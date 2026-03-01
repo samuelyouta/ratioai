@@ -26,9 +26,9 @@ const features = [
 ];
 
 const previews = [
+  { src: appPreview1, alt: "RatioAi profile setup", label: "Your Profile" },
   { src: appPreview2, alt: "RatioAi daily tracking dashboard", label: "Track Daily" },
   { src: appPreview3, alt: "RatioAi AI food analysis", label: "AI Analysis" },
-  { src: appPreview1, alt: "RatioAi personalized profile", label: "Your Profile" },
 ];
 
 const Waitlist = () => {
