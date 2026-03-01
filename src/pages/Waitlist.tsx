@@ -1,13 +1,51 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
+import appPreview1 from "@/assets/app-preview-1.png";
+import appPreview2 from "@/assets/app-preview-2.png";
+import appPreview3 from "@/assets/app-preview-3.png";
+
+const features = [
+  {
+    icon: Camera,
+    title: "Snap & Track",
+    description: "Take a photo of your meal and let AI do the rest",
+  },
+  {
+    icon: Brain,
+    title: "AI Analysis",
+    description: "Instant macro breakdown with USDA-verified data",
+  },
+  {
+    icon: TrendingUp,
+    title: "Smart Insights",
+    description: "Personalized nutrition goals that adapt to you",
+  },
+];
+
+const previews = [
+  { src: appPreview2, alt: "RatioAi daily tracking dashboard", label: "Track Daily" },
+  { src: appPreview3, alt: "RatioAi AI food analysis", label: "AI Analysis" },
+  { src: appPreview1, alt: "RatioAi personalized profile", label: "Your Profile" },
+];
 
 const Waitlist = () => {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [activePreview, setActivePreview] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setActivePreview((prev) => (prev + 1) % previews.length);
+    }, 4000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +61,7 @@ const Waitlist = () => {
 
     if (error) {
       if (error.code === "23505") {
-        setStatus("success"); // already on waitlist, treat as success
+        setStatus("success");
       } else {
         setErrorMsg("Something went wrong. Try again.");
         setStatus("error");
@@ -34,20 +72,23 @@ const Waitlist = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 relative overflow-hidden">
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-primary/5 blur-[100px]" />
+    <div className="min-h-screen bg-background flex flex-col items-center px-5 py-12 relative overflow-hidden">
+      {/* Ambient glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-0 w-64 h-64 rounded-full bg-primary/3 blur-[100px] pointer-events-none" />
 
+      {/* Hero section */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
         className="flex flex-col items-center text-center z-10 w-full max-w-sm"
       >
         <motion.div
-          initial={{ y: -20 }}
-          animate={{ y: 0 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="w-20 h-20 rounded-3xl overflow-hidden shadow-glow mb-6"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+          className="w-16 h-16 rounded-2xl overflow-hidden shadow-glow mb-5"
         >
           <img src={logo} alt="RatioAi logo" className="w-full h-full object-cover" />
         </motion.div>
@@ -55,15 +96,16 @@ const Waitlist = () => {
         <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">
           RatioAi
         </h1>
-        <p className="text-muted-foreground text-sm max-w-xs leading-relaxed mb-8">
+        <p className="text-muted-foreground text-sm max-w-xs leading-relaxed mb-6">
           AI-powered nutrition tracking is almost here. Join the waitlist to get early access.
         </p>
 
+        {/* Email form */}
         {status === "success" ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center gap-3"
+            className="flex flex-col items-center gap-3 mb-10"
           >
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
               <CheckCircle className="w-7 h-7 text-primary" />
@@ -72,7 +114,7 @@ const Waitlist = () => {
             <p className="text-muted-foreground text-xs">We'll let you know when RatioAi launches.</p>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} className="w-full space-y-3">
+          <form onSubmit={handleSubmit} className="w-full space-y-3 mb-10">
             <input
               type="email"
               placeholder="Enter your email"
@@ -102,12 +144,99 @@ const Waitlist = () => {
                 </>
               )}
             </motion.button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              No spam. Unsubscribe anytime.
+            </p>
           </form>
         )}
+      </motion.div>
 
-        <p className="text-[11px] text-muted-foreground mt-6">
-          No spam. Unsubscribe anytime.
-        </p>
+      {/* App Preview Carousel */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="z-10 w-full max-w-sm mb-10"
+      >
+        <div className="relative h-[420px] flex items-center justify-center">
+          {previews.map((preview, index) => {
+            const isActive = index === activePreview;
+            const offset = index - activePreview;
+            return (
+              <motion.div
+                key={index}
+                animate={{
+                  scale: isActive ? 1 : 0.85,
+                  x: offset * 60,
+                  zIndex: isActive ? 10 : 5 - Math.abs(offset),
+                  opacity: isActive ? 1 : 0.4,
+                  rotateY: offset * -5,
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="absolute w-52 cursor-pointer"
+                onClick={() => setActivePreview(index)}
+              >
+                <div className={`rounded-2xl overflow-hidden border-2 transition-colors duration-300 ${isActive ? 'border-primary/40 shadow-glow' : 'border-border/30'}`}>
+                  <img
+                    src={preview.src}
+                    alt={preview.alt}
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Dots indicator */}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {previews.map((preview, index) => (
+            <button
+              key={index}
+              onClick={() => setActivePreview(index)}
+              className={`transition-all duration-300 rounded-full ${
+                index === activePreview
+                  ? 'w-6 h-2 bg-primary'
+                  : 'w-2 h-2 bg-muted-foreground/30'
+              }`}
+              aria-label={preview.label}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Feature highlights */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
+        className="z-10 w-full max-w-sm space-y-3"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            What's coming
+          </span>
+        </div>
+
+        {features.map((feature, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 + index * 0.1 }}
+            className="flex items-start gap-4 p-4 rounded-xl bg-card/60 border border-border/50"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <feature.icon className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">{feature.title}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{feature.description}</p>
+            </div>
+          </motion.div>
+        ))}
       </motion.div>
     </div>
   );
