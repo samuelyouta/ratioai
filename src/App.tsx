@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Welcome from "./pages/Welcome";
+import Waitlist from "./pages/Waitlist";
 import GoalSelection from "./pages/GoalSelection";
 import ProfileSetup from "./pages/ProfileSetup";
 import CalorieTarget from "./pages/CalorieTarget";
@@ -22,7 +23,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Welcome />} />
+          <Route path="/" element={<Waitlist />} />
+          <Route path="/welcome" element={<Welcome />} />
           <Route path="/goals" element={<GoalSelection />} />
           <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/calorie-target" element={<CalorieTarget />} />
