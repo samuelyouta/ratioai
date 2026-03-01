@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Flame, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -21,9 +22,9 @@ const Welcome = () => {
           initial={{ y: -20 }}
           animate={{ y: 0 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="gradient-glow w-20 h-20 rounded-3xl flex items-center justify-center shadow-glow mb-8"
+          className="w-20 h-20 rounded-3xl overflow-hidden shadow-glow mb-8"
         >
-          <Flame className="w-10 h-10 text-primary-foreground" />
+          <img src={logo} alt="RatioAi logo" className="w-full h-full object-cover" />
         </motion.div>
 
         <motion.h1
@@ -32,7 +33,7 @@ const Welcome = () => {
           transition={{ delay: 0.3 }}
           className="text-4xl font-black text-foreground tracking-tight mb-3"
         >
-          FuelAI
+          RatioAi
         </motion.h1>
 
         <motion.p
