@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
+import heroVideo from "@/assets/hero-video.mp4";
 import appPreview1 from "@/assets/app-preview-1.png";
 import appPreview2 from "@/assets/app-preview-2.png";
 import appPreview3 from "@/assets/app-preview-3.png";
@@ -203,6 +204,31 @@ const Waitlist = () => {
               aria-label={preview.label}
             />
           ))}
+        </div>
+      </motion.div>
+
+      {/* Video Demo */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="z-10 w-full max-w-sm mb-10"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Camera className="w-4 h-4 text-primary" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            See it in action
+          </span>
+        </div>
+        <div className="rounded-2xl overflow-hidden border-2 border-border/50 shadow-glow">
+          <video
+            src={heroVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-auto"
+          />
         </div>
       </motion.div>
 
