@@ -9,12 +9,6 @@ const testimonials = [
     initials: "SM",
   },
   {
-    quote: "The AI accuracy blew me away — it even detected the avocado hidden under my eggs.",
-    name: "James K.",
-    role: "Fitness Coach",
-    initials: "JK",
-  },
-  {
     quote: "I've tried every calorie tracker out there. RatioAi is the first one I actually stuck with.",
     name: "Priya R.",
     role: "Early Access User",
