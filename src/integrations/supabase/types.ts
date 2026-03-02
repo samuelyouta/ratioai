@@ -21,6 +21,7 @@ export type Database = {
           id: string
           nurture_sent_at: string | null
           nurture_step: number
+          unsubscribed: boolean
         }
         Insert: {
           created_at?: string
@@ -28,6 +29,7 @@ export type Database = {
           id?: string
           nurture_sent_at?: string | null
           nurture_step?: number
+          unsubscribed?: boolean
         }
         Update: {
           created_at?: string
@@ -35,6 +37,7 @@ export type Database = {
           id?: string
           nurture_sent_at?: string | null
           nurture_step?: number
+          unsubscribed?: boolean
         }
         Relationships: []
       }
