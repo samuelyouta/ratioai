@@ -168,7 +168,7 @@ const Waitlist = () => {
               >
                 <Users className="w-3 h-3 text-primary" />
                 <span className="text-[11px] text-muted-foreground">
-                  <span className="font-semibold text-foreground">{waitlistCount.toLocaleString()}</span> people already joined
+                  <span className="font-semibold text-foreground">{waitlistCount.toLocaleString()}</span> {waitlistCount === 1 ? 'person has' : 'people have'} already joined
                 </span>
               </motion.div>
             )}
