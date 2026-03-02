@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
-import FAQ from "@/components/FAQ";
+
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
 
@@ -245,8 +245,6 @@ const Waitlist = () => {
         ))}
       </motion.div>
 
-      {/* FAQ */}
-      <FAQ />
     </div>
   );
 };
