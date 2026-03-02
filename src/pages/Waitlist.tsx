@@ -177,7 +177,7 @@ const Waitlist = () => {
                   opacity: isActive ? 1 : 0.4,
                   rotateY: offset * -5,
                 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                transition={{ type: "spring", stiffness: 180, damping: 24, mass: 0.8 }}
                 className="absolute w-52 cursor-pointer"
                 onClick={() => setActivePreview(index)}
               >
