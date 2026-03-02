@@ -19,16 +19,22 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          nurture_sent_at: string | null
+          nurture_step: number
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
+          nurture_sent_at?: string | null
+          nurture_step?: number
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          nurture_sent_at?: string | null
+          nurture_step?: number
         }
         Relationships: []
       }
