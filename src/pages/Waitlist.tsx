@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles, Users } from "lucide-react";
 
 
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,7 @@ const Waitlist = () => {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [activePreview, setActivePreview] = useState(0);
+  const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -49,6 +50,14 @@ const Waitlist = () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { data } = await supabase.rpc("get_waitlist_count");
+      if (typeof data === "number") setWaitlistCount(data);
+    };
+    fetchCount();
+  }, [status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +159,19 @@ const Waitlist = () => {
             <p className="text-[11px] text-muted-foreground text-center">
               No spam. Unsubscribe anytime.
             </p>
+            {waitlistCount !== null && waitlistCount > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="flex items-center justify-center gap-1.5 mt-1"
+              >
+                <Users className="w-3 h-3 text-primary" />
+                <span className="text-[11px] text-muted-foreground">
+                  <span className="font-semibold text-foreground">{waitlistCount.toLocaleString()}</span> people already joined
+                </span>
+              </motion.div>
+            )}
           </form>
         )}
       </motion.div>
