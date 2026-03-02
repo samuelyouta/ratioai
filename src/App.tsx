@@ -24,15 +24,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Waitlist />} />
-          <Route path="/welcome" element={<Welcome />} />
-          <Route path="/goals" element={<GoalSelection />} />
-          <Route path="/profile-setup" element={<ProfileSetup />} />
-          <Route path="/calorie-target" element={<CalorieTarget />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/camera" element={<CameraCapture />} />
-          <Route path="/ai-result" element={<AIResult />} />
-          <Route path="/manual-edit" element={<ManualEdit />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
