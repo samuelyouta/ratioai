@@ -24,14 +24,15 @@ const emails = [
         <p style="font-size: 15px; line-height: 1.7;">Hey there! 👋</p>
         <p style="font-size: 15px; line-height: 1.7;">Thanks for joining the RatioAi waitlist. We're building something special — an AI-powered nutrition tracker that makes calorie counting as easy as snapping a photo.</p>
         <p style="font-size: 15px; line-height: 1.7;">You'll be among the first to try it when we launch. Stay tuned for updates!</p>
-        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
-          <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
-        </div>
-      </div>
-    `,
-  },
-  {
-    step: 2,
+         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
+           <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
+           <p style="font-size: 11px; color: #bbb; margin: 12px 0 0;"><a href="{{UNSUBSCRIBE_URL}}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a></p>
+         </div>
+       </div>
+     `,
+   },
+   {
+     step: 2,
     delayDays: 2,
     subject: "Why we're building RatioAi 🧠",
     html: `
@@ -51,9 +52,10 @@ const emails = [
           </p>
         </div>
         <p style="font-size: 15px; line-height: 1.7;">We can't wait to get this into your hands.</p>
-        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
-          <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
-        </div>
+         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
+           <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
+           <p style="font-size: 11px; color: #bbb; margin: 12px 0 0;"><a href="{{UNSUBSCRIBE_URL}}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a></p>
+         </div>
       </div>
     `,
   },
@@ -78,9 +80,10 @@ const emails = [
           <a href="https://ratioai.lovable.app" style="display: inline-block; background: #1a1a1a; color: #fff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px;">Share RatioAi →</a>
         </div>
         <p style="font-size: 15px; line-height: 1.7;">Thanks for being an early supporter. It means the world to us. 💚</p>
-        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
-          <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
-        </div>
+         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
+           <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
+           <p style="font-size: 11px; color: #bbb; margin: 12px 0 0;"><a href="{{UNSUBSCRIBE_URL}}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a></p>
+         </div>
       </div>
     `,
   },
@@ -113,6 +116,7 @@ Deno.serve(async (req) => {
         .from("waitlist")
         .select("id, email, nurture_sent_at")
         .eq("nurture_step", emailConfig.step - 1)
+        .eq("unsubscribed", false)
         .not("nurture_sent_at", "is", null)
         .limit(50);
 
@@ -143,7 +147,10 @@ Deno.serve(async (req) => {
               from: FROM_EMAIL,
               to: [user.email],
               subject: emailConfig.subject,
-              html: emailConfig.html,
+              html: emailConfig.html.replace(
+                /\{\{UNSUBSCRIBE_URL\}\}/g,
+                `${supabaseUrl}/functions/v1/unsubscribe?id=${user.id}`
+              ),
             }),
           });
 

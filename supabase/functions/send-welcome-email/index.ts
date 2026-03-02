@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
             <p style="font-size: 15px; line-height: 1.7;">You'll be among the first to try it when we launch. Stay tuned for updates!</p>
             <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
               <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
+              <p style="font-size: 11px; color: #bbb; margin: 12px 0 0;"><a href="${Deno.env.get("SUPABASE_URL")}/functions/v1/unsubscribe?id=${id}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a></p>
             </div>
           </div>
         `,
