@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles } from "lucide-react";
-import Testimonials from "@/components/Testimonials";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
@@ -209,8 +209,6 @@ const Waitlist = () => {
         </div>
       </motion.div>
 
-      {/* Social Proof */}
-      <Testimonials />
 
       {/* Feature highlights */}
       <motion.div
