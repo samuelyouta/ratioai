@@ -62,7 +62,7 @@ const Waitlist = () => {
     }
 
     setStatus("loading");
-    const { error } = await supabase.from("waitlist").insert({ email: trimmed });
+    const { data, error } = await supabase.from("waitlist").insert({ email: trimmed }).select("id, email").single();
 
     if (error) {
       if (error.code === "23505") {
@@ -73,6 +73,12 @@ const Waitlist = () => {
       }
     } else {
       setStatus("success");
+      // Fire-and-forget welcome email
+      if (data) {
+        supabase.functions.invoke("send-welcome-email", {
+          body: { email: data.email, id: data.id },
+        }).catch(console.error);
+      }
     }
   };
 
