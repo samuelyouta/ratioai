@@ -121,8 +121,12 @@ const Waitlist = () => {
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
               <CheckCircle className="w-7 h-7 text-primary" />
             </div>
-            <p className="text-foreground font-semibold">You're on the list!</p>
-            <p className="text-muted-foreground text-xs">We'll let you know when RatioAi launches.</p>
+            <p className="text-foreground font-semibold text-center leading-snug">
+              Waitlist joined.<br />
+              Status: <span className="text-primary">Early Adopter</span>.<br />
+              Vibe: <span className="text-primary">Elite</span>.<br />
+            </p>
+            <p className="text-muted-foreground text-xs">See you inside soon. 🚀</p>
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit} className="w-full space-y-3 mb-10">
