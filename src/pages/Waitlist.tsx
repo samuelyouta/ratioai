@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles }
 
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
+import NativeFeaturesPanel from "@/components/NativeFeaturesPanel";
 
 import appPreview1 from "@/assets/app-preview-1.png";
 import appPreview2 from "@/assets/app-preview-2.png";
@@ -253,6 +254,8 @@ const Waitlist = () => {
             </div>
           </motion.div>
         ))}
+
+        <NativeFeaturesPanel email={status === "success" ? email.trim().toLowerCase() : undefined} />
       </motion.div>
 
     </div>

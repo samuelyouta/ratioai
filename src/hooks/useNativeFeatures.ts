@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { PushNotifications } from "@capacitor/push-notifications";
-import { CapacitorHealth } from "capacitor-health";
+import { Health } from "capacitor-health";
 import { isNative, getPlatform } from "@/lib/native";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -83,9 +83,9 @@ export function useNativeFeatures(email?: string) {
   const requestHealth = useCallback(async () => {
     if (!isNative()) return "unsupported" as const;
     try {
-      const available = await CapacitorHealth.isHealthAvailable();
+      const available = await Health.isHealthAvailable();
       if (!available?.available) return "unsupported" as const;
-      await CapacitorHealth.requestHealthPermissions({
+      await Health.requestHealthPermissions({
         permissions: ["READ_STEPS", "READ_ACTIVE_CALORIES", "READ_WEIGHT"],
       });
       return "granted" as const;
