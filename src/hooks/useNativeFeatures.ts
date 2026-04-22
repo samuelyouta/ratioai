@@ -86,7 +86,7 @@ export function useNativeFeatures(email?: string) {
       const available = await Health.isHealthAvailable();
       if (!available?.available) return "unsupported" as const;
       await Health.requestHealthPermissions({
-        permissions: ["READ_STEPS", "READ_ACTIVE_CALORIES", "READ_WEIGHT"],
+        permissions: ["READ_STEPS", "READ_ACTIVE_CALORIES", "READ_HEART_RATE"],
       });
       return "granted" as const;
     } catch (e) {
