@@ -87,7 +87,14 @@ const Describe = () => {
         else interim += transcript;
       }
       if (finalChunk) {
-        baseTextRef.current = (baseTextRef.current + finalChunk).replace(/\s+/g, " ");
+        const { remaining, handled } = handleVoiceCommands(finalChunk);
+        if (handled) {
+          // Command consumed — refresh base from current text and skip append
+          baseTextRef.current = text ? text.trim() + " " : "";
+          setText(baseTextRef.current.trim());
+          return;
+        }
+        baseTextRef.current = (baseTextRef.current + remaining).replace(/\s+/g, " ");
       }
       setText((baseTextRef.current + " " + interim).trim());
     };
