@@ -16,6 +16,7 @@ import Insights from "./pages/app/Insights";
 import Profile from "./pages/app/Profile";
 import Log from "./pages/app/Log";
 import Analyze from "./pages/app/Analyze";
+import History from "./pages/app/History";
 
 const queryClient = new QueryClient();
 

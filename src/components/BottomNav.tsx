@@ -1,10 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Camera, User, BarChart3 } from "lucide-react";
+import { Home, Camera, User, BarChart3, History as HistoryIcon } from "lucide-react";
 
 const tabs = [
   { to: "/app/today", icon: Home, label: "Today" },
   { to: "/app/insights", icon: BarChart3, label: "Insights" },
   { to: "/app/log", icon: Camera, label: "Log", primary: true },
+  { to: "/app/history", icon: HistoryIcon, label: "History" },
   { to: "/app/profile", icon: User, label: "Profile" },
 ];
 
