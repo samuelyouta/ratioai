@@ -18,6 +18,7 @@ import Log from "./pages/app/Log";
 import Analyze from "./pages/app/Analyze";
 import History from "./pages/app/History";
 import MealDetails from "./pages/app/MealDetails";
+import Manual from "./pages/app/Manual";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,14 @@ const App = () => (
             element={
               <RequireOnboarding>
                 <MealDetails />
+              </RequireOnboarding>
+            }
+          />
+          <Route
+            path="/app/manual"
+            element={
+              <RequireOnboarding>
+                <Manual />
               </RequireOnboarding>
             }
           />
