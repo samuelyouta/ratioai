@@ -128,16 +128,26 @@ const Log = () => {
           </button>
         </div>
 
-        <button
-          disabled={scanning}
-          onClick={() => navigate("/app/manual")}
-          className="mt-5 w-full h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-foreground/90"
-        >
-          <Pencil className="w-4 h-4 text-muted-foreground" />
-          Search & Edit manually
-        </button>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button
+            disabled={scanning}
+            onClick={() => navigate("/app/manual")}
+            className="h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-foreground/90"
+          >
+            <Pencil className="w-4 h-4 text-muted-foreground" />
+            Search & Edit
+          </button>
+          <button
+            disabled={scanning}
+            onClick={() => navigate("/app/describe")}
+            className="h-11 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-foreground"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            Describe Meal
+          </button>
+        </div>
         <p className="mt-2 text-[10px] text-muted-foreground text-center">
-          AI scan recommended for accuracy
+          Can't find it? Describe it — we'll estimate the macros.
         </p>
       </div>
 
