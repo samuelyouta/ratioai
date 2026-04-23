@@ -30,6 +30,8 @@ export interface MealItem {
   fat: number;
 }
 
+export type MealSource = "photo" | "voice" | "manual";
+
 export interface Meal {
   id: string;
   loggedAt: string; // ISO
@@ -41,6 +43,10 @@ export interface Meal {
   totalCarbs: number;
   totalFat: number;
   hiddenIngredient?: string | null;
+  source?: MealSource;
+  imageDataUrl?: string | null;
+  verified?: boolean;
+  notes?: string;
 }
 
 const PROFILE_KEY = "ratioai.profile";
