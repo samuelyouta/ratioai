@@ -5,6 +5,7 @@ import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil, Mic, MicOff } f
 import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
+import PortionGuideList from "@/components/app/PortionGuideList";
 
 interface AIItem {
   name: string;
@@ -446,6 +447,12 @@ const Describe = () => {
                 <p className="text-xs text-foreground/90 mt-0.5">{result.hiddenIngredient}</p>
               </div>
             )}
+
+            <PortionGuideList
+              items={result.items.map((i) => ({ name: i.name, portion: i.portion }))}
+              title="Portion guide"
+              compact
+            />
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-2">

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Search, Plus, Minus, Check, Pencil } from "lucide-react";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
+import PortionGuideList from "@/components/app/PortionGuideList";
 
 // Lightweight built-in food database (per 100g unless noted)
 type FoodDef = {
@@ -196,6 +197,15 @@ const Manual = () => {
               </div>
             ))}
           </div>
+
+          <PortionGuideList
+            items={selected.map((s) => ({
+              name: s.food.name,
+              portion: `${Math.round(s.food.unitGrams * s.servings)}g`,
+            }))}
+            title="Portion guide"
+            compact
+          />
         </div>
       )}
 
