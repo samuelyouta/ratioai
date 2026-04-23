@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { getMeals, deleteMeal, type MealSource } from "@/lib/profile";
+import { sanitizeMealIcon } from "@/lib/mealIcon";
 import { toast } from "sonner";
 
 const sourceMeta: Record<MealSource, { icon: typeof Camera; label: string }> = {
@@ -85,7 +86,7 @@ const MealDetails = () => {
           {meal.imageDataUrl ? (
             <img src={meal.imageDataUrl} alt={meal.title} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-7xl">{meal.icon || "🍽️"}</span>
+            <span className="text-7xl">{sanitizeMealIcon(meal.icon)}</span>
           )}
         </div>
 
