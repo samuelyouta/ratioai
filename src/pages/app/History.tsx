@@ -192,14 +192,20 @@ const History = () => {
                         )}
                         <div className="ml-auto flex gap-1">
                           <button
-                            onClick={() => setEditing(m)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditing(m);
+                            }}
                             className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground"
                             aria-label="Edit"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(m)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(m);
+                            }}
                             className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-destructive"
                             aria-label="Delete"
                           >
