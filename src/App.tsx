@@ -82,6 +82,14 @@ const App = () => (
               </RequireOnboarding>
             }
           />
+          <Route
+            path="/app/history"
+            element={
+              <RequireOnboarding>
+                <History />
+              </RequireOnboarding>
+            }
+          />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
