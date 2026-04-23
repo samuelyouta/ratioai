@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil, Mic, MicOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
