@@ -17,6 +17,7 @@ import Profile from "./pages/app/Profile";
 import Log from "./pages/app/Log";
 import Analyze from "./pages/app/Analyze";
 import History from "./pages/app/History";
+import MealDetails from "./pages/app/MealDetails";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,14 @@ const App = () => (
             element={
               <RequireOnboarding>
                 <History />
+              </RequireOnboarding>
+            }
+          />
+          <Route
+            path="/app/history/:id"
+            element={
+              <RequireOnboarding>
+                <MealDetails />
               </RequireOnboarding>
             }
           />
