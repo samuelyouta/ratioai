@@ -35,6 +35,85 @@ const Describe = () => {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIResult | null>(null);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const baseTextRef = useRef<string>("");
+
+  const SpeechRecognition =
+    typeof window !== "undefined"
+      ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      : null;
+  const speechSupported = !!SpeechRecognition;
+
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        /* noop */
+      }
+    };
+  }, []);
+
+  const toggleDictation = () => {
+    if (!speechSupported) {
+      toast({
+        title: "Dictation not supported",
+        description: "Try Chrome or Safari on desktop / iOS to dictate your meal.",
+      });
+      return;
+    }
+    if (listening) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        /* noop */
+      }
+      return;
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = navigator.language || "en-US";
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    baseTextRef.current = text ? text.trim() + (text.trim().endsWith(".") ? " " : ". ") : "";
+
+    rec.onresult = (event: any) => {
+      let interim = "";
+      let finalChunk = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalChunk += transcript;
+        else interim += transcript;
+      }
+      if (finalChunk) {
+        baseTextRef.current = (baseTextRef.current + finalChunk).replace(/\s+/g, " ");
+      }
+      setText((baseTextRef.current + " " + interim).trim());
+    };
+    rec.onerror = (e: any) => {
+      console.error("SpeechRecognition error", e);
+      const code = e?.error || "unknown";
+      const msg =
+        code === "not-allowed" || code === "service-not-allowed"
+          ? "Microphone permission denied."
+          : code === "no-speech"
+            ? "Didn't catch that — try again."
+            : `Dictation error: ${code}`;
+      toast({ title: "Dictation stopped", description: msg });
+      setListening(false);
+    };
+    rec.onend = () => setListening(false);
+    rec.onstart = () => setListening(true);
+
+    try {
+      rec.start();
+      recognitionRef.current = rec;
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Couldn't start mic", description: "Please allow microphone access." });
+    }
+  };
 
   const estimate = async () => {
     const desc = text.trim();
