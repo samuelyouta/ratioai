@@ -256,7 +256,15 @@ const Waitlist = () => {
         ))}
 
         <NativeFeaturesPanel email={status === "success" ? email.trim().toLowerCase() : undefined} />
+
+        <a
+          href="/app"
+          className="block text-center text-xs text-muted-foreground hover:text-primary transition-colors pt-4"
+        >
+          Open the RatioAi preview →
+        </a>
       </motion.div>
+
 
     </div>
   );
