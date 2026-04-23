@@ -1,19 +1,18 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Camera, Dumbbell, User, BarChart3 } from "lucide-react";
+import { Home, Camera, User, BarChart3 } from "lucide-react";
 
 const tabs = [
-  { to: "/home", icon: Home, label: "Today" },
-  { to: "/insights", icon: BarChart3, label: "Insights" },
-  { to: "/camera", icon: Camera, label: "Log", primary: true },
-  { to: "/workouts", icon: Dumbbell, label: "Workouts" },
-  { to: "/profile", icon: User, label: "Profile" },
+  { to: "/app/today", icon: Home, label: "Today" },
+  { to: "/app/insights", icon: BarChart3, label: "Insights" },
+  { to: "/app/log", icon: Camera, label: "Log", primary: true },
+  { to: "/app/profile", icon: User, label: "Profile" },
 ];
+
+const HIDDEN = ["/app/welcome", "/app/log", "/app/analyze"];
 
 const BottomNav = () => {
   const location = useLocation();
-
-  // Hide on onboarding routes
-  if (["/", "/goals", "/profile-setup", "/calorie-target", "/permissions"].includes(location.pathname)) {
+  if (HIDDEN.includes(location.pathname) || location.pathname.startsWith("/app/onboarding")) {
     return null;
   }
 
