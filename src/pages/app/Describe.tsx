@@ -351,6 +351,19 @@ const Describe = () => {
           </button>
         </div>
 
+        {speechSupported && listening && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {['"add two eggs"', '"delete last word"', '"clear text"', '"estimate"', '"stop"'].map((c) => (
+              <span
+                key={c}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
+
         {!result && (
           <div className="mt-3">
             <p className="text-[11px] text-muted-foreground mb-2">Try one of these:</p>
