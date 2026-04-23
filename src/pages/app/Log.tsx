@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
-import { X, Zap, Camera, Image as ImageIcon, Loader2, Search, Pencil } from "lucide-react";
+import { X, Zap, Camera, Image as ImageIcon, Loader2, Search, Pencil, Sparkles } from "lucide-react";
 
 const Log = () => {
   const navigate = useNavigate();
