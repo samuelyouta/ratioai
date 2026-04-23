@@ -214,17 +214,48 @@ const Describe = () => {
 
       {/* Input */}
       <div className="px-4 pt-5">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          What did you eat?
-        </label>
-        <textarea
-          autoFocus
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="e.g. A big bowl of homemade lasagna and a side salad"
-          rows={4}
-          className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-        />
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            What did you eat?
+          </label>
+          {listening && (
+            <span className="flex items-center gap-1.5 text-[10px] font-medium text-primary">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              Listening…
+            </span>
+          )}
+        </div>
+        <div className="relative mt-2">
+          <textarea
+            autoFocus
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="e.g. A big bowl of homemade lasagna and a side salad"
+            rows={4}
+            className="w-full px-4 py-3 pr-14 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+          />
+          <button
+            type="button"
+            onClick={toggleDictation}
+            aria-label={listening ? "Stop dictation" : "Start dictation"}
+            title={
+              speechSupported
+                ? listening
+                  ? "Stop dictation"
+                  : "Dictate your meal"
+                : "Dictation unavailable in this browser"
+            }
+            className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+              listening
+                ? "bg-primary text-primary-foreground shadow-glow animate-pulse"
+                : speechSupported
+                  ? "bg-primary/15 text-primary hover:bg-primary/25 border border-primary/30"
+                  : "bg-secondary/60 text-muted-foreground border border-border opacity-60"
+            }`}
+          >
+            {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+        </div>
 
         {!result && (
           <div className="mt-3">
