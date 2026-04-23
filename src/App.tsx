@@ -21,6 +21,7 @@ import Analyze from "./pages/app/Analyze";
 import History from "./pages/app/History";
 import MealDetails from "./pages/app/MealDetails";
 import Manual from "./pages/app/Manual";
+import Describe from "./pages/app/Describe";
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,14 @@ const App = () => {
             element={
               <RequireOnboarding>
                 <Manual />
+              </RequireOnboarding>
+            }
+          />
+          <Route
+            path="/app/describe"
+            element={
+              <RequireOnboarding>
+                <Describe />
               </RequireOnboarding>
             }
           />

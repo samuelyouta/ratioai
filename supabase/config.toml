@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.analyze-meal]
 verify_jwt = false
+
+[functions.describe-meal]
+verify_jwt = false
