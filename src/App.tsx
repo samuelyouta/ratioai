@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { startReminderScheduler, ensureNotificationPermission } from "@/lib/reminders";
 import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
 import RequireOnboarding from "./components/RequireOnboarding";
@@ -22,7 +24,16 @@ import Manual from "./pages/app/Manual";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    // Best-effort: ask once for browser notification permission, then start
+    // the in-app scheduler that checks for the 2 PM lunch reminder.
+    ensureNotificationPermission();
+    const stop = startReminderScheduler();
+    return stop;
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
