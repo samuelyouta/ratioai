@@ -129,6 +129,26 @@ export function saveMeal(meal: Meal) {
   localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
 }
 
+export function updateMeal(id: string, patch: Partial<Meal>) {
+  const meals = getMeals().map((m) => {
+    if (m.id !== id) return m;
+    const merged = { ...m, ...patch };
+    if (patch.items) {
+      merged.totalCalories = patch.items.reduce((s, i) => s + (i.calories || 0), 0);
+      merged.totalProtein = patch.items.reduce((s, i) => s + (i.protein || 0), 0);
+      merged.totalCarbs = patch.items.reduce((s, i) => s + (i.carbs || 0), 0);
+      merged.totalFat = patch.items.reduce((s, i) => s + (i.fat || 0), 0);
+    }
+    return merged;
+  });
+  localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
+}
+
+export function deleteMeal(id: string) {
+  const meals = getMeals().filter((m) => m.id !== id);
+  localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
+}
+
 export function getTodayMeals(): Meal[] {
   const today = new Date().toISOString().slice(0, 10);
   return getMeals().filter((m) => m.loggedAt.startsWith(today));
