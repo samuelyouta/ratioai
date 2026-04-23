@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { sanitizeMealIcon } from "@/lib/mealIcon";
 
 interface MealCardProps {
   time: string;
@@ -17,7 +18,7 @@ const MealCard = ({ time, title, calories, items, icon }: MealCardProps) => {
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="text-2xl">{icon}</div>
+          <div className="text-2xl leading-none truncate max-w-[2rem]">{sanitizeMealIcon(icon)}</div>
           <div>
             <h4 className="font-semibold text-foreground text-sm">{title}</h4>
             <p className="text-xs text-muted-foreground">{time}</p>

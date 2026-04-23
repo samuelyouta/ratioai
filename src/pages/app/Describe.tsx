@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
+import { sanitizeMealIcon } from "@/lib/mealIcon";
 
 interface AIItem {
   name: string;
@@ -264,7 +265,7 @@ const Describe = () => {
       id: `meal_${Date.now()}`,
       loggedAt: new Date().toISOString(),
       title: result.title || "Estimated meal",
-      icon: result.icon || "✨",
+      icon: sanitizeMealIcon(result.icon, "✨"),
       items,
       totalCalories: items.reduce((s, i) => s + i.calories, 0),
       totalProtein: +items.reduce((s, i) => s + i.protein, 0).toFixed(1),
@@ -410,7 +411,7 @@ const Describe = () => {
         >
           <div className="bg-card border border-border rounded-2xl p-4">
             <div className="flex items-center gap-3 mb-3">
-              <div className="text-3xl">{result.icon}</div>
+              <div className="text-3xl">{sanitizeMealIcon(result.icon, "✨")}</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">{result.title}</p>
                 <p className="text-[11px] text-muted-foreground">{result.notes}</p>
