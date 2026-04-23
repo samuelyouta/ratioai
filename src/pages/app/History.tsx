@@ -155,7 +155,8 @@ const History = () => {
                     layout
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="gradient-card rounded-2xl p-3 border border-border flex gap-3"
+                    onClick={() => navigate(`/app/history/${m.id}`)}
+                    className="gradient-card rounded-2xl p-3 border border-border flex gap-3 cursor-pointer hover:border-primary/40 transition-colors"
                   >
                     <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0">
                       {m.imageDataUrl ? (
