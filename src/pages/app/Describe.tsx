@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil, Mic, MicOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
@@ -35,6 +35,85 @@ const Describe = () => {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIResult | null>(null);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const baseTextRef = useRef<string>("");
+
+  const SpeechRecognition =
+    typeof window !== "undefined"
+      ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      : null;
+  const speechSupported = !!SpeechRecognition;
+
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        /* noop */
+      }
+    };
+  }, []);
+
+  const toggleDictation = () => {
+    if (!speechSupported) {
+      toast({
+        title: "Dictation not supported",
+        description: "Try Chrome or Safari on desktop / iOS to dictate your meal.",
+      });
+      return;
+    }
+    if (listening) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        /* noop */
+      }
+      return;
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = navigator.language || "en-US";
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    baseTextRef.current = text ? text.trim() + (text.trim().endsWith(".") ? " " : ". ") : "";
+
+    rec.onresult = (event: any) => {
+      let interim = "";
+      let finalChunk = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalChunk += transcript;
+        else interim += transcript;
+      }
+      if (finalChunk) {
+        baseTextRef.current = (baseTextRef.current + finalChunk).replace(/\s+/g, " ");
+      }
+      setText((baseTextRef.current + " " + interim).trim());
+    };
+    rec.onerror = (e: any) => {
+      console.error("SpeechRecognition error", e);
+      const code = e?.error || "unknown";
+      const msg =
+        code === "not-allowed" || code === "service-not-allowed"
+          ? "Microphone permission denied."
+          : code === "no-speech"
+            ? "Didn't catch that — try again."
+            : `Dictation error: ${code}`;
+      toast({ title: "Dictation stopped", description: msg });
+      setListening(false);
+    };
+    rec.onend = () => setListening(false);
+    rec.onstart = () => setListening(true);
+
+    try {
+      rec.start();
+      recognitionRef.current = rec;
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Couldn't start mic", description: "Please allow microphone access." });
+    }
+  };
 
   const estimate = async () => {
     const desc = text.trim();
@@ -135,17 +214,48 @@ const Describe = () => {
 
       {/* Input */}
       <div className="px-4 pt-5">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          What did you eat?
-        </label>
-        <textarea
-          autoFocus
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="e.g. A big bowl of homemade lasagna and a side salad"
-          rows={4}
-          className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-        />
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            What did you eat?
+          </label>
+          {listening && (
+            <span className="flex items-center gap-1.5 text-[10px] font-medium text-primary">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              Listening…
+            </span>
+          )}
+        </div>
+        <div className="relative mt-2">
+          <textarea
+            autoFocus
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="e.g. A big bowl of homemade lasagna and a side salad"
+            rows={4}
+            className="w-full px-4 py-3 pr-14 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+          />
+          <button
+            type="button"
+            onClick={toggleDictation}
+            aria-label={listening ? "Stop dictation" : "Start dictation"}
+            title={
+              speechSupported
+                ? listening
+                  ? "Stop dictation"
+                  : "Dictate your meal"
+                : "Dictation unavailable in this browser"
+            }
+            className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+              listening
+                ? "bg-primary text-primary-foreground shadow-glow animate-pulse"
+                : speechSupported
+                  ? "bg-primary/15 text-primary hover:bg-primary/25 border border-primary/30"
+                  : "bg-secondary/60 text-muted-foreground border border-border opacity-60"
+            }`}
+          >
+            {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+        </div>
 
         {!result && (
           <div className="mt-3">
