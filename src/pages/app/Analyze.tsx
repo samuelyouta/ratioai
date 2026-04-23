@@ -5,6 +5,7 @@ import { ArrowLeft, AlertTriangle, Check, Sparkles, Loader2, Minus, Plus } from 
 import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal } from "@/lib/profile";
 import { toast } from "sonner";
+import PortionGuideOverlay from "@/components/app/PortionGuideOverlay";
 
 interface AnalyzedItem {
   name: string;
@@ -31,6 +32,7 @@ const Analyze = () => {
   const [counts, setCounts] = useState<number[]>([]);
   const [acceptHidden, setAcceptHidden] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const dataUrl = sessionStorage.getItem("ratioai.lastImage");
@@ -38,6 +40,7 @@ const Analyze = () => {
       navigate("/app/log", { replace: true });
       return;
     }
+    setImageUrl(dataUrl);
 
     (async () => {
       try {
@@ -170,6 +173,8 @@ const Analyze = () => {
         <h2 className="font-semibold text-foreground">{result.title}</h2>
         <div className="w-10" />
       </div>
+
+      {imageUrl && <PortionGuideOverlay imageUrl={imageUrl} items={result.items} />}
 
       <div className="px-6 mb-4">
         <div className="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-2.5">
