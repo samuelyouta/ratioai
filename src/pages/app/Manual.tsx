@@ -205,8 +205,15 @@ const Manual = () => {
           {query ? `Results (${results.length})` : "Common foods"}
         </h2>
         {results.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-sm text-muted-foreground">No matches. Try another term.</p>
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground mb-3">No matches for "{query}".</p>
+            <button
+              onClick={() => navigate(`/app/describe?q=${encodeURIComponent(query)}`)}
+              className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary/15 border border-primary/30 text-sm font-medium text-foreground"
+            >
+              <Pencil className="w-4 h-4 text-primary" />
+              Describe it instead — AI estimate
+            </button>
           </div>
         ) : (
           <div className="space-y-2">
