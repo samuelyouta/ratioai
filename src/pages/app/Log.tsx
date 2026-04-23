@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
-import { X, Zap, Camera, Image as ImageIcon, Loader2 } from "lucide-react";
+import { X, Zap, Camera, Image as ImageIcon, Loader2, Search, Pencil } from "lucide-react";
 
 const Log = () => {
   const navigate = useNavigate();
@@ -116,8 +116,29 @@ const Log = () => {
             </div>
           </button>
 
-          <div className="w-12 h-12" />
+          <button
+            disabled={scanning}
+            onClick={() => navigate("/app/manual")}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+              <Search className="w-5 h-5 text-secondary-foreground" />
+            </div>
+            <span className="text-[10px] text-muted-foreground">Search</span>
+          </button>
         </div>
+
+        <button
+          disabled={scanning}
+          onClick={() => navigate("/app/manual")}
+          className="mt-5 w-full h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-foreground/90"
+        >
+          <Pencil className="w-4 h-4 text-muted-foreground" />
+          Search & Edit manually
+        </button>
+        <p className="mt-2 text-[10px] text-muted-foreground text-center">
+          AI scan recommended for accuracy
+        </p>
       </div>
 
       <input
