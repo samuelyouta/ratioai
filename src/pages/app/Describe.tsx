@@ -55,6 +55,93 @@ const Describe = () => {
     };
   }, []);
 
+  // Convert spoken number words ("two", "twenty-one") and digits to a number.
+  const NUMBER_WORDS: Record<string, number> = {
+    a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
+    eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
+    fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+    thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+    hundred: 100,
+  };
+  const parseSpokenNumber = (raw: string): number | null => {
+    const s = raw.trim().toLowerCase().replace(/-/g, " ");
+    if (!s) return null;
+    if (/^\d+(\.\d+)?$/.test(s)) return parseFloat(s);
+    const parts = s.split(/\s+/);
+    let total = 0;
+    for (const p of parts) {
+      const n = NUMBER_WORDS[p];
+      if (n == null) return null;
+      if (n === 100) total = (total || 1) * 100;
+      else total += n;
+    }
+    return total || null;
+  };
+
+  // Run voice commands on each finalized speech chunk.
+  // Returns handled=true when the chunk was consumed by a command.
+  const handleVoiceCommands = (chunk: string): { remaining: string; handled: boolean } => {
+    const raw = chunk.trim();
+    const lower = raw.toLowerCase().replace(/[.!?,]+$/g, "").trim();
+    if (!lower) return { remaining: chunk, handled: true };
+
+    // STOP / END dictation
+    if (/^(stop|stop dictation|stop listening|that's all|done|end dictation)$/.test(lower)) {
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+      toast({ title: "Dictation stopped", description: "Voice command: stop." });
+      return { remaining: "", handled: true };
+    }
+
+    // CLEAR text
+    if (/^(clear text|clear all|clear everything|delete all|reset text|start over)$/.test(lower)) {
+      baseTextRef.current = "";
+      setText("");
+      toast({ title: "Cleared", description: "Voice command: clear text." });
+      return { remaining: "", handled: true };
+    }
+
+    // DELETE LAST word/sentence
+    const delMatch = lower.match(/^(delete|remove|scratch)\s+(that|last(?:\s+(word|sentence))?)$/);
+    if (delMatch) {
+      const target = delMatch[3] || (delMatch[2] === "that" ? "sentence" : "word");
+      const current = baseTextRef.current.trim();
+      let next = current;
+      if (target === "sentence") next = current.replace(/[^.!?]*[.!?]?\s*$/, "").trim();
+      else next = current.replace(/\s*\S+\s*$/, "").trim();
+      baseTextRef.current = next ? next + " " : "";
+      setText(next);
+      return { remaining: "", handled: true };
+    }
+
+    // ESTIMATE NOW
+    if (/^(estimate( now| it)?|run estimate|analyze( now)?|calculate( now)?)$/.test(lower)) {
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+      setTimeout(() => estimate(), 250);
+      toast({ title: "Estimating", description: "Voice command: estimate." });
+      return { remaining: "", handled: true };
+    }
+
+    // ADD <quantity> <food>
+    const addMatch = lower.match(/^(?:add|log|include|put in)\s+(.+)$/);
+    if (addMatch) {
+      const rest = addMatch[1].trim();
+      const qtyMatch = rest.match(
+        /^((?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|\d+(?:\.\d+)?)(?:[\s-](?:and\s+)?(?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred))*)\s+(.+)$/,
+      );
+      let phrase = rest;
+      if (qtyMatch) {
+        const qty = parseSpokenNumber(qtyMatch[1]);
+        phrase = qty != null ? `${qty} ${qtyMatch[2]}` : `${qtyMatch[1]} ${qtyMatch[2]}`;
+      }
+      const sep = baseTextRef.current.trim() && !baseTextRef.current.trim().endsWith(",") ? ", " : "";
+      baseTextRef.current = (baseTextRef.current + sep + phrase).replace(/\s+/g, " ");
+      setText(baseTextRef.current.trim());
+      return { remaining: "", handled: true };
+    }
+
+    return { remaining: chunk, handled: false };
+  };
+
   const toggleDictation = () => {
     if (!speechSupported) {
       toast({
@@ -87,7 +174,14 @@ const Describe = () => {
         else interim += transcript;
       }
       if (finalChunk) {
-        baseTextRef.current = (baseTextRef.current + finalChunk).replace(/\s+/g, " ");
+        const { remaining, handled } = handleVoiceCommands(finalChunk);
+        if (handled) {
+          // Command consumed — refresh base from current text and skip append
+          baseTextRef.current = text ? text.trim() + " " : "";
+          setText(baseTextRef.current.trim());
+          return;
+        }
+        baseTextRef.current = (baseTextRef.current + remaining).replace(/\s+/g, " ");
       }
       setText((baseTextRef.current + " " + interim).trim());
     };
@@ -256,6 +350,19 @@ const Describe = () => {
             {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           </button>
         </div>
+
+        {speechSupported && listening && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {['"add two eggs"', '"delete last word"', '"clear text"', '"estimate"', '"stop"'].map((c) => (
+              <span
+                key={c}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
 
         {!result && (
           <div className="mt-3">
