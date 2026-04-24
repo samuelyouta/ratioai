@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { startReminderScheduler, ensureNotificationPermission } from "@/lib/reminders";
+import { useHardwareBack } from "@/hooks/useHardwareBack";
 import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
 import RequireOnboarding from "./components/RequireOnboarding";
