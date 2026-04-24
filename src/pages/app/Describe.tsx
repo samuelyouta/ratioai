@@ -383,6 +383,24 @@ const Describe = () => {
           </div>
         )}
 
+        {/* Portion helper trigger */}
+        <button
+          type="button"
+          onClick={() => setHelperOpen(true)}
+          className="mt-3 w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/30 hover:border-primary/50 transition-colors text-left"
+        >
+          <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+            <Ruler className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-foreground">Need help with portions?</p>
+            <p className="text-[10px] text-muted-foreground">
+              Pick a familiar object — deck of cards, fist, cup — to add a precise gram amount.
+            </p>
+          </div>
+          <span className="text-[10px] font-semibold text-primary shrink-0">Open →</span>
+        </button>
+
         {!result && (
           <div className="mt-3">
             <p className="text-[11px] text-muted-foreground mb-2">Try one of these:</p>
