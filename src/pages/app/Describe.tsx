@@ -518,6 +518,12 @@ const Describe = () => {
           </button>
         </motion.div>
       )}
+
+      <PortionHelper
+        open={helperOpen}
+        onClose={() => setHelperOpen(false)}
+        onInsert={insertPortion}
+      />
     </div>
   );
 };
