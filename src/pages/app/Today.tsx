@@ -116,10 +116,14 @@ const Today = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="gradient-glow rounded-2xl p-4 flex items-center justify-between"
+          className="gradient-glow rounded-2xl p-4 flex items-center justify-between relative overflow-hidden"
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🔥</span>
+            <div className="relative w-10 h-10 flex items-center justify-center">
+              <AnimatePresence>
+                {showFlame ? <FlameBurst key="burst" /> : <span key="static" className="text-2xl">🔥</span>}
+              </AnimatePresence>
+            </div>
             <div>
               <p className="text-sm font-bold text-primary-foreground">
                 {streak === 0 ? "Start your streak today" : `${streak}-day streak!`}
@@ -129,15 +133,27 @@ const Today = () => {
               </p>
             </div>
           </div>
-          <div className="flex -space-x-1">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <span key={i} className="text-sm">
-                {i < streak ? "🟢" : "⚪"}
-              </span>
-            ))}
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex -space-x-1">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <span key={i} className="text-sm">
+                  {i < streak ? "🟢" : "⚪"}
+                </span>
+              ))}
+            </div>
+            {freezeDays > 0 && (
+              <div className="flex items-center gap-1 bg-background/30 backdrop-blur rounded-full px-2 py-0.5">
+                <Snowflake className="w-3 h-3 text-primary-foreground" />
+                <span className="text-[10px] font-bold text-primary-foreground">
+                  {freezeDays} freeze{freezeDays > 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
+
+      <LevelUpModal reward={reward} onClose={() => setReward(null)} />
 
       <div className="px-6">
         <div className="flex items-center justify-between mb-3">
