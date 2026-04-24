@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil, Mic, MicOff } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil, Mic, MicOff, Ruler } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
+import PortionHelper from "@/components/app/PortionHelper";
 import { sanitizeMealIcon } from "@/lib/mealIcon";
 
 interface AIItem {
@@ -38,8 +39,10 @@ const Describe = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIResult | null>(null);
   const [listening, setListening] = useState(false);
+  const [helperOpen, setHelperOpen] = useState(false);
   const recognitionRef = useRef<any>(null);
   const baseTextRef = useRef<string>("");
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const SpeechRecognition =
     typeof window !== "undefined"
@@ -211,6 +214,19 @@ const Describe = () => {
     }
   };
 
+  const insertPortion = (phrase: string) => {
+    setText((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) return phrase;
+      const sep = /[.,;]$/.test(trimmed) ? " " : ", ";
+      const next = `${trimmed}${sep}${phrase}`;
+      baseTextRef.current = next + " ";
+      return next;
+    });
+    toast({ title: "Portion added", description: phrase });
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
   const estimate = async () => {
     const desc = text.trim();
     if (desc.length < 3) {
@@ -323,6 +339,7 @@ const Describe = () => {
         </div>
         <div className="relative mt-2">
           <textarea
+            ref={textareaRef}
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -365,6 +382,24 @@ const Describe = () => {
             ))}
           </div>
         )}
+
+        {/* Portion helper trigger */}
+        <button
+          type="button"
+          onClick={() => setHelperOpen(true)}
+          className="mt-3 w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/30 hover:border-primary/50 transition-colors text-left"
+        >
+          <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+            <Ruler className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-foreground">Need help with portions?</p>
+            <p className="text-[10px] text-muted-foreground">
+              Pick a familiar object — deck of cards, fist, cup — to add a precise gram amount.
+            </p>
+          </div>
+          <span className="text-[10px] font-semibold text-primary shrink-0">Open →</span>
+        </button>
 
         {!result && (
           <div className="mt-3">
@@ -483,6 +518,12 @@ const Describe = () => {
           </button>
         </motion.div>
       )}
+
+      <PortionHelper
+        open={helperOpen}
+        onClose={() => setHelperOpen(false)}
+        onInsert={insertPortion}
+      />
     </div>
   );
 };
