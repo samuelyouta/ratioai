@@ -339,6 +339,7 @@ const Describe = () => {
         </div>
         <div className="relative mt-2">
           <textarea
+            ref={textareaRef}
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
