@@ -26,6 +26,42 @@ import Describe from "./pages/app/Describe";
 
 const queryClient = new QueryClient();
 
+const AppRoutes = () => {
+  // Hardware back button (Android) + Capacitor edge-swipe → router-aware nav.
+  useHardwareBack();
+
+  return (
+    <Routes>
+      {/* Waitlist (pre-launch landing) */}
+      <Route path="/" element={<Waitlist />} />
+      <Route path="/waitlist" element={<Waitlist />} />
+
+      {/* App entry — redirects into onboarding or today */}
+      <Route path="/app" element={<Navigate to="/app/today" replace />} />
+      <Route path="/app/welcome" element={<AppWelcome />} />
+
+      {/* Onboarding (no gate) */}
+      <Route path="/app/onboarding/goal" element={<StepGoal />} />
+      <Route path="/app/onboarding/gender" element={<StepGender />} />
+      <Route path="/app/onboarding/body" element={<StepBody />} />
+      <Route path="/app/onboarding/activity" element={<StepActivity />} />
+
+      {/* Gated app routes */}
+      <Route path="/app/today" element={<RequireOnboarding><Today /></RequireOnboarding>} />
+      <Route path="/app/insights" element={<RequireOnboarding><Insights /></RequireOnboarding>} />
+      <Route path="/app/profile" element={<RequireOnboarding><Profile /></RequireOnboarding>} />
+      <Route path="/app/log" element={<RequireOnboarding><Log /></RequireOnboarding>} />
+      <Route path="/app/analyze" element={<RequireOnboarding><Analyze /></RequireOnboarding>} />
+      <Route path="/app/history" element={<RequireOnboarding><History /></RequireOnboarding>} />
+      <Route path="/app/history/:id" element={<RequireOnboarding><MealDetails /></RequireOnboarding>} />
+      <Route path="/app/manual" element={<RequireOnboarding><Manual /></RequireOnboarding>} />
+      <Route path="/app/describe" element={<RequireOnboarding><Describe /></RequireOnboarding>} />
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => {
   useEffect(() => {
     // Best-effort: ask once for browser notification permission, then start
@@ -36,105 +72,15 @@ const App = () => {
   }, []);
 
   return (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Waitlist (pre-launch landing) */}
-          <Route path="/" element={<Waitlist />} />
-          <Route path="/waitlist" element={<Waitlist />} />
-
-          {/* App entry — redirects into onboarding or today */}
-          <Route path="/app" element={<Navigate to="/app/today" replace />} />
-          <Route path="/app/welcome" element={<AppWelcome />} />
-
-          {/* Onboarding (no gate) */}
-          <Route path="/app/onboarding/goal" element={<StepGoal />} />
-          <Route path="/app/onboarding/gender" element={<StepGender />} />
-          <Route path="/app/onboarding/body" element={<StepBody />} />
-          <Route path="/app/onboarding/activity" element={<StepActivity />} />
-
-          {/* Gated app routes */}
-          <Route
-            path="/app/today"
-            element={
-              <RequireOnboarding>
-                <Today />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/insights"
-            element={
-              <RequireOnboarding>
-                <Insights />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/profile"
-            element={
-              <RequireOnboarding>
-                <Profile />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/log"
-            element={
-              <RequireOnboarding>
-                <Log />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/analyze"
-            element={
-              <RequireOnboarding>
-                <Analyze />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/history"
-            element={
-              <RequireOnboarding>
-                <History />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/history/:id"
-            element={
-              <RequireOnboarding>
-                <MealDetails />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/manual"
-            element={
-              <RequireOnboarding>
-                <Manual />
-              </RequireOnboarding>
-            }
-          />
-          <Route
-            path="/app/describe"
-            element={
-              <RequireOnboarding>
-                <Describe />
-              </RequireOnboarding>
-            }
-          />
-
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
