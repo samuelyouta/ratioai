@@ -39,8 +39,10 @@ const Describe = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIResult | null>(null);
   const [listening, setListening] = useState(false);
+  const [helperOpen, setHelperOpen] = useState(false);
   const recognitionRef = useRef<any>(null);
   const baseTextRef = useRef<string>("");
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const SpeechRecognition =
     typeof window !== "undefined"
