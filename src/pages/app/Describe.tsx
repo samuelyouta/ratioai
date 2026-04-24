@@ -214,6 +214,19 @@ const Describe = () => {
     }
   };
 
+  const insertPortion = (phrase: string) => {
+    setText((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) return phrase;
+      const sep = /[.,;]$/.test(trimmed) ? " " : ", ";
+      const next = `${trimmed}${sep}${phrase}`;
+      baseTextRef.current = next + " ";
+      return next;
+    });
+    toast({ title: "Portion added", description: phrase });
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
   const estimate = async () => {
     const desc = text.trim();
     if (desc.length < 3) {
