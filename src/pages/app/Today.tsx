@@ -1,17 +1,55 @@
-import { motion } from "framer-motion";
-import { Bell, Plus, Camera as CamIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, Plus, Camera as CamIcon, Snowflake } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import ProgressRing from "@/components/ProgressRing";
 import MacroBar from "@/components/MacroBar";
 import BottomNav from "@/components/BottomNav";
-import { getProfile, getStreak, getTodayMeals, getTodayTotals } from "@/lib/profile";
+import FlameBurst from "@/components/app/FlameBurst";
+import LevelUpModal from "@/components/app/LevelUpModal";
+import { getProfile, getTodayMeals, getTodayTotals } from "@/lib/profile";
+import {
+  checkLevelUp,
+  evaluateProteinStreakReward,
+  getProtectedStreak,
+  getStreakState,
+  markFlameShown,
+  shouldShowFlameToday,
+  type LevelUpReward,
+} from "@/lib/streak";
+import { toast } from "sonner";
 
 const Today = () => {
   const navigate = useNavigate();
   const profile = getProfile()!;
   const totals = getTodayTotals();
   const meals = getTodayMeals();
-  const streak = getStreak();
+  const streak = getProtectedStreak();
+  const [freezeDays, setFreezeDays] = useState(0);
+  const [showFlame, setShowFlame] = useState(false);
+  const [reward, setReward] = useState<LevelUpReward | null>(null);
+
+  useEffect(() => {
+    const awarded = evaluateProteinStreakReward();
+    if (awarded) {
+      toast.success("Freeze Day earned!", {
+        description: "3 days of hitting protein. Use it on a missed log day.",
+      });
+    }
+    setFreezeDays(getStreakState().freezeDays);
+
+    if (meals.length >= 1 && shouldShowFlameToday()) {
+      setShowFlame(true);
+      markFlameShown();
+      const t = setTimeout(() => setShowFlame(false), 2200);
+      return () => clearTimeout(t);
+    }
+  }, [meals.length]);
+
+  useEffect(() => {
+    const r = checkLevelUp();
+    if (r) setReward(r);
+  }, []);
 
   const remaining = Math.max(profile.calorieTarget - totals.calories, 0);
   const pct = Math.min(Math.round((totals.calories / profile.calorieTarget) * 100), 100);
