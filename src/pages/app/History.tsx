@@ -294,9 +294,7 @@ const History = () => {
                   </div>
                 ))}
                 {editing.items.length === 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <ImageOff className="w-4 h-4" /> No items yet.
-                  </div>
+                  <p className="text-xs text-muted-foreground">No items yet.</p>
                 )}
               </div>
 
