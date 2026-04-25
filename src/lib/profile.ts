@@ -186,6 +186,40 @@ export function getLast7DaysTotals() {
   return days;
 }
 
+/**
+ * Returns the most recent unique meals (deduped by title), sorted newest-first.
+ * Useful for "Log again" / repeat-meal shortcuts.
+ */
+export function getRecentUniqueMeals(limit = 6): Meal[] {
+  const meals = [...getMeals()].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
+  const seen = new Set<string>();
+  const out: Meal[] = [];
+  for (const m of meals) {
+    const key = (m.title || "").trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(m);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
+ * Re-logs a previously saved meal as a new entry stamped at the current time.
+ * Returns the new meal so callers can navigate / toast.
+ */
+export function relogMeal(source: Meal): Meal {
+  const copy: Meal = {
+    ...source,
+    id: `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    loggedAt: new Date().toISOString(),
+    // Drop image to keep storage small for one-tap re-logs
+    imageDataUrl: null,
+  };
+  saveMeal(copy);
+  return copy;
+}
+
 export function getStreak(): number {
   const meals = getMeals();
   if (meals.length === 0) return 0;
