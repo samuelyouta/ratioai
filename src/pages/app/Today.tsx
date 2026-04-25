@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Plus, Camera as CamIcon, Snowflake } from "lucide-react";
+import { Snowflake } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ProgressRing from "@/components/ProgressRing";
@@ -7,6 +7,7 @@ import MacroBar from "@/components/MacroBar";
 import BottomNav from "@/components/BottomNav";
 import FlameBurst from "@/components/app/FlameBurst";
 import LevelUpModal from "@/components/app/LevelUpModal";
+import RecentMeals from "@/components/app/RecentMeals";
 import { getProfile, getTodayMeals, getTodayTotals } from "@/lib/profile";
 import {
   checkLevelUp,
@@ -63,14 +64,9 @@ const Today = () => {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="px-6 pt-6 pb-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{greeting}</p>
-          <h1 className="text-xl font-bold text-foreground">Athlete 👋</h1>
-        </div>
-        <button className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center">
-          <Bell className="w-5 h-5 text-muted-foreground" />
-        </button>
+      <div className="px-6 pt-6 pb-4">
+        <p className="text-sm text-muted-foreground">{greeting}</p>
+        <h1 className="text-xl font-bold text-foreground">Athlete</h1>
       </div>
 
       <motion.div
@@ -118,34 +114,22 @@ const Today = () => {
           transition={{ delay: 0.2 }}
           className="gradient-glow rounded-2xl p-4 flex items-center justify-between relative overflow-hidden"
         >
-          <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 flex items-center justify-center">
-              <AnimatePresence>
-                {showFlame ? <FlameBurst key="burst" /> : <span key="static" className="text-2xl">🔥</span>}
-              </AnimatePresence>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-primary-foreground">
-                {streak === 0 ? "Start your streak today" : `${streak}-day streak!`}
-              </p>
-              <p className="text-xs text-primary-foreground/70">
-                {streak === 0 ? "Log a meal to begin" : "Keep going, you're on fire"}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-bold text-primary-foreground">
+              {streak === 0 ? "Start your streak today" : `${streak}-day streak`}
+            </p>
+            <p className="text-xs text-primary-foreground/70">
+              {streak === 0 ? "Log a meal to begin" : "Keep going, you're on fire"}
+            </p>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <div className="flex -space-x-1">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <span key={i} className="text-sm">
-                  {i < streak ? "🟢" : "⚪"}
-                </span>
-              ))}
-            </div>
+          <div className="flex items-center gap-3">
+            <AnimatePresence>{showFlame && <FlameBurst key="burst" />}</AnimatePresence>
+            <span className="text-2xl font-black text-primary-foreground">{streak}</span>
             {freezeDays > 0 && (
               <div className="flex items-center gap-1 bg-background/30 backdrop-blur rounded-full px-2 py-0.5">
                 <Snowflake className="w-3 h-3 text-primary-foreground" />
                 <span className="text-[10px] font-bold text-primary-foreground">
-                  {freezeDays} freeze{freezeDays > 1 ? "s" : ""}
+                  {freezeDays}
                 </span>
               </div>
             )}
@@ -155,11 +139,19 @@ const Today = () => {
 
       <LevelUpModal reward={reward} onClose={() => setReward(null)} />
 
+      {/* Repeat / recent meals — one-tap re-log */}
+      <div className="px-6 mb-6">
+        <RecentMeals limit={6} variant="row" />
+      </div>
+
       <div className="px-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-foreground">Today's Meals</h3>
-          <button onClick={() => navigate("/app/log")} className="flex items-center gap-1 text-xs text-primary font-medium">
-            <Plus className="w-3.5 h-3.5" /> Log
+          <h3 className="font-semibold text-foreground">Today's meals</h3>
+          <button
+            onClick={() => navigate("/app/log")}
+            className="text-xs text-primary font-semibold uppercase tracking-wide"
+          >
+            Log
           </button>
         </div>
 
@@ -168,24 +160,21 @@ const Today = () => {
             onClick={() => navigate("/app/log")}
             className="w-full bg-card border border-dashed border-border rounded-2xl p-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 transition-colors"
           >
-            <CamIcon className="w-6 h-6" />
-            <p className="text-sm">No meals yet — snap your first one</p>
+            <p className="text-sm font-medium text-foreground">No meals yet</p>
+            <p className="text-xs">Tap to log your first one</p>
           </button>
         ) : (
           <div className="space-y-3">
             {meals.map((m) => (
               <div key={m.id} className="bg-card border border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg">{m.icon}</div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{m.title}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {new Date(m.loggedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{m.title}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(m.loggedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
                   </div>
-                  <p className="text-sm font-bold text-primary">
+                  <p className="text-sm font-bold text-primary whitespace-nowrap">
                     {m.totalCalories}
                     <span className="text-muted-foreground font-normal text-xs"> cal</span>
                   </p>
