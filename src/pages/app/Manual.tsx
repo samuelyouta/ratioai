@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, Plus, Minus, Check, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Minus } from "lucide-react";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
@@ -9,8 +9,7 @@ import PortionGuideList from "@/components/app/PortionGuideList";
 // Lightweight built-in food database (per 100g unless noted)
 type FoodDef = {
   name: string;
-  icon: string;
-  unit: string; // e.g. "100g", "1 egg", "1 slice"
+  unit: string;
   unitGrams: number;
   cal: number;
   p: number;
@@ -19,26 +18,26 @@ type FoodDef = {
 };
 
 const FOODS: FoodDef[] = [
-  { name: "Chicken breast", icon: "🍗", unit: "100g", unitGrams: 100, cal: 165, p: 31, c: 0, f: 3.6 },
-  { name: "Salmon", icon: "🐟", unit: "100g", unitGrams: 100, cal: 208, p: 20, c: 0, f: 13 },
-  { name: "Beef mince (lean)", icon: "🥩", unit: "100g", unitGrams: 100, cal: 217, p: 26, c: 0, f: 12 },
-  { name: "Egg", icon: "🥚", unit: "1 egg", unitGrams: 50, cal: 78, p: 6, c: 0.6, f: 5 },
-  { name: "Greek yogurt", icon: "🥛", unit: "100g", unitGrams: 100, cal: 59, p: 10, c: 3.6, f: 0.4 },
-  { name: "Oats", icon: "🌾", unit: "40g (dry)", unitGrams: 40, cal: 150, p: 5, c: 27, f: 3 },
-  { name: "White rice (cooked)", icon: "🍚", unit: "100g", unitGrams: 100, cal: 130, p: 2.4, c: 28, f: 0.3 },
-  { name: "Brown rice (cooked)", icon: "🍚", unit: "100g", unitGrams: 100, cal: 112, p: 2.6, c: 24, f: 0.9 },
-  { name: "Pasta (cooked)", icon: "🍝", unit: "100g", unitGrams: 100, cal: 158, p: 5.8, c: 31, f: 0.9 },
-  { name: "Bread slice", icon: "🍞", unit: "1 slice", unitGrams: 30, cal: 80, p: 3, c: 14, f: 1 },
-  { name: "Banana", icon: "🍌", unit: "1 medium", unitGrams: 118, cal: 105, p: 1.3, c: 27, f: 0.4 },
-  { name: "Apple", icon: "🍎", unit: "1 medium", unitGrams: 182, cal: 95, p: 0.5, c: 25, f: 0.3 },
-  { name: "Avocado", icon: "🥑", unit: "1/2", unitGrams: 100, cal: 160, p: 2, c: 9, f: 15 },
-  { name: "Olive oil", icon: "🫒", unit: "1 tbsp", unitGrams: 14, cal: 119, p: 0, c: 0, f: 14 },
-  { name: "Almonds", icon: "🌰", unit: "30g", unitGrams: 30, cal: 174, p: 6, c: 6, f: 15 },
-  { name: "Peanut butter", icon: "🥜", unit: "1 tbsp", unitGrams: 16, cal: 94, p: 4, c: 3, f: 8 },
-  { name: "Broccoli", icon: "🥦", unit: "100g", unitGrams: 100, cal: 35, p: 2.4, c: 7, f: 0.4 },
-  { name: "Sweet potato", icon: "🍠", unit: "100g", unitGrams: 100, cal: 86, p: 1.6, c: 20, f: 0.1 },
-  { name: "Protein shake", icon: "🥤", unit: "1 scoop", unitGrams: 30, cal: 120, p: 24, c: 3, f: 1.5 },
-  { name: "Coffee w/ milk", icon: "☕", unit: "1 cup", unitGrams: 240, cal: 35, p: 2, c: 3, f: 1.5 },
+  { name: "Chicken breast", unit: "100g", unitGrams: 100, cal: 165, p: 31, c: 0, f: 3.6 },
+  { name: "Salmon", unit: "100g", unitGrams: 100, cal: 208, p: 20, c: 0, f: 13 },
+  { name: "Beef mince (lean)", unit: "100g", unitGrams: 100, cal: 217, p: 26, c: 0, f: 12 },
+  { name: "Egg", unit: "1 egg", unitGrams: 50, cal: 78, p: 6, c: 0.6, f: 5 },
+  { name: "Greek yogurt", unit: "100g", unitGrams: 100, cal: 59, p: 10, c: 3.6, f: 0.4 },
+  { name: "Oats", unit: "40g (dry)", unitGrams: 40, cal: 150, p: 5, c: 27, f: 3 },
+  { name: "White rice (cooked)", unit: "100g", unitGrams: 100, cal: 130, p: 2.4, c: 28, f: 0.3 },
+  { name: "Brown rice (cooked)", unit: "100g", unitGrams: 100, cal: 112, p: 2.6, c: 24, f: 0.9 },
+  { name: "Pasta (cooked)", unit: "100g", unitGrams: 100, cal: 158, p: 5.8, c: 31, f: 0.9 },
+  { name: "Bread slice", unit: "1 slice", unitGrams: 30, cal: 80, p: 3, c: 14, f: 1 },
+  { name: "Banana", unit: "1 medium", unitGrams: 118, cal: 105, p: 1.3, c: 27, f: 0.4 },
+  { name: "Apple", unit: "1 medium", unitGrams: 182, cal: 95, p: 0.5, c: 25, f: 0.3 },
+  { name: "Avocado", unit: "1/2", unitGrams: 100, cal: 160, p: 2, c: 9, f: 15 },
+  { name: "Olive oil", unit: "1 tbsp", unitGrams: 14, cal: 119, p: 0, c: 0, f: 14 },
+  { name: "Almonds", unit: "30g", unitGrams: 30, cal: 174, p: 6, c: 6, f: 15 },
+  { name: "Peanut butter", unit: "1 tbsp", unitGrams: 16, cal: 94, p: 4, c: 3, f: 8 },
+  { name: "Broccoli", unit: "100g", unitGrams: 100, cal: 35, p: 2.4, c: 7, f: 0.4 },
+  { name: "Sweet potato", unit: "100g", unitGrams: 100, cal: 86, p: 1.6, c: 20, f: 0.1 },
+  { name: "Protein shake", unit: "1 scoop", unitGrams: 30, cal: 120, p: 24, c: 3, f: 1.5 },
+  { name: "Coffee w/ milk", unit: "1 cup", unitGrams: 240, cal: 35, p: 2, c: 3, f: 1.5 },
 ];
 
 type Selected = { food: FoodDef; servings: number };
@@ -104,7 +103,7 @@ const Manual = () => {
       id: `meal_${Date.now()}`,
       loggedAt: new Date().toISOString(),
       title: title.trim() || (items.length === 1 ? items[0].name : "Manual entry"),
-      icon: selected[0]?.food.icon ?? "🍽️",
+      icon: "",
       items,
       totalCalories: items.reduce((s, i) => s + i.calories, 0),
       totalProtein: +items.reduce((s, i) => s + i.protein, 0).toFixed(1),
@@ -138,26 +137,22 @@ const Manual = () => {
         </div>
 
         <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search foods (e.g. chicken, oats)…"
-              className="w-full h-11 pl-9 pr-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40"
-            />
-          </div>
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search foods (e.g. chicken, oats)…"
+            className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
         </div>
       </div>
 
       {/* Selected items */}
       {selected.length > 0 && (
         <div className="px-4 pt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Pencil className="w-3.5 h-3.5 text-primary" />
-            <h2 className="text-xs font-semibold text-foreground uppercase tracking-wide">Your meal</h2>
-          </div>
+          <h2 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
+            Your meal
+          </h2>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -170,7 +165,6 @@ const Manual = () => {
                 key={s.food.name}
                 className="flex items-center gap-3 bg-card border border-border rounded-xl p-3"
               >
-                <div className="text-2xl">{s.food.icon}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{s.food.name}</p>
                   <p className="text-[11px] text-muted-foreground">
@@ -219,9 +213,8 @@ const Manual = () => {
             <p className="text-sm text-muted-foreground mb-3">No matches for "{query}".</p>
             <button
               onClick={() => navigate(`/app/describe?q=${encodeURIComponent(query)}`)}
-              className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary/15 border border-primary/30 text-sm font-medium text-foreground"
+              className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-primary/15 border border-primary/30 text-sm font-medium text-foreground"
             >
-              <Pencil className="w-4 h-4 text-primary" />
               Describe it instead — AI estimate
             </button>
           </div>
@@ -233,7 +226,6 @@ const Manual = () => {
                 onClick={() => addFood(f)}
                 className="w-full flex items-center gap-3 bg-card hover:bg-card/80 border border-border rounded-xl p-3 text-left transition-colors"
               >
-                <div className="text-2xl">{f.icon}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{f.name}</p>
                   <p className="text-[11px] text-muted-foreground">
@@ -269,9 +261,8 @@ const Manual = () => {
           </div>
           <button
             onClick={handleSave}
-            className="w-full h-12 rounded-xl gradient-glow shadow-glow flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground"
+            className="w-full h-12 rounded-xl gradient-glow shadow-glow text-sm font-semibold text-primary-foreground"
           >
-            <Check className="w-4 h-4" />
             Log {selected.length} item{selected.length > 1 ? "s" : ""}
           </button>
         </motion.div>
