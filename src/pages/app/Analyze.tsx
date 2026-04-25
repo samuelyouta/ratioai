@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowLeft, AlertTriangle, Check, Sparkles, Loader2, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal } from "@/lib/profile";
 import { toast } from "sonner";
@@ -91,7 +91,7 @@ const Analyze = () => {
       id: crypto.randomUUID(),
       loggedAt: new Date().toISOString(),
       title: result.title,
-      icon: result.icon || "🍽️",
+      icon: "",
       items: result.items.map((it, i) => ({
         name: it.name,
         portion: it.portion,
@@ -127,7 +127,6 @@ const Analyze = () => {
   if (error || !result) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
-        <AlertTriangle className="w-10 h-10 text-warning mb-3" />
         <p className="text-base font-semibold text-foreground">Couldn't analyze that photo</p>
         <p className="text-sm text-muted-foreground mt-1 mb-6">{error ?? "No result"}</p>
         <button
@@ -153,11 +152,9 @@ const Analyze = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.15, type: "spring" }}
-            className="w-20 h-20 gradient-glow rounded-full mx-auto flex items-center justify-center shadow-glow mb-6"
-          >
-            <Check className="w-10 h-10 text-primary-foreground" />
-          </motion.div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Meal Logged 🎉</h2>
+            className="w-20 h-20 gradient-glow rounded-full mx-auto shadow-glow mb-6"
+          />
+          <h2 className="text-2xl font-bold text-foreground mb-2">Meal logged</h2>
           <p className="text-muted-foreground text-sm">{totalCalories} calories added to your day</p>
         </motion.div>
       </div>
@@ -177,37 +174,35 @@ const Analyze = () => {
       {imageUrl && <PortionGuideOverlay imageUrl={imageUrl} items={result.items} />}
 
       <div className="px-6 mb-4">
-        <div className="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-2.5">
-          <Sparkles className="w-4 h-4 text-primary" />
+        <div className="bg-primary/10 rounded-xl px-4 py-2.5">
           <p className="text-sm text-primary font-medium">{result.items.length} items detected</p>
         </div>
       </div>
 
       {result.hiddenIngredient && (
         <div className="px-6 mb-4">
-          <div className="flex items-start gap-3 bg-warning/10 rounded-xl px-4 py-3 border border-warning/20">
-            <AlertTriangle className="w-4 h-4 text-warning mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Hidden ingredient detected</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{result.hiddenIngredient}</p>
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => setAcceptHidden(true)}
-                  className={`text-xs font-medium px-3 py-1 rounded-lg ${
-                    acceptHidden ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                  }`}
-                >
-                  Yes, add it
-                </button>
-                <button
-                  onClick={() => setAcceptHidden(false)}
-                  className={`text-xs font-medium px-3 py-1 rounded-lg ${
-                    !acceptHidden ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                  }`}
-                >
-                  No thanks
-                </button>
-              </div>
+          <div className="bg-warning/10 rounded-xl px-4 py-3 border border-warning/20">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-warning mb-1">
+              Hidden ingredient detected
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{result.hiddenIngredient}</p>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setAcceptHidden(true)}
+                className={`text-xs font-medium px-3 py-1 rounded-lg ${
+                  acceptHidden ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                Yes, add it
+              </button>
+              <button
+                onClick={() => setAcceptHidden(false)}
+                className={`text-xs font-medium px-3 py-1 rounded-lg ${
+                  !acceptHidden ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                No thanks
+              </button>
             </div>
           </div>
         </div>
@@ -277,9 +272,9 @@ const Analyze = () => {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleSave}
-          className="gradient-glow text-primary-foreground font-semibold text-base py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center"
+          className="gradient-glow text-primary-foreground font-semibold text-base py-4 rounded-2xl shadow-glow w-full"
         >
-          <Check className="w-5 h-5" /> Confirm & Log Meal
+          Confirm & log meal
         </motion.button>
       </div>
     </div>

@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Loader2, Check, RefreshCw, Pencil, Mic, MicOff, Ruler } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, MicOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
 import PortionHelper from "@/components/app/PortionHelper";
-import { sanitizeMealIcon } from "@/lib/mealIcon";
 
 interface AIItem {
   name: string;
@@ -281,7 +280,7 @@ const Describe = () => {
       id: `meal_${Date.now()}`,
       loggedAt: new Date().toISOString(),
       title: result.title || "Estimated meal",
-      icon: sanitizeMealIcon(result.icon, "✨"),
+      icon: "",
       items,
       totalCalories: items.reduce((s, i) => s + i.calories, 0),
       totalProtein: +items.reduce((s, i) => s + i.protein, 0).toFixed(1),
@@ -317,8 +316,7 @@ const Describe = () => {
             <h1 className="text-base font-semibold text-foreground leading-tight">Describe meal</h1>
             <p className="text-[11px] text-muted-foreground">AI estimates · refine later</p>
           </div>
-          <div className="flex items-center gap-1.5 glass border border-border rounded-full px-2.5 py-1">
-            <Sparkles className="w-3 h-3 text-primary" />
+          <div className="glass border border-border rounded-full px-2.5 py-1">
             <span className="text-[10px] font-medium text-foreground">Estimated</span>
           </div>
         </div>
@@ -387,12 +385,9 @@ const Describe = () => {
         <button
           type="button"
           onClick={() => setHelperOpen(true)}
-          className="mt-3 w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/30 hover:border-primary/50 transition-colors text-left"
+          className="mt-3 w-full p-3 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/30 hover:border-primary/50 transition-colors text-left flex items-center justify-between gap-3"
         >
-          <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-            <Ruler className="w-4 h-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             <p className="text-xs font-semibold text-foreground">Need help with portions?</p>
             <p className="text-[10px] text-muted-foreground">
               Pick a familiar object — deck of cards, fist, cup — to add a precise gram amount.
@@ -429,10 +424,7 @@ const Describe = () => {
               Estimating…
             </>
           ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              {result ? "Re-estimate" : "Estimate macros"}
-            </>
+            <>{result ? "Re-estimate" : "Estimate macros"}</>
           )}
         </button>
       </div>
@@ -445,12 +437,9 @@ const Describe = () => {
           className="px-4 pt-6"
         >
           <div className="bg-card border border-border rounded-2xl p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="text-3xl">{sanitizeMealIcon(result.icon, "✨")}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{result.title}</p>
-                <p className="text-[11px] text-muted-foreground">{result.notes}</p>
-              </div>
+            <div className="mb-3">
+              <p className="text-sm font-semibold text-foreground truncate">{result.title}</p>
+              <p className="text-[11px] text-muted-foreground">{result.notes}</p>
             </div>
 
             <div className="grid grid-cols-4 gap-2 mb-4">
@@ -494,16 +483,14 @@ const Describe = () => {
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
               onClick={() => saveAsEstimated(false)}
-              className="h-12 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2"
+              className="h-12 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
             >
-              <Check className="w-4 h-4" />
               Save estimate
             </button>
             <button
               onClick={() => saveAsEstimated(true)}
-              className="h-12 rounded-xl bg-secondary border border-border text-foreground text-sm font-semibold flex items-center justify-center gap-2"
+              className="h-12 rounded-xl bg-secondary border border-border text-foreground text-sm font-semibold"
             >
-              <Pencil className="w-4 h-4" />
               Save & refine
             </button>
           </div>
@@ -511,9 +498,8 @@ const Describe = () => {
           <button
             onClick={estimate}
             disabled={loading}
-            className="mt-2 w-full h-10 rounded-xl text-xs text-muted-foreground flex items-center justify-center gap-1.5 hover:text-foreground"
+            className="mt-2 w-full h-10 rounded-xl text-xs text-muted-foreground hover:text-foreground"
           >
-            <RefreshCw className="w-3 h-3" />
             Not quite right? Re-estimate
           </button>
         </motion.div>

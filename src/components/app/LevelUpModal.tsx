@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
 import { setActiveTheme, type LevelUpReward } from "@/lib/streak";
 
 interface Props {
@@ -55,7 +55,9 @@ const LevelUpModal = ({ reward, onClose }: Props) => {
               transition={{ type: "spring", stiffness: 200, damping: 12, delay: 0.1 }}
               className="w-20 h-20 rounded-2xl gradient-glow flex items-center justify-center shadow-glow mb-4"
             >
-              <Sparkles className="w-10 h-10 text-primary-foreground" />
+              <span className="text-3xl font-black text-primary-foreground">
+                {reward.level}
+              </span>
             </motion.div>
 
             <p className="text-xs uppercase tracking-widest text-primary font-bold mb-1">

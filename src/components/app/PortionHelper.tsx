@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Ruler, Plus, Minus, X } from "lucide-react";
+import { Plus, Minus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
@@ -113,9 +113,6 @@ const PortionHelper = ({ open, onClose, onInsert }: Props) => {
           >
             {/* Header */}
             <div className="sticky top-0 bg-card/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
-                <Ruler className="w-4 h-4 text-primary" />
-              </div>
               <div className="flex-1">
                 <h2 className="text-sm font-semibold text-foreground">Portion helper</h2>
                 <p className="text-[11px] text-muted-foreground">
@@ -145,21 +142,18 @@ const PortionHelper = ({ open, onClose, onInsert }: Props) => {
                         <button
                           key={r.id}
                           onClick={() => setPicked(r)}
-                          className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
                             isPicked
                               ? "border-primary bg-primary/15 ring-2 ring-primary/40"
                               : "border-border bg-background hover:bg-secondary"
                           }`}
                         >
-                          <span className="text-2xl shrink-0">{r.icon}</span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-medium text-foreground truncate">
-                              {r.label}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              ~{r.grams}g · {r.hint}
-                            </p>
-                          </div>
+                          <p className="text-[11px] font-medium text-foreground truncate">
+                            {r.label}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            ~{r.grams}g · {r.hint}
+                          </p>
                         </button>
                       );
                     })}
@@ -176,7 +170,6 @@ const PortionHelper = ({ open, onClose, onInsert }: Props) => {
                 className="fixed inset-x-0 bottom-0 bg-card border-t border-border px-4 pt-3 pb-4 z-50"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">{picked.icon}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-foreground truncate">
                       {picked.label}

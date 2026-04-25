@@ -1,15 +1,15 @@
 import { motion } from "framer-motion";
-import { sanitizeMealIcon } from "@/lib/mealIcon";
 
 interface MealCardProps {
   time: string;
   title: string;
   calories: number;
   items: string[];
-  icon: string;
+  /** Kept for backwards compatibility; no longer rendered. */
+  icon?: string;
 }
 
-const MealCard = ({ time, title, calories, items, icon }: MealCardProps) => {
+const MealCard = ({ time, title, calories, items }: MealCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -17,14 +17,11 @@ const MealCard = ({ time, title, calories, items, icon }: MealCardProps) => {
       className="gradient-card rounded-2xl p-4 border border-border"
     >
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl leading-none truncate max-w-[2rem]">{sanitizeMealIcon(icon)}</div>
-          <div>
-            <h4 className="font-semibold text-foreground text-sm">{title}</h4>
-            <p className="text-xs text-muted-foreground">{time}</p>
-          </div>
+        <div className="min-w-0">
+          <h4 className="font-semibold text-foreground text-sm truncate">{title}</h4>
+          <p className="text-xs text-muted-foreground">{time}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <span className="text-sm font-bold text-primary">{calories}</span>
           <span className="text-xs text-muted-foreground ml-0.5">cal</span>
         </div>

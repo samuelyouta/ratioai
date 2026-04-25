@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Ruler } from "lucide-react";
 import { useState } from "react";
 import { matchPortion, extractGrams, compareToReference } from "@/lib/portionGuides";
 
@@ -34,12 +33,9 @@ const PortionGuideList = ({ items, title = "Portion guide", compact = false }: P
 
   return (
     <div className={compact ? "mt-3" : "mx-4 mt-4"}>
-      <div className="flex items-center gap-1.5 mb-2">
-        <Ruler className="w-3.5 h-3.5 text-primary" />
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h3>
-      </div>
+      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+        {title}
+      </h3>
       <div className="grid grid-cols-2 gap-2">
         {items.map((it, i) => {
           const ref = matchPortion(it.name);
@@ -60,9 +56,9 @@ const PortionGuideList = ({ items, title = "Portion guide", compact = false }: P
               }`}
             >
               <span
-                className={`flex items-center justify-center w-10 h-10 rounded-full ring-2 text-xl shrink-0 ${toneRing[ref.tone]}`}
+                className={`flex items-center justify-center min-w-[3rem] h-10 px-2 rounded-full ring-2 text-[10px] font-bold shrink-0 ${toneRing[ref.tone]}`}
               >
-                {ref.icon}
+                {grams ? `${grams}g` : ref.object}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-medium text-foreground truncate">{it.name}</p>
@@ -77,7 +73,7 @@ const PortionGuideList = ({ items, title = "Portion guide", compact = false }: P
         })}
       </div>
       <p className="text-[10px] text-muted-foreground mt-2 px-0.5">
-        Tap a chip to compare the estimate to a familiar object.
+        Tap a chip to compare the estimate to a familiar reference.
       </p>
     </div>
   );

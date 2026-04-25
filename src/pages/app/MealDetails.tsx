@@ -1,17 +1,16 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Pencil, Trash2, Camera, Mic, AlertTriangle, Check } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { getMeals, deleteMeal, type MealSource } from "@/lib/profile";
-import { sanitizeMealIcon } from "@/lib/mealIcon";
 import { toast } from "sonner";
 
-const sourceMeta: Record<MealSource, { icon: typeof Camera; label: string }> = {
-  photo: { icon: Camera, label: "Photo capture" },
-  voice: { icon: Mic, label: "Voice log" },
-  manual: { icon: Pencil, label: "Manual entry" },
+const sourceLabel: Record<MealSource, string> = {
+  photo: "Photo capture",
+  voice: "Voice log",
+  manual: "Manual entry",
 };
 
 const formatWhen = (iso: string) => {
@@ -43,7 +42,6 @@ const MealDetails = () => {
   }
 
   const src = (meal.source ?? "photo") as MealSource;
-  const SIcon = sourceMeta[src].icon;
 
   const macros = [
     { key: "Protein", value: meal.totalProtein, color: "hsl(var(--primary))" },
@@ -82,13 +80,11 @@ const MealDetails = () => {
         animate={{ opacity: 1, y: 0 }}
         className="px-6"
       >
-        <div className="aspect-[4/3] rounded-3xl overflow-hidden border border-border bg-secondary flex items-center justify-center mb-4">
-          {meal.imageDataUrl ? (
+        {meal.imageDataUrl && (
+          <div className="aspect-[4/3] rounded-3xl overflow-hidden border border-border bg-secondary mb-4">
             <img src={meal.imageDataUrl} alt={meal.title} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-7xl">{sanitizeMealIcon(meal.icon)}</span>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="min-w-0">
@@ -102,30 +98,24 @@ const MealDetails = () => {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-5">
-          <span className="inline-flex items-center gap-1.5 text-[11px] bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">
-            <SIcon className="w-3 h-3" />
-            {sourceMeta[src].label}
+          <span className="text-[11px] bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">
+            {sourceLabel[src]}
           </span>
           {meal.verified && (
-            <span className="inline-flex items-center gap-1.5 text-[11px] bg-primary/15 text-primary px-2.5 py-1 rounded-full">
-              <Check className="w-3 h-3" /> Verified
+            <span className="text-[11px] bg-primary/15 text-primary px-2.5 py-1 rounded-full font-semibold">
+              Verified
             </span>
           )}
         </div>
 
         {meal.hiddenIngredient && (
-          <div className="gradient-card border border-border rounded-2xl p-4 mb-5 flex gap-3">
-            <div className="w-9 h-9 rounded-xl bg-destructive/15 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-4 h-4 text-destructive" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-foreground mb-0.5">
-                Ingredient probe
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {meal.hiddenIngredient}
-              </p>
-            </div>
+          <div className="gradient-card border border-border rounded-2xl p-4 mb-5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-warning mb-1">
+              Ingredient probe
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {meal.hiddenIngredient}
+            </p>
           </div>
         )}
 
@@ -215,7 +205,7 @@ const MealDetails = () => {
           onClick={() => navigate(`/app/history?edit=${meal.id}`)}
           className="w-full gradient-glow text-primary-foreground font-semibold"
         >
-          <Pencil className="w-4 h-4 mr-2" /> Edit meal
+          Edit meal
         </Button>
       </motion.div>
 

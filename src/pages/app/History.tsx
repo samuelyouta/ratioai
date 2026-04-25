@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, Camera, Mic, Pencil, Trash2, Check, X, ImageOff } from "lucide-react";
+import { ArrowLeft, Search, Trash2, Pencil, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,10 @@ import { toast } from "sonner";
 
 type Filter = "all" | MealSource | "verified";
 
-const sourceMeta: Record<MealSource, { icon: typeof Camera; label: string }> = {
-  photo: { icon: Camera, label: "Photo" },
-  voice: { icon: Mic, label: "Voice" },
-  manual: { icon: Pencil, label: "Manual" },
+const sourceLabel: Record<MealSource, string> = {
+  photo: "Photo",
+  voice: "Voice",
+  manual: "Manual",
 };
 
 const formatDay = (iso: string) => {
@@ -148,7 +148,6 @@ const History = () => {
             <div className="space-y-2">
               {items.map((m) => {
                 const src = (m.source ?? "photo") as MealSource;
-                const SIcon = sourceMeta[src].icon;
                 return (
                   <motion.div
                     key={m.id}
@@ -158,13 +157,11 @@ const History = () => {
                     onClick={() => navigate(`/app/history/${m.id}`)}
                     className="gradient-card rounded-2xl p-3 border border-border flex gap-3 cursor-pointer hover:border-primary/40 transition-colors"
                   >
-                    <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {m.imageDataUrl ? (
+                    {m.imageDataUrl && (
+                      <div className="w-14 h-14 rounded-xl bg-secondary overflow-hidden flex-shrink-0">
                         <img src={m.imageDataUrl} alt={m.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-2xl">{m.icon || "🍽️"}</span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -181,13 +178,12 @@ const History = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
-                          <SIcon className="w-3 h-3" />
-                          {sourceMeta[src].label}
+                        <span className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
+                          {sourceLabel[src]}
                         </span>
                         {m.verified && (
-                          <span className="inline-flex items-center gap-1 text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full">
-                            <Check className="w-3 h-3" /> Verified
+                          <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">
+                            Verified
                           </span>
                         )}
                         <div className="ml-auto flex gap-1">
@@ -298,9 +294,7 @@ const History = () => {
                   </div>
                 ))}
                 {editing.items.length === 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <ImageOff className="w-4 h-4" /> No items yet.
-                  </div>
+                  <p className="text-xs text-muted-foreground">No items yet.</p>
                 )}
               </div>
 

@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import BottomNav from "@/components/BottomNav";
 import { getLast7DaysTotals, getProfile } from "@/lib/profile";
-import { TrendingUp, Target, Zap } from "lucide-react";
 
 const Insights = () => {
   const profile = getProfile()!;
@@ -34,23 +33,23 @@ const Insights = () => {
 
       <div className="px-6 grid grid-cols-3 gap-2 mb-5">
         <div className="bg-card border border-border rounded-2xl p-3">
-          <Target className="w-4 h-4 text-primary mb-1" />
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Consistency</p>
           <p className="text-lg font-bold text-foreground">{avgConsistency}%</p>
-          <p className="text-[10px] text-muted-foreground">Macro consistency</p>
+          <p className="text-[10px] text-muted-foreground">Macro target hit</p>
         </div>
         <div className="bg-card border border-border rounded-2xl p-3">
-          <TrendingUp className="w-4 h-4 text-info mb-1" />
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Avg cal</p>
           <p className="text-lg font-bold text-foreground">
             {Math.round(days.reduce((s, d) => s + d.calories, 0) / 7)}
           </p>
-          <p className="text-[10px] text-muted-foreground">Avg calories</p>
+          <p className="text-[10px] text-muted-foreground">per day</p>
         </div>
         <div className="bg-card border border-border rounded-2xl p-3">
-          <Zap className="w-4 h-4 text-warning mb-1" />
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Avg protein</p>
           <p className="text-lg font-bold text-foreground">
             {Math.round(days.reduce((s, d) => s + d.protein, 0) / 7)}g
           </p>
-          <p className="text-[10px] text-muted-foreground">Avg protein</p>
+          <p className="text-[10px] text-muted-foreground">per day</p>
         </div>
       </div>
 

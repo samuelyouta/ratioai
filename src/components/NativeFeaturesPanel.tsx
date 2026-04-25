@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Check, Heart, Smartphone } from "lucide-react";
+import { Check } from "lucide-react";
 import { useNativeFeatures } from "@/hooks/useNativeFeatures";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -37,8 +37,7 @@ const NativeFeaturesPanel = ({ email }: Props) => {
         transition={{ type: "spring", stiffness: 180, damping: 24 }}
         className="mt-8 rounded-2xl border border-border/40 bg-card/40 backdrop-blur p-5"
       >
-        <div className="flex items-center gap-2 mb-4">
-          <Smartphone className="w-4 h-4 text-primary" />
+        <div className="mb-4">
           <h3 className="text-sm font-semibold tracking-wide uppercase text-foreground/80">
             Native preview · {platform}
           </h3>
@@ -51,8 +50,7 @@ const NativeFeaturesPanel = ({ email }: Props) => {
             className="w-full justify-between"
             disabled={pushPermission === "granted"}
           >
-            <span className="flex items-center gap-2">
-              <Bell className="w-4 h-4" />
+            <span>
               {pushPermission === "granted" ? "Notifications on" : "Enable push notifications"}
             </span>
             {pushPermission === "granted" && <Check className="w-4 h-4 text-primary" />}
@@ -63,10 +61,7 @@ const NativeFeaturesPanel = ({ email }: Props) => {
             variant="secondary"
             className="w-full justify-between"
           >
-            <span className="flex items-center gap-2">
-              <Heart className="w-4 h-4" />
-              Connect {platform === "ios" ? "Apple Health" : "Google Fit"}
-            </span>
+            <span>Connect {platform === "ios" ? "Apple Health" : "Google Fit"}</span>
           </Button>
         </div>
 

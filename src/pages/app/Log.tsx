@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
-import { X, Zap, Camera, Image as ImageIcon, Loader2, Search, Pencil, Sparkles } from "lucide-react";
+import { X, Camera, Image as ImageIcon, Loader2 } from "lucide-react";
+import RecentMeals from "@/components/app/RecentMeals";
 
 const Log = () => {
   const navigate = useNavigate();
@@ -16,11 +17,10 @@ const Log = () => {
     reader.onload = () => {
       const dataUrl = reader.result as string;
       setPreviewUrl(dataUrl);
-      // Stash for the result page to read once analysis completes
       try {
         sessionStorage.setItem("ratioai.lastImage", dataUrl);
       } catch {
-        // ignore quota errors
+        /* ignore quota errors */
       }
       setTimeout(() => navigate("/app/analyze"), 900);
     };
@@ -29,7 +29,7 @@ const Log = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
-      <div className="flex-1 relative bg-card overflow-hidden">
+      <div className="flex-1 relative bg-card overflow-hidden min-h-[42vh]">
         {previewUrl ? (
           <img src={previewUrl} alt="Captured meal" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
@@ -63,11 +63,11 @@ const Log = () => {
           <button
             onClick={() => navigate("/app/today")}
             className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center"
+            aria-label="Close"
           >
             <X className="w-5 h-5 text-foreground" />
           </button>
-          <div className="flex items-center gap-1.5 glass border border-border rounded-full px-3 py-1.5">
-            <Zap className="w-3.5 h-3.5 text-primary" />
+          <div className="glass border border-border rounded-full px-3 py-1.5">
             <span className="text-xs font-medium text-foreground">
               {scanning ? "Scanning…" : "Snap a meal"}
             </span>
@@ -83,13 +83,18 @@ const Log = () => {
         >
           <div className="glass border border-border rounded-2xl p-3">
             <p className="text-xs text-muted-foreground text-center">
-              💡 Tip: include the whole plate in frame for better portion estimates
+              Tip: include the whole plate in frame for better portion estimates
             </p>
           </div>
         </motion.div>
       </div>
 
       <div className="bg-background px-6 py-6 safe-bottom">
+        {/* Recent / repeat meals — fastest path to log */}
+        <div className="mb-5">
+          <RecentMeals limit={4} variant="stack" title="Quick re-log" onLogged={() => navigate("/app/today")} />
+        </div>
+
         <div className="flex items-center justify-around">
           <button
             disabled={scanning}
@@ -106,6 +111,7 @@ const Log = () => {
             disabled={scanning}
             onClick={() => fileRef.current?.click()}
             className="w-20 h-20 rounded-full gradient-glow shadow-glow flex items-center justify-center"
+            aria-label="Take photo"
           >
             <div className="w-16 h-16 rounded-full border-4 border-primary-foreground/20 flex items-center justify-center">
               {scanning ? (
@@ -122,7 +128,7 @@ const Log = () => {
             className="flex flex-col items-center gap-1"
           >
             <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
-              <Search className="w-5 h-5 text-secondary-foreground" />
+              <span className="text-xs font-bold text-secondary-foreground">A–Z</span>
             </div>
             <span className="text-[10px] text-muted-foreground">Search</span>
           </button>
@@ -132,17 +138,15 @@ const Log = () => {
           <button
             disabled={scanning}
             onClick={() => navigate("/app/manual")}
-            className="h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-foreground/90"
+            className="h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors text-sm font-medium text-foreground/90"
           >
-            <Pencil className="w-4 h-4 text-muted-foreground" />
             Search & Edit
           </button>
           <button
             disabled={scanning}
             onClick={() => navigate("/app/describe")}
-            className="h-11 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-foreground"
+            className="h-11 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-colors text-sm font-medium text-foreground"
           >
-            <Sparkles className="w-4 h-4 text-primary" />
             Describe Meal
           </button>
         </div>

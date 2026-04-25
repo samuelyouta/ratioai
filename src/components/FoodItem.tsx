@@ -1,4 +1,4 @@
-import { Check, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 
 interface FoodItemProps {
@@ -18,12 +18,12 @@ const FoodItem = ({ name, portion, calories, protein, carbs, fat, confidence }: 
   return (
     <div className="gradient-card rounded-2xl p-4 border border-border space-y-3">
       <div className="flex items-start justify-between">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-foreground">{name}</h4>
+            <h4 className="font-semibold text-foreground truncate">{name}</h4>
             {confidence >= 90 && (
-              <span className="flex items-center gap-0.5 text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                <Check className="w-2.5 h-2.5" /> USDA
+              <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                USDA
               </span>
             )}
           </div>
@@ -39,11 +39,11 @@ const FoodItem = ({ name, portion, calories, protein, carbs, fat, confidence }: 
           <span>F <span className="text-foreground font-medium">{fat * qty}g</span></span>
         </div>
         <div className="flex items-center gap-3 bg-secondary rounded-full px-1 py-0.5">
-          <button onClick={() => setQty(Math.max(0.5, qty - 0.5))} className="p-1 text-muted-foreground hover:text-foreground">
+          <button onClick={() => setQty(Math.max(0.5, qty - 0.5))} className="p-1 text-muted-foreground hover:text-foreground" aria-label="Decrease">
             <Minus className="w-3.5 h-3.5" />
           </button>
           <span className="text-sm font-semibold text-foreground min-w-[2ch] text-center">{qty}</span>
-          <button onClick={() => setQty(qty + 0.5)} className="p-1 text-muted-foreground hover:text-foreground">
+          <button onClick={() => setQty(qty + 0.5)} className="p-1 text-muted-foreground hover:text-foreground" aria-label="Increase">
             <Plus className="w-3.5 h-3.5" />
           </button>
         </div>

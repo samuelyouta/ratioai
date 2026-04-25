@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, Target, User, Activity as ActivityIcon, Flame, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { clearProfile, getProfile } from "@/lib/profile";
 
@@ -38,27 +37,22 @@ const Profile = () => {
       </div>
 
       <div className="px-6 mb-5">
-        <div className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl gradient-glow flex items-center justify-center shadow-glow">
-            <User className="w-7 h-7 text-primary-foreground" />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">RatioAi Athlete</p>
-            <p className="text-xs text-muted-foreground">
-              {profile.gender} · {profile.age} yrs · {profile.heightCm}cm · {profile.weightKg}kg
-            </p>
-          </div>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <p className="font-semibold text-foreground">RatioAi Athlete</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {profile.gender} · {profile.age} yrs · {profile.heightCm}cm · {profile.weightKg}kg
+          </p>
         </div>
       </div>
 
       <div className="px-6 mb-5 grid grid-cols-2 gap-3">
         <div className="bg-card border border-border rounded-2xl p-4">
-          <Target className="w-4 h-4 text-primary mb-2" />
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Daily target</p>
           <p className="text-lg font-bold text-foreground">{profile.calorieTarget}</p>
           <p className="text-xs text-muted-foreground">cal / day</p>
         </div>
         <div className="bg-card border border-border rounded-2xl p-4">
-          <Flame className="w-4 h-4 text-coral mb-2" />
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Goal</p>
           <p className="text-lg font-bold text-foreground">{goalLabels[profile.goal]}</p>
           <p className="text-xs text-muted-foreground">current goal</p>
         </div>
@@ -67,10 +61,7 @@ const Profile = () => {
       <div className="px-6 mb-5">
         <div className="bg-card border border-border rounded-2xl divide-y divide-border">
           <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <ActivityIcon className="w-4 h-4 text-info" />
-              <span className="text-sm text-foreground">Activity</span>
-            </div>
+            <span className="text-sm text-foreground">Activity</span>
             <span className="text-sm text-muted-foreground">{activityLabels[profile.activity]}</span>
           </div>
           <div className="flex items-center justify-between p-4">
@@ -91,15 +82,15 @@ const Profile = () => {
       <div className="px-6 space-y-2">
         <button
           onClick={handleRedo}
-          className="w-full flex items-center justify-center gap-2 bg-card border border-border rounded-xl py-3 text-sm font-medium text-foreground"
+          className="w-full bg-card border border-border rounded-xl py-3 text-sm font-medium text-foreground"
         >
-          <RefreshCw className="w-4 h-4" /> Recalculate targets
+          Recalculate targets
         </button>
         <button
           onClick={handleReset}
-          className="w-full flex items-center justify-center gap-2 bg-card border border-destructive/30 rounded-xl py-3 text-sm font-medium text-destructive"
+          className="w-full bg-card border border-destructive/30 rounded-xl py-3 text-sm font-medium text-destructive"
         >
-          <LogOut className="w-4 h-4" /> Reset everything
+          Reset everything
         </button>
       </div>
 
