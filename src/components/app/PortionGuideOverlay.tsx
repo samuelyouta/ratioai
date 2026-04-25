@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Ruler, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useState } from "react";
 import {
   matchPortion,
@@ -65,9 +65,9 @@ const PortionGuideOverlay = ({ imageUrl, items }: Props) => {
                   className="absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none"
                 >
                   <span
-                    className={`flex items-center justify-center w-12 h-12 rounded-full ring-2 backdrop-blur-md text-2xl shadow-glow ${toneRing[ref.tone]}`}
+                    className={`flex items-center justify-center min-w-[3rem] h-12 px-2 rounded-full ring-2 backdrop-blur-md text-[11px] font-bold shadow-glow ${toneRing[ref.tone]}`}
                   >
-                    {ref.icon}
+                    {grams ? `${grams}g` : ref.object}
                   </span>
                   <AnimatePresence>
                     {isActive && (
@@ -84,12 +84,9 @@ const PortionGuideOverlay = ({ imageUrl, items }: Props) => {
                         <p className="text-[10px] text-muted-foreground mt-0.5">
                           AI: {it.portion}
                         </p>
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <span className="text-base leading-none">{ref.icon}</span>
-                          <p className="text-[10px] text-foreground">
-                            {ref.object} · ~{ref.grams}g
-                          </p>
-                        </div>
+                        <p className="text-[10px] text-foreground mt-1.5">
+                          ≈ {ref.object} · ~{ref.grams}g
+                        </p>
                         {cmp && (
                           <p className="text-[10px] text-primary font-medium mt-1">
                             {cmp.label}
@@ -112,15 +109,14 @@ const PortionGuideOverlay = ({ imageUrl, items }: Props) => {
           }}
           className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-md border border-border text-[11px] font-semibold text-foreground"
         >
-          {showGuide ? <X className="w-3 h-3" /> : <Ruler className="w-3 h-3 text-primary" />}
-          {showGuide ? "Hide guide" : "Portion guide"}
+          {showGuide && <X className="w-3 h-3" />}
+          {showGuide ? "Hide guide" : "Show guide"}
         </button>
 
         {showGuide && (
-          <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-background/80 backdrop-blur-md border border-border">
-            <Ruler className="w-3.5 h-3.5 text-primary shrink-0" />
+          <div className="absolute bottom-3 left-3 right-3 px-3 py-2 rounded-xl bg-background/80 backdrop-blur-md border border-border">
             <p className="text-[11px] text-foreground leading-snug">
-              Tap an icon to compare the AI estimate to a familiar object.
+              Tap a chip to compare the AI estimate to a familiar reference.
             </p>
           </div>
         )}
