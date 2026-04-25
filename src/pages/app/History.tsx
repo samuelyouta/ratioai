@@ -148,7 +148,6 @@ const History = () => {
             <div className="space-y-2">
               {items.map((m) => {
                 const src = (m.source ?? "photo") as MealSource;
-                const SIcon = sourceMeta[src].icon;
                 return (
                   <motion.div
                     key={m.id}
@@ -158,13 +157,11 @@ const History = () => {
                     onClick={() => navigate(`/app/history/${m.id}`)}
                     className="gradient-card rounded-2xl p-3 border border-border flex gap-3 cursor-pointer hover:border-primary/40 transition-colors"
                   >
-                    <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {m.imageDataUrl ? (
+                    {m.imageDataUrl && (
+                      <div className="w-14 h-14 rounded-xl bg-secondary overflow-hidden flex-shrink-0">
                         <img src={m.imageDataUrl} alt={m.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-2xl">{m.icon || "🍽️"}</span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -181,13 +178,12 @@ const History = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
-                          <SIcon className="w-3 h-3" />
-                          {sourceMeta[src].label}
+                        <span className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
+                          {sourceLabel[src]}
                         </span>
                         {m.verified && (
-                          <span className="inline-flex items-center gap-1 text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full">
-                            <Check className="w-3 h-3" /> Verified
+                          <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">
+                            Verified
                           </span>
                         )}
                         <div className="ml-auto flex gap-1">
