@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, Camera, Mic, Pencil, Trash2, Check, X, ImageOff } from "lucide-react";
+import { ArrowLeft, Search, Trash2, Pencil, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,10 @@ import { toast } from "sonner";
 
 type Filter = "all" | MealSource | "verified";
 
-const sourceMeta: Record<MealSource, { icon: typeof Camera; label: string }> = {
-  photo: { icon: Camera, label: "Photo" },
-  voice: { icon: Mic, label: "Voice" },
-  manual: { icon: Pencil, label: "Manual" },
+const sourceLabel: Record<MealSource, string> = {
+  photo: "Photo",
+  voice: "Voice",
+  manual: "Manual",
 };
 
 const formatDay = (iso: string) => {
