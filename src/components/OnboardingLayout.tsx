@@ -33,7 +33,7 @@ const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps)
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.3 }}
-        className="flex-1 flex flex-col px-6 pb-8"
+        className="flex-1 flex flex-col justify-center px-6 py-6 max-w-md mx-auto w-full"
       >
         {children}
       </motion.div>

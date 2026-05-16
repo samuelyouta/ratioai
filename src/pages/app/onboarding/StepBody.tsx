@@ -28,9 +28,9 @@ const StepBody = () => {
 
   return (
     <OnboardingLayout step={2} totalSteps={4}>
-      <div className="mt-8 mb-6">
-        <h2 className="text-2xl font-bold text-foreground">Your body</h2>
-        <p className="text-muted-foreground mt-1 text-sm">Used to calculate your metabolic rate.</p>
+      <div className="mb-8">
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Your body</h2>
+        <p className="text-muted-foreground mt-2 text-base">Used to calculate your metabolic rate.</p>
       </div>
 
       <div className="space-y-6 flex-1">
