@@ -39,15 +39,7 @@ const StepBody = () => {
     navigate("/app/onboarding/activity");
   };
 
-  const UnitToggle = <T extends string>({
-    value,
-    onChange,
-    options,
-  }: {
-    value: T;
-    onChange: (v: T) => void;
-    options: readonly T[];
-  }) => (
+  const renderToggle = (value: string, options: readonly string[], onChange: (v: string) => void) => (
     <div className="flex bg-secondary rounded-lg p-0.5">
       {options.map((o) => (
         <button
