@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
 import { X, Camera, Image as ImageIcon, Loader2 } from "lucide-react";
 import RecentMeals from "@/components/app/RecentMeals";
+import { compressImageForAnalysis } from "@/lib/image";
+import { isNative } from "@/lib/native";
+import { useNativeFeatures } from "@/hooks/useNativeFeatures";
+import { toast } from "sonner";
+
+const LAST_IMAGE_KEY = "ratioai.lastImage";
 
 const Log = () => {
   const navigate = useNavigate();
@@ -10,35 +16,69 @@ const Log = () => {
   const galleryRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const { takePhoto } = useNativeFeatures();
+
+  const storeAndAnalyze = async (dataUrl: string) => {
+    setScanning(true);
+    try {
+      const compressed = await compressImageForAnalysis(dataUrl);
+      setPreviewUrl(compressed);
+      try {
+        sessionStorage.setItem(LAST_IMAGE_KEY, compressed);
+      } catch {
+        toast.warning("Couldn't cache preview", { description: "Analysis will still run." });
+      }
+      navigate("/app/analyze");
+    } catch {
+      toast.error("Couldn't process that image", { description: "Try another photo." });
+      setScanning(false);
+    }
+  };
 
   const handleFile = async (file: File) => {
-    setScanning(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setPreviewUrl(dataUrl);
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    await storeAndAnalyze(file);
+  };
+
+  const handleCameraCapture = async () => {
+    if (isNative()) {
+      setScanning(true);
       try {
-        sessionStorage.setItem("ratioai.lastImage", dataUrl);
+        const dataUrl = await takePhoto();
+        if (!dataUrl) {
+          setScanning(false);
+          return;
+        }
+        await storeAndAnalyze(dataUrl);
       } catch {
-        /* ignore quota errors */
+        toast.error("Camera unavailable", { description: "Check camera permissions in Settings." });
+        setScanning(false);
       }
-      setTimeout(() => navigate("/app/analyze"), 900);
-    };
-    reader.readAsDataURL(file);
+      return;
+    }
+    fileRef.current?.click();
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-background flex flex-col relative"
+    >
       <div className="flex-1 relative bg-card overflow-hidden min-h-[42vh]">
         {previewUrl ? (
           <img src={previewUrl} alt="Captured meal" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-muted/50 to-card flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="absolute inset-0 bg-gradient-to-b from-muted/50 to-card flex items-center justify-center"
+          >
             <div className="w-64 h-64 border-2 border-primary/40 rounded-3xl relative">
-              <div className="absolute -top-1 -left-1 w-8 h-8 border-t-2 border-l-2 border-primary rounded-tl-xl" />
-              <div className="absolute -top-1 -right-1 w-8 h-8 border-t-2 border-r-2 border-primary rounded-tr-xl" />
-              <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-2 border-l-2 border-primary rounded-bl-xl" />
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-2 border-r-2 border-primary rounded-br-xl" />
               <motion.div
                 animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -47,7 +87,7 @@ const Log = () => {
                 <p className="text-sm text-primary font-medium">Place food here</p>
               </motion.div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {scanning && (
@@ -67,30 +107,31 @@ const Log = () => {
           >
             <X className="w-5 h-5 text-foreground" />
           </button>
-          <div className="glass border border-border rounded-full px-3 py-1.5">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="glass border border-border rounded-full px-3 py-1.5"
+          >
             <span className="text-xs font-medium text-foreground">
-              {scanning ? "Scanning…" : "Snap a meal"}
+              {scanning ? "Preparing…" : "Snap a meal"}
             </span>
+          </motion.div>
+          <div className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center">
+            <span className="text-sm">🔬</span>
           </div>
-          <div className="w-10" />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="absolute bottom-6 left-4 right-4"
-        >
+        <div className="absolute bottom-6 left-4 right-4">
           <div className="glass border border-border rounded-2xl p-3">
             <p className="text-xs text-muted-foreground text-center">
               Tip: include the whole plate in frame for better portion estimates
             </p>
           </div>
-        </motion.div>
+        </div>
       </div>
 
-      <div className="bg-background px-6 py-6 safe-bottom">
-        {/* Recent / repeat meals — fastest path to log */}
+      <motion.div className="bg-background px-6 py-6 safe-bottom">
         <div className="mb-5">
           <RecentMeals limit={4} variant="stack" title="Quick re-log" onLogged={() => navigate("/app/today")} />
         </div>
@@ -107,9 +148,10 @@ const Log = () => {
             <span className="text-[10px] text-muted-foreground">Gallery</span>
           </button>
 
-          <button
+          <motion.button
             disabled={scanning}
-            onClick={() => fileRef.current?.click()}
+            onClick={handleCameraCapture}
+            whileTap={{ scale: 0.9 }}
             className="w-20 h-20 rounded-full gradient-glow shadow-glow flex items-center justify-center"
             aria-label="Take photo"
           >
@@ -120,7 +162,7 @@ const Log = () => {
                 <Camera className="w-7 h-7 text-primary-foreground" />
               )}
             </div>
-          </button>
+          </motion.button>
 
           <button
             disabled={scanning}
@@ -153,7 +195,7 @@ const Log = () => {
         <p className="mt-2 text-[10px] text-muted-foreground text-center">
           Can't find it? Describe it — we'll estimate the macros.
         </p>
-      </div>
+      </motion.div>
 
       <input
         ref={fileRef}
@@ -161,16 +203,24 @@ const Log = () => {
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) void handleFile(file);
+        }}
       />
       <input
         ref={galleryRef}
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) void handleFile(file);
+        }}
       />
-    </div>
+    </motion.div>
   );
 };
 

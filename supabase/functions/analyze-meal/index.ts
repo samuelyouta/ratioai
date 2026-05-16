@@ -13,7 +13,15 @@ Your job:
 1. Identify every distinct food item visible.
 2. Estimate portion size in grams using visual volume + reference objects (plate ~25cm, fork, hand).
 3. Estimate calories and macros (protein/carbs/fat in grams) per item using USDA-style averages.
-4. Detect a likely "hidden ingredient" if the dish looks restaurant-style (e.g. cooking oil on stir-fry, butter on steak, dressing on salad). Estimate added calories.
+4. Detect hidden cooking fats/sauces that are NOT visible but very likely present:
+   - Stir-fries, fried rice, sautéed vegetables → cooking oil (~1 tbsp, ~120 cal)
+   - Grilled/fried proteins with sheen → butter or oil (~1 tsp–1 tbsp)
+   - Salads with glossy leaves → dressing (~2 tbsp, ~140 cal)
+   - Pasta, lasagna, pizza, creamy sauces → cheese/oil/butter in preparation
+   - Restaurant or takeout plates → assume extra oil vs home-cooked
+   Set hiddenIngredient to a short label with estimated calories (e.g. "~1 tbsp olive oil, +120 cal").
+   Set hiddenIngredientCalories to the numeric added calories (0 if none likely).
+   Do NOT double-count: item macros should reflect the food itself; hiddenIngredient is only for added fats/sauces.
 
 Return ONLY a tool call to log_meal. Be confident but realistic. If the image isn't food, return items: [] and set notes accordingly.`;
 
@@ -51,9 +59,13 @@ const tools = [
             description:
               "If a hidden cooking fat/sauce is likely present, describe it (e.g. '~1 tbsp cooking oil, +120 cal'). Null otherwise.",
           },
+          hiddenIngredientCalories: {
+            type: "number",
+            description: "Estimated calories from the hidden ingredient alone (0 if none).",
+          },
           notes: { type: "string", description: "One-line note for the user." },
         },
-        required: ["title", "icon", "items", "hiddenIngredient", "notes"],
+        required: ["title", "icon", "items", "hiddenIngredient", "hiddenIngredientCalories", "notes"],
         additionalProperties: false,
       },
     },
