@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.jpg";
+import scanDemo from "@/assets/scan-demo.mp4.asset.json";
 
 const AppWelcome = () => {
   const navigate = useNavigate();
