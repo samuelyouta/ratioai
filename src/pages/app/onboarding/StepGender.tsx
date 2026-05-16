@@ -27,9 +27,9 @@ const StepGender = () => {
 
   return (
     <OnboardingLayout step={1} totalSteps={4}>
-      <div className="mt-8 mb-6">
-        <h2 className="text-2xl font-bold text-foreground">About you</h2>
-        <p className="text-muted-foreground mt-1 text-sm">We need this to calculate your ideal daily intake.</p>
+      <div className="mb-8">
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">About you</h2>
+        <p className="text-muted-foreground mt-2 text-base">We need this to calculate your ideal daily intake.</p>
       </div>
 
       <div className="space-y-6 flex-1">

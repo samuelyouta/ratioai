@@ -50,9 +50,9 @@ const StepActivity = () => {
 
   return (
     <OnboardingLayout step={3} totalSteps={4}>
-      <div className="mt-8 mb-6">
-        <h2 className="text-2xl font-bold text-foreground">Activity level</h2>
-        <p className="text-muted-foreground mt-1 text-sm">Be honest — we calibrate your targets from this.</p>
+      <div className="mb-8">
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Activity level</h2>
+        <p className="text-muted-foreground mt-2 text-base">Be honest — we calibrate your targets from this.</p>
       </div>
 
       <div className="space-y-2 flex-1">
