@@ -5,6 +5,7 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight } from "lucide-react";
 import { getDraft, setDraft, clearDraft } from "@/lib/onboardingDraft";
 import { calculateTargets, saveProfile, type Activity } from "@/lib/profile";
+import previewActivity from "@/assets/preview-activity.png";
 
 const levels: { id: Activity; label: string; desc: string }[] = [
   { id: "sedentary", label: "Sedentary", desc: "Desk job, little exercise" },
@@ -50,9 +51,17 @@ const StepActivity = () => {
 
   return (
     <OnboardingLayout step={3} totalSteps={4}>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Activity level</h2>
         <p className="text-muted-foreground mt-2 text-base">Be honest — we calibrate your targets from this.</p>
+        <img
+          src={previewActivity}
+          alt="Activity preview"
+          loading="lazy"
+          width={512}
+          height={512}
+          className="mt-5 mx-auto h-32 w-auto rounded-xl opacity-90"
+        />
       </div>
 
       <div className="space-y-2 flex-1">

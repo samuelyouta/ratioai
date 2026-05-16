@@ -5,6 +5,7 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight, Flame, Dumbbell, Scale, Zap } from "lucide-react";
 import { setDraft, getDraft } from "@/lib/onboardingDraft";
 import type { Goal } from "@/lib/profile";
+import previewGoal from "@/assets/preview-goal.png";
 
 const goals: { id: Goal; icon: typeof Flame; label: string; desc: string; color: string }[] = [
   { id: "lose", icon: Flame, label: "Lose Fat", desc: "Caloric deficit with smart tracking", color: "text-coral" },
@@ -25,9 +26,17 @@ const StepGoal = () => {
 
   return (
     <OnboardingLayout step={0} totalSteps={4}>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">What's your goal?</h2>
         <p className="text-muted-foreground mt-2 text-base">We'll personalize everything around this.</p>
+        <img
+          src={previewGoal}
+          alt="Goal selection preview"
+          loading="lazy"
+          width={512}
+          height={512}
+          className="mt-5 mx-auto h-32 w-auto rounded-xl opacity-90"
+        />
       </div>
 
       <div className="space-y-3 flex-1">
