@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.jpg";
-import scanDemo from "@/assets/scan-demo.mp4.asset.json";
 
 const AppWelcome = () => {
   const navigate = useNavigate();
@@ -30,22 +29,6 @@ const AppWelcome = () => {
         <p className="text-muted-foreground text-base max-w-xs leading-relaxed mb-8">
           Snap a photo. Get instant calories. No guessing, no typing, no stress.
         </p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="w-full max-w-[240px] aspect-[9/16] rounded-3xl overflow-hidden shadow-glow mb-8 bg-card border border-border"
-        >
-          <video
-            src={scanDemo.url}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        </motion.div>
 
         <div className="flex flex-wrap justify-center gap-2 mb-10 max-w-xs">
           {["📸 Photo AI", "🔬 Hidden Ingredients", "📊 7-Day Trends", "🌍 200+ Cuisines"].map((tag) => (

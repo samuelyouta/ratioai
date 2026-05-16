@@ -4,6 +4,7 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight } from "lucide-react";
 import { getDraft, setDraft } from "@/lib/onboardingDraft";
 import type { Gender } from "@/lib/profile";
+import previewGender from "@/assets/preview-gender.png";
 
 const genders: { id: Gender; label: string; icon: string }[] = [
   { id: "male", label: "Male", icon: "♂️" },
@@ -27,9 +28,17 @@ const StepGender = () => {
 
   return (
     <OnboardingLayout step={1} totalSteps={4}>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">About you</h2>
         <p className="text-muted-foreground mt-2 text-base">We need this to calculate your ideal daily intake.</p>
+        <img
+          src={previewGender}
+          alt="Profile preview"
+          loading="lazy"
+          width={512}
+          height={512}
+          className="mt-5 mx-auto h-32 w-auto rounded-xl opacity-90"
+        />
       </div>
 
       <div className="space-y-6 flex-1">
