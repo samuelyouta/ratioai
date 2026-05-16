@@ -74,7 +74,7 @@ const StepBody = () => {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-foreground text-sm">Height</h3>
-            <UnitToggle value={heightUnit} onChange={setHeightUnit} options={["cm", "in"] as const} />
+            {renderToggle(heightUnit, ["cm", "in"], (v) => setHeightUnit(v as HeightUnit))}
           </div>
           <div className="relative">
             <input
@@ -94,7 +94,7 @@ const StepBody = () => {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-foreground text-sm">Weight</h3>
-            <UnitToggle value={weightUnit} onChange={setWeightUnit} options={["kg", "lbs"] as const} />
+            {renderToggle(weightUnit, ["kg", "lbs"], (v) => setWeightUnit(v as WeightUnit))}
           </div>
           <div className="relative">
             <input
