@@ -15,6 +15,7 @@ import StepGoal from "./pages/app/onboarding/StepGoal";
 import StepGender from "./pages/app/onboarding/StepGender";
 import StepBody from "./pages/app/onboarding/StepBody";
 import StepActivity from "./pages/app/onboarding/StepActivity";
+import Analyzing from "./pages/app/onboarding/Analyzing";
 import Today from "./pages/app/Today";
 import Insights from "./pages/app/Insights";
 import Profile from "./pages/app/Profile";
@@ -46,6 +47,7 @@ const AppRoutes = () => {
       <Route path="/app/onboarding/gender" element={<StepGender />} />
       <Route path="/app/onboarding/body" element={<StepBody />} />
       <Route path="/app/onboarding/activity" element={<StepActivity />} />
+      <Route path="/app/onboarding/analyzing" element={<Analyzing />} />
 
       {/* Gated app routes */}
       <Route path="/app/today" element={<RequireOnboarding><Today /></RequireOnboarding>} />
