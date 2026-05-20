@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight } from "lucide-react";
 import { getDraft, setDraft } from "@/lib/onboardingDraft";
-import previewBody from "@/assets/preview-body.png";
+import ScaleSlider from "@/components/onboarding/ScaleSlider";
 
 type HeightUnit = "cm" | "in";
 type WeightUnit = "kg" | "lbs";
@@ -11,26 +11,12 @@ type WeightUnit = "kg" | "lbs";
 const StepBody = () => {
   const navigate = useNavigate();
   const draft = getDraft();
-  const initialHeightUnit: HeightUnit = draft.unit === "imperial" ? "in" : "cm";
-  const initialWeightUnit: WeightUnit = draft.unit === "imperial" ? "lbs" : "kg";
-
-  const [heightUnit, setHeightUnit] = useState<HeightUnit>(initialHeightUnit);
-  const [weightUnit, setWeightUnit] = useState<WeightUnit>(initialWeightUnit);
-
-  const [height, setHeight] = useState<string>(
-    draft.heightCm ? (initialHeightUnit === "cm" ? String(draft.heightCm) : String(Math.round(draft.heightCm / 2.54))) : "",
-  );
-  const [weight, setWeight] = useState<string>(
-    draft.weightKg ? (initialWeightUnit === "kg" ? String(draft.weightKg) : String(Math.round(draft.weightKg * 2.205))) : "",
-  );
-
-  const isValid = height && weight && Number(height) > 0 && Number(weight) > 0;
+  const [heightUnit, setHeightUnit] = useState<HeightUnit>(draft.unit === "imperial" ? "in" : "cm");
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>(draft.unit === "imperial" ? "lbs" : "kg");
+  const [heightCm, setHeightCm] = useState<number>(draft.heightCm ?? 175);
+  const [weightKg, setWeightKg] = useState<number>(draft.weightKg ?? 75);
 
   const handleNext = () => {
-    if (!isValid) return;
-    const heightCm = heightUnit === "cm" ? Number(height) : Number(height) * 2.54;
-    const weightKg = weightUnit === "kg" ? Number(weight) : Number(weight) / 2.205;
-    // Persist `unit` to track user's preferred display; default to heightUnit's system
     setDraft({
       unit: heightUnit === "cm" && weightUnit === "kg" ? "metric" : "imperial",
       heightCm: Math.round(heightCm),
@@ -39,14 +25,14 @@ const StepBody = () => {
     navigate("/app/onboarding/activity");
   };
 
-  const renderToggle = (value: string, options: readonly string[], onChange: (v: string) => void) => (
+  const renderToggle = <T extends string>(value: T, options: readonly T[], onChange: (v: T) => void) => (
     <div className="flex bg-secondary rounded-lg p-0.5">
       {options.map((o) => (
         <button
           key={o}
           onClick={() => onChange(o)}
-          className={`text-xs font-medium px-3 py-1 rounded-md transition-all ${
-            value === o ? "gradient-glow text-primary-foreground" : "text-muted-foreground"
+          className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all ${
+            value === o ? "gradient-glow text-primary-foreground shadow-glow" : "text-muted-foreground"
           }`}
         >
           {o}
@@ -55,67 +41,102 @@ const StepBody = () => {
     </div>
   );
 
+  // ----- Height label -----
+  const heightLabel = (cm: number) => {
+    if (heightUnit === "cm") {
+      return (
+        <div>
+          <span
+            className="text-7xl font-black tabular-nums text-primary tracking-tight"
+            style={{ textShadow: "0 0 28px hsl(var(--primary) / 0.5)" }}
+          >
+            {Math.round(cm)}
+          </span>
+          <span className="text-2xl font-bold text-muted-foreground ml-2">cm</span>
+        </div>
+      );
+    }
+    const totalInches = Math.round(cm / 2.54);
+    const ft = Math.floor(totalInches / 12);
+    const inch = totalInches % 12;
+    return (
+      <div>
+        <span
+          className="text-7xl font-black tabular-nums text-primary tracking-tight"
+          style={{ textShadow: "0 0 28px hsl(var(--primary) / 0.5)" }}
+        >
+          {ft}
+        </span>
+        <span className="text-2xl font-bold text-muted-foreground mr-3">ft</span>
+        <span
+          className="text-7xl font-black tabular-nums text-primary tracking-tight"
+          style={{ textShadow: "0 0 28px hsl(var(--primary) / 0.5)" }}
+        >
+          {inch}
+        </span>
+        <span className="text-2xl font-bold text-muted-foreground ml-2">in</span>
+      </div>
+    );
+  };
+
+  // ----- Weight label -----
+  const weightLabel = (kg: number) => {
+    const display = weightUnit === "kg" ? Math.round(kg) : Math.round(kg * 2.205);
+    return (
+      <div>
+        <span
+          className="text-7xl font-black tabular-nums text-primary tracking-tight"
+          style={{ textShadow: "0 0 28px hsl(var(--primary) / 0.5)" }}
+        >
+          {display}
+        </span>
+        <span className="text-2xl font-bold text-muted-foreground ml-2">{weightUnit}</span>
+      </div>
+    );
+  };
+
   return (
     <OnboardingLayout step={2} totalSteps={4}>
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Your body</h2>
-        <p className="text-muted-foreground mt-2 text-base">Used to calculate your metabolic rate.</p>
-        <img
-          src={previewBody}
-          alt="Body info preview"
-          loading="lazy"
-          width={512}
-          height={512}
-          className="mt-5 mx-auto h-32 w-auto rounded-xl opacity-90"
-        />
+        <p className="text-muted-foreground mt-2 text-base">Drag to adjust. We use this for your metabolic rate.</p>
       </div>
 
-      <div className="space-y-5 flex-1">
+      <div className="space-y-10 flex-1">
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-foreground text-sm">Height</h3>
-            {renderToggle(heightUnit, ["cm", "in"], (v) => setHeightUnit(v as HeightUnit))}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">Height</h3>
+            {renderToggle(heightUnit, ["cm", "in"] as const, setHeightUnit)}
           </div>
-          <div className="relative">
-            <input
-              type="number"
-              inputMode="decimal"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-              placeholder={heightUnit === "cm" ? "175" : "69"}
-              className="w-full bg-card border border-border rounded-xl py-3 px-4 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-              {heightUnit}
-            </span>
-          </div>
+          <ScaleSlider
+            value={heightCm}
+            min={120}
+            max={220}
+            step={1}
+            onChange={setHeightCm}
+            renderLabel={heightLabel}
+          />
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-foreground text-sm">Weight</h3>
-            {renderToggle(weightUnit, ["kg", "lbs"], (v) => setWeightUnit(v as WeightUnit))}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">Weight</h3>
+            {renderToggle(weightUnit, ["kg", "lbs"] as const, setWeightUnit)}
           </div>
-          <div className="relative">
-            <input
-              type="number"
-              inputMode="decimal"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              placeholder={weightUnit === "kg" ? "75" : "165"}
-              className="w-full bg-card border border-border rounded-xl py-3 px-4 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-              {weightUnit}
-            </span>
-          </div>
+          <ScaleSlider
+            value={weightKg}
+            min={35}
+            max={200}
+            step={1}
+            onChange={setWeightKg}
+            renderLabel={weightLabel}
+          />
         </div>
       </div>
 
       <button
-        disabled={!isValid}
         onClick={handleNext}
-        className="gradient-glow text-primary-foreground font-semibold text-base px-8 py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center mt-6 disabled:opacity-40 disabled:shadow-none transition-opacity"
+        className="gradient-glow text-primary-foreground font-semibold text-base px-8 py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center mt-6 transition-opacity"
       >
         Continue <ArrowRight className="w-5 h-5" />
       </button>

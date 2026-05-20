@@ -1,74 +1,102 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import OnboardingLayout from "@/components/OnboardingLayout";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Minus, Plus } from "lucide-react";
 import { getDraft, setDraft } from "@/lib/onboardingDraft";
 import type { Gender } from "@/lib/profile";
-import previewGender from "@/assets/preview-gender.png";
 
-const genders: { id: Gender; label: string; icon: string }[] = [
-  { id: "male", label: "Male", icon: "♂️" },
-  { id: "female", label: "Female", icon: "♀️" },
-  { id: "other", label: "Other", icon: "⚧️" },
+const genders: { id: Gender; label: string }[] = [
+  { id: "male", label: "Male" },
+  { id: "female", label: "Female" },
+  { id: "other", label: "Other" },
 ];
 
 const StepGender = () => {
   const navigate = useNavigate();
   const draft = getDraft();
   const [gender, setGender] = useState<Gender | null>(draft.gender ?? null);
-  const [age, setAge] = useState<string>(draft.age ? String(draft.age) : "");
+  const [age, setAge] = useState<number>(draft.age ?? 25);
 
-  const isValid = gender && age && Number(age) > 10 && Number(age) < 120;
+  const isValid = gender && age > 10 && age < 120;
 
   const handleNext = () => {
     if (!isValid) return;
-    setDraft({ gender: gender!, age: Number(age) });
+    setDraft({ gender: gender!, age });
     navigate("/app/onboarding/body");
   };
 
+  const bump = (delta: number) => setAge((a) => Math.max(11, Math.min(119, a + delta)));
+
   return (
     <OnboardingLayout step={1} totalSteps={4}>
-      <div className="mb-6">
+      <div className="mb-8">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">About you</h2>
         <p className="text-muted-foreground mt-2 text-base">We need this to calculate your ideal daily intake.</p>
-        <img
-          src={previewGender}
-          alt="Profile preview"
-          loading="lazy"
-          width={512}
-          height={512}
-          className="mt-5 mx-auto h-32 w-auto rounded-xl opacity-90"
-        />
       </div>
 
-      <div className="space-y-6 flex-1">
+      <div className="space-y-10 flex-1">
+        {/* Segmented gender control */}
         <div>
-          <h3 className="font-semibold text-foreground text-sm mb-2.5">Gender</h3>
-          <div className="flex gap-2">
-            {genders.map(({ id, label, icon }) => (
+          <h3 className="font-semibold text-foreground text-sm mb-3 uppercase tracking-widest text-muted-foreground">
+            Gender
+          </h3>
+          <div className="relative flex bg-secondary rounded-2xl p-1">
+            {gender && (
+              <motion.div
+                layoutId="gender-pill"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                className="absolute inset-y-1 gradient-glow rounded-xl shadow-glow"
+                style={{
+                  width: `calc(${100 / genders.length}% - 0.25rem)`,
+                  left: `calc(${genders.findIndex((g) => g.id === gender) * (100 / genders.length)}% + 0.125rem)`,
+                }}
+              />
+            )}
+            {genders.map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => setGender(id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all ${
-                  gender === id ? "border-primary bg-primary/5 text-foreground" : "border-border bg-card text-muted-foreground"
+                className={`relative z-10 flex-1 py-3 text-sm font-semibold transition-colors ${
+                  gender === id ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <span>{icon}</span> {label}
+                {label}
               </button>
             ))}
           </div>
         </div>
 
+        {/* Age picker */}
         <div>
-          <h3 className="font-semibold text-foreground text-sm mb-2.5">Age</h3>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="25"
-            className="w-full bg-card border border-border rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
+          <h3 className="font-semibold text-sm mb-4 uppercase tracking-widest text-muted-foreground">Age</h3>
+          <div className="flex items-center justify-center gap-8">
+            <button
+              onClick={() => bump(-1)}
+              className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:border-primary hover:text-primary transition-colors"
+              aria-label="Decrease age"
+            >
+              <Minus className="w-5 h-5" />
+            </button>
+            <motion.div
+              key={age}
+              initial={{ scale: 0.92, opacity: 0.6 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 380, damping: 22 }}
+              className="text-7xl font-black tabular-nums text-primary tracking-tight"
+              style={{ textShadow: "0 0 24px hsl(var(--primary) / 0.45)" }}
+            >
+              {age}
+            </motion.div>
+            <button
+              onClick={() => bump(1)}
+              className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:border-primary hover:text-primary transition-colors"
+              aria-label="Increase age"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-center text-xs text-muted-foreground mt-3">years old</p>
         </div>
       </div>
 

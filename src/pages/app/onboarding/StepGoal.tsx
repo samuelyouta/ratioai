@@ -5,7 +5,6 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight, Flame, Dumbbell, Scale, Zap } from "lucide-react";
 import { setDraft, getDraft } from "@/lib/onboardingDraft";
 import type { Goal } from "@/lib/profile";
-import previewGoal from "@/assets/preview-goal.png";
 
 const goals: { id: Goal; icon: typeof Flame; label: string; desc: string; color: string }[] = [
   { id: "lose", icon: Flame, label: "Lose Fat", desc: "Caloric deficit with smart tracking", color: "text-coral" },
@@ -29,39 +28,46 @@ const StepGoal = () => {
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">What's your goal?</h2>
         <p className="text-muted-foreground mt-2 text-base">We'll personalize everything around this.</p>
-        <img
-          src={previewGoal}
-          alt="Goal selection preview"
-          loading="lazy"
-          width={512}
-          height={512}
-          className="mt-5 mx-auto h-32 w-auto rounded-xl opacity-90"
-        />
       </div>
 
       <div className="space-y-3 flex-1">
-        {goals.map(({ id, icon: Icon, label, desc, color }, i) => (
-          <motion.button
-            key={id}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
-            onClick={() => setSelected(id)}
-            className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${
-              selected === id
-                ? "border-primary bg-primary/5 shadow-glow-sm"
-                : "border-border bg-card hover:border-muted-foreground/30"
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-secondary ${color}`}>
-              <Icon className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">{label}</h3>
-              <p className="text-xs text-muted-foreground">{desc}</p>
-            </div>
-          </motion.button>
-        ))}
+        {goals.map(({ id, icon: Icon, label, desc, color }, i) => {
+          const active = selected === id;
+          return (
+            <motion.button
+              key={id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: active ? 1.02 : 1,
+              }}
+              transition={{ delay: i * 0.06, type: "spring", stiffness: 320, damping: 22 }}
+              onClick={() => setSelected(id)}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-colors ${
+                active
+                  ? "border-primary bg-primary/[0.07]"
+                  : "border-border bg-card hover:border-muted-foreground/30"
+              }`}
+              style={
+                active
+                  ? {
+                      boxShadow:
+                        "0 0 0 1px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.25), inset 0 0 20px hsl(var(--primary) / 0.08)",
+                    }
+                  : undefined
+              }
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-secondary ${color}`}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">{label}</h3>
+                <p className="text-xs text-muted-foreground">{desc}</p>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
 
       <button
