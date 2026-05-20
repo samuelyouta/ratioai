@@ -25,7 +25,7 @@ const StepBody = () => {
     navigate("/app/onboarding/activity");
   };
 
-  const renderToggle = <T extends string>(value: T, options: readonly T[], onChange: (v: T) => void) => (
+  const renderToggle = (value: string, options: readonly string[], onChange: (v: string) => void) => (
     <div className="flex bg-secondary rounded-lg p-0.5">
       {options.map((o) => (
         <button
@@ -106,7 +106,7 @@ const StepBody = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">Height</h3>
-            {renderToggle(heightUnit, ["cm", "in"] as const, setHeightUnit)}
+            {renderToggle(heightUnit, ["cm", "in"], (v) => setHeightUnit(v as HeightUnit))}
           </div>
           <ScaleSlider
             value={heightCm}
@@ -121,7 +121,7 @@ const StepBody = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">Weight</h3>
-            {renderToggle(weightUnit, ["kg", "lbs"] as const, setWeightUnit)}
+            {renderToggle(weightUnit, ["kg", "lbs"], (v) => setWeightUnit(v as WeightUnit))}
           </div>
           <ScaleSlider
             value={weightKg}
