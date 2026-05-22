@@ -9,6 +9,8 @@ import { useHardwareBack } from "@/hooks/useHardwareBack";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
 import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import RequireOnboarding from "./components/RequireOnboarding";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
@@ -37,6 +39,8 @@ const AppRoutes = () => {
       {/* Waitlist (pre-launch landing) */}
       <Route path="/" element={<Waitlist />} />
       <Route path="/waitlist" element={<Waitlist />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
 
       {/* App entry — redirects into onboarding or today */}
       <Route path="/app" element={<Navigate to="/app/today" replace />} />
