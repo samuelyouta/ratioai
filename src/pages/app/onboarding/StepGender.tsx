@@ -17,6 +17,7 @@ const StepGender = () => {
   const draft = getDraft();
   const [gender, setGender] = useState<Gender | null>(draft.gender ?? null);
   const [age, setAge] = useState<number>(draft.age ?? 25);
+  const [ageInput, setAgeInput] = useState<string>(String(draft.age ?? 25));
 
   const isValid = gender && age > 10 && age < 120;
 
@@ -26,7 +27,30 @@ const StepGender = () => {
     navigate("/app/onboarding/body");
   };
 
-  const bump = (delta: number) => setAge((a) => Math.max(11, Math.min(119, a + delta)));
+  const bump = (delta: number) => {
+    const next = Math.max(11, Math.min(119, age + delta));
+    setAge(next);
+    setAgeInput(String(next));
+  };
+
+  const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setAgeInput(raw);
+    if (raw === "") return;
+    const val = parseInt(raw, 10);
+    if (!isNaN(val)) {
+      const clamped = Math.max(11, Math.min(119, val));
+      setAge(clamped);
+    }
+  };
+
+  const handleAgeBlur = () => {
+    if (ageInput === "" || isNaN(parseInt(ageInput, 10))) {
+      setAgeInput(String(age));
+    } else {
+      setAgeInput(String(age));
+    }
+  };
 
   return (
     <OnboardingLayout step={1} totalSteps={4}>
@@ -83,10 +107,17 @@ const StepGender = () => {
               initial={{ scale: 0.92, opacity: 0.6 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 380, damping: 22 }}
-              className="text-7xl font-black tabular-nums text-primary tracking-tight"
-              style={{ textShadow: "0 0 24px hsl(var(--primary) / 0.45)" }}
             >
-              {age}
+              <input
+                type="number"
+                value={ageInput}
+                min={11}
+                max={119}
+                onChange={handleAgeChange}
+                onBlur={handleAgeBlur}
+                className="text-7xl font-black tabular-nums text-primary tracking-tight bg-transparent border-none outline-none text-center w-[200px] focus:ring-0 p-0"
+                style={{ textShadow: "0 0 24px hsl(var(--primary) / 0.45)" }}
+              />
             </motion.div>
             <button
               onClick={() => bump(1)}
