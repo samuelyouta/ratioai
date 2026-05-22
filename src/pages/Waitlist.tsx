@@ -263,6 +263,16 @@ const Waitlist = () => {
         >
           Open the RatioAi preview →
         </a>
+
+        <div className="flex items-center justify-center gap-2 pt-2 pb-2">
+          <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+            Privacy
+          </a>
+          <span className="text-muted-foreground/30 text-[11px]">·</span>
+          <a href="/terms" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+            Terms
+          </a>
+        </div>
       </motion.div>
 
 

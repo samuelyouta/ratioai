@@ -37,6 +37,16 @@ const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps)
       >
         {children}
       </motion.div>
+
+      <div className="px-6 pb-4 flex items-center justify-center gap-2">
+        <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+          Privacy
+        </a>
+        <span className="text-muted-foreground/30 text-[11px]">·</span>
+        <a href="/terms" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+          Terms
+        </a>
+      </div>
     </div>
   );
 };
