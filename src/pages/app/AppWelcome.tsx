@@ -47,6 +47,16 @@ const AppWelcome = () => {
         </motion.button>
 
         <p className="text-xs text-muted-foreground mt-4">Free · No credit card · 2 min setup</p>
+
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+            Privacy
+          </a>
+          <span className="text-muted-foreground/30 text-[11px]">·</span>
+          <a href="/terms" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+            Terms
+          </a>
+        </div>
       </motion.div>
     </div>
   );
