@@ -83,10 +83,20 @@ const StepGender = () => {
               initial={{ scale: 0.92, opacity: 0.6 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 380, damping: 22 }}
-              className="text-7xl font-black tabular-nums text-primary tracking-tight"
-              style={{ textShadow: "0 0 24px hsl(var(--primary) / 0.45)" }}
             >
-              {age}
+              <input
+                type="number"
+                value={age}
+                min={11}
+                max={119}
+                onChange={(e) => {
+                  const val = e.target.value === "" ? "" : parseInt(e.target.value, 10);
+                  if (val === "") return;
+                  if (!isNaN(val)) setAge(Math.max(11, Math.min(119, val)));
+                }}
+                className="text-7xl font-black tabular-nums text-primary tracking-tight bg-transparent border-none outline-none text-center w-[200px] focus:ring-0 p-0"
+                style={{ textShadow: "0 0 24px hsl(var(--primary) / 0.45)" }}
+              />
             </motion.div>
             <button
               onClick={() => bump(1)}
