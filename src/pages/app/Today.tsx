@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import FlameBurst from "@/components/app/FlameBurst";
 import LevelUpModal from "@/components/app/LevelUpModal";
 import RecentMeals from "@/components/app/RecentMeals";
+import MetabolicStreakTracker from "@/components/app/MetabolicStreakTracker";
 import { getProfile, getTodayMeals, getTodayTotals } from "@/lib/profile";
 import {
   checkLevelUp,
@@ -138,6 +139,11 @@ const Today = () => {
       </div>
 
       <LevelUpModal reward={reward} onClose={() => setReward(null)} />
+
+      {/* Metabolic Streak Tracker — calendar of consecutive successful days */}
+      <div className="px-6 mb-6">
+        <MetabolicStreakTracker days={28} />
+      </div>
 
       {/* Repeat / recent meals — one-tap re-log */}
       <div className="px-6 mb-6">

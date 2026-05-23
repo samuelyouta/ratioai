@@ -3,33 +3,46 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const STEPS = [
-  "Analyzing metabolic profile...",
-  "Calculating protein satiety curve...",
-  "Building your custom RatioAi profile...",
+  "Parsing biological framework...",
+  "Calibrating protein satiety index...",
+  "Optimizing computer-vision volume models...",
 ];
+
+const STEP_MS = 800;
+const TOTAL_MS = 2500;
 
 const Analyzing = () => {
   const navigate = useNavigate();
   const [i, setI] = useState(0);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    const t1 = setInterval(() => setI((p) => Math.min(p + 1, STEPS.length - 1)), 800);
-    const t2 = setTimeout(() => navigate("/app/today", { replace: true }), 3000);
+    const t1 = setInterval(
+      () => setI((p) => Math.min(p + 1, STEPS.length - 1)),
+      STEP_MS,
+    );
+    const tLeave = setTimeout(() => setLeaving(true), TOTAL_MS - 350);
+    const tNav = setTimeout(() => navigate("/app/today", { replace: true }), TOTAL_MS);
     return () => {
       clearInterval(t1);
-      clearTimeout(t2);
+      clearTimeout(tLeave);
+      clearTimeout(tNav);
     };
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top progress line — fully filled for final stage */}
+    <motion.div
+      animate={{ x: leaving ? "-100%" : "0%", opacity: leaving ? 0 : 1 }}
+      transition={{ duration: 0.35, ease: "easeIn" }}
+      className="min-h-screen bg-background flex flex-col"
+    >
+      {/* Top progress line — fully filled by end */}
       <div className="h-1 w-full bg-muted">
         <motion.div
           className="h-full gradient-glow"
           initial={{ width: "0%" }}
           animate={{ width: "100%" }}
-          transition={{ duration: 2.8, ease: "easeOut" }}
+          transition={{ duration: TOTAL_MS / 1000, ease: "easeOut" }}
         />
       </div>
 
@@ -44,14 +57,19 @@ const Analyzing = () => {
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: "conic-gradient(from 0deg, transparent 0deg, hsl(var(--primary) / 0.5) 60deg, transparent 90deg)",
-              animation: "spin 1.6s linear infinite",
+              background:
+                "conic-gradient(from 0deg, transparent 0deg, hsl(var(--primary) / 0.55) 60deg, transparent 90deg)",
+              animation: "spin 1.4s linear infinite",
             }}
           />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-3 h-3 rounded-full bg-primary shadow-glow" />
           </div>
         </div>
+
+        <p className="text-[10px] uppercase tracking-[0.25em] text-primary/80 mb-3">
+          AI Model Synthesis
+        </p>
 
         <div className="h-8 relative w-full max-w-sm text-center">
           <AnimatePresence mode="wait">
@@ -60,7 +78,7 @@ const Analyzing = () => {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.3 }}
               className="text-base text-muted-foreground tracking-wide"
             >
               {STEPS[i]}
@@ -68,7 +86,7 @@ const Analyzing = () => {
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
