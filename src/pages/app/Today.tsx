@@ -140,6 +140,11 @@ const Today = () => {
 
       <LevelUpModal reward={reward} onClose={() => setReward(null)} />
 
+      {/* Metabolic Streak Tracker — calendar of consecutive successful days */}
+      <div className="px-6 mb-6">
+        <MetabolicStreakTracker days={28} />
+      </div>
+
       {/* Repeat / recent meals — one-tap re-log */}
       <div className="px-6 mb-6">
         <RecentMeals limit={6} variant="row" />
