@@ -128,7 +128,8 @@ const Analyze = () => {
     saveMeal(meal);
     sessionStorage.removeItem(LAST_IMAGE_KEY);
     setSaved(true);
-    setTimeout(() => navigate("/app/today", { replace: true }), 1400);
+    const t = window.setTimeout(() => navigate("/app/today", { replace: true }), 3200);
+    setAutoNavTimer(t);
   };
 
   if (loading) {
