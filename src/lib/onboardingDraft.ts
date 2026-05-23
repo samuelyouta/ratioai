@@ -5,6 +5,7 @@ const KEY = "ratioai.onboarding.draft";
 
 export interface OnboardingDraft {
   goal?: Goal;
+  name?: string;
   gender?: Gender;
   age?: number;
   heightCm?: number;
