@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import OnboardingLayout from "@/components/OnboardingLayout";
-import { ArrowRight, Minus, Plus } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { getDraft, setDraft } from "@/lib/onboardingDraft";
+import NumberDial from "@/components/onboarding/NumberDial";
 import type { Gender } from "@/lib/profile";
 
 const genders: { id: Gender; label: string }[] = [
@@ -15,56 +16,43 @@ const genders: { id: Gender; label: string }[] = [
 const StepGender = () => {
   const navigate = useNavigate();
   const draft = getDraft();
+  const [name, setName] = useState<string>(draft.name ?? "");
   const [gender, setGender] = useState<Gender | null>(draft.gender ?? null);
   const [age, setAge] = useState<number>(draft.age ?? 25);
-  const [ageInput, setAgeInput] = useState<string>(String(draft.age ?? 25));
 
-  const isValid = gender && age > 10 && age < 120;
+  const isValid = !!gender && age > 10 && age < 120;
 
   const handleNext = () => {
     if (!isValid) return;
-    setDraft({ gender: gender!, age });
+    setDraft({ gender: gender!, age, name: name.trim() || undefined });
     navigate("/app/onboarding/body");
-  };
-
-  const bump = (delta: number) => {
-    const next = Math.max(11, Math.min(119, age + delta));
-    setAge(next);
-    setAgeInput(String(next));
-  };
-
-  const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    setAgeInput(raw);
-    if (raw === "") return;
-    const val = parseInt(raw, 10);
-    if (!isNaN(val)) {
-      const clamped = Math.max(11, Math.min(119, val));
-      setAge(clamped);
-    }
-  };
-
-  const handleAgeBlur = () => {
-    if (ageInput === "" || isNaN(parseInt(ageInput, 10))) {
-      setAgeInput(String(age));
-    } else {
-      setAgeInput(String(age));
-    }
   };
 
   return (
     <OnboardingLayout step={1} totalSteps={4}>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">About you</h2>
         <p className="text-muted-foreground mt-2 text-base">We need this to calculate your ideal daily intake.</p>
       </div>
 
-      <div className="space-y-10 flex-1">
+      <div className="space-y-7 flex-1">
+        {/* Name */}
+        <div>
+          <h3 className="font-semibold text-xs mb-3 uppercase tracking-widest text-muted-foreground">
+            Your name <span className="normal-case font-normal text-muted-foreground/60">(optional)</span>
+          </h3>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value.slice(0, 30))}
+            placeholder="e.g. Alex"
+            className="w-full bg-secondary border border-border rounded-2xl px-4 py-3.5 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-colors"
+          />
+        </div>
+
         {/* Segmented gender control */}
         <div>
-          <h3 className="font-semibold text-foreground text-sm mb-3 uppercase tracking-widest text-muted-foreground">
-            Gender
-          </h3>
+          <h3 className="font-semibold text-xs mb-3 uppercase tracking-widest text-muted-foreground">Gender</h3>
           <div className="relative flex bg-secondary rounded-2xl p-1">
             {gender && (
               <motion.div
@@ -91,43 +79,13 @@ const StepGender = () => {
           </div>
         </div>
 
-        {/* Age picker */}
+        {/* Age dial */}
         <div>
-          <h3 className="font-semibold text-sm mb-4 uppercase tracking-widest text-muted-foreground">Age</h3>
-          <div className="flex items-center justify-center gap-8">
-            <button
-              onClick={() => bump(-1)}
-              className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:border-primary hover:text-primary transition-colors"
-              aria-label="Decrease age"
-            >
-              <Minus className="w-5 h-5" />
-            </button>
-            <motion.div
-              key={age}
-              initial={{ scale: 0.92, opacity: 0.6 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 380, damping: 22 }}
-            >
-              <input
-                type="number"
-                value={ageInput}
-                min={11}
-                max={119}
-                onChange={handleAgeChange}
-                onBlur={handleAgeBlur}
-                className="text-7xl font-black tabular-nums text-primary tracking-tight bg-transparent border-none outline-none text-center w-[200px] focus:ring-0 p-0"
-                style={{ textShadow: "0 0 24px hsl(var(--primary) / 0.45)" }}
-              />
-            </motion.div>
-            <button
-              onClick={() => bump(1)}
-              className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:border-primary hover:text-primary transition-colors"
-              aria-label="Increase age"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-          <p className="text-center text-xs text-muted-foreground mt-3">years old</p>
+          <h3 className="font-semibold text-xs mb-2 uppercase tracking-widest text-muted-foreground">Age</h3>
+          <NumberDial value={age} min={13} max={99} onChange={setAge} unitLabel="years" />
+          <p className="text-center text-[11px] text-muted-foreground/70 mt-3">
+            Swipe the dial or tap a number
+          </p>
         </div>
       </div>
 
