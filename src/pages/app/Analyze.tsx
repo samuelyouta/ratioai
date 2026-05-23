@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Minus, Plus, Share2 } from "lucide-react";
 import { saveMeal, type Meal } from "@/lib/profile";
 import { invokeEdgeFunction } from "@/lib/edgeFunction";
 import { sanitizeMealIcon } from "@/lib/mealIcon";
 import PortionGuideOverlay from "@/components/app/PortionGuideOverlay";
+import ShareRecipeCard from "@/components/app/ShareRecipeCard";
 
 interface AnalyzedItem {
   name: string;
