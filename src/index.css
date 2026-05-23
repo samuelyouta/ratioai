@@ -102,6 +102,14 @@
   .safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 16px);
   }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Unlockable themes — toggled via <html class="theme-*"> */
