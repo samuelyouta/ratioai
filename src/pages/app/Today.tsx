@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import FlameBurst from "@/components/app/FlameBurst";
 import LevelUpModal from "@/components/app/LevelUpModal";
 import RecentMeals from "@/components/app/RecentMeals";
+import MetabolicStreakTracker from "@/components/app/MetabolicStreakTracker";
 import { getProfile, getTodayMeals, getTodayTotals } from "@/lib/profile";
 import {
   checkLevelUp,
