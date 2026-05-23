@@ -174,7 +174,7 @@ const Analyze = () => {
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 200 }}
-          className="text-center"
+          className="text-center w-full max-w-sm"
         >
           <motion.div
             initial={{ scale: 0 }}
@@ -184,7 +184,38 @@ const Analyze = () => {
           />
           <h2 className="text-2xl font-bold text-foreground mb-2">Meal logged</h2>
           <p className="text-muted-foreground text-sm">{totalCalories} calories added to your day</p>
+
+          <div className="mt-7 flex flex-col gap-2">
+            <button
+              onClick={() => {
+                if (autoNavTimer) window.clearTimeout(autoNavTimer);
+                setShareOpen(true);
+              }}
+              className="w-full bg-card border border-primary/40 rounded-2xl py-3.5 text-sm font-semibold text-primary flex items-center justify-center gap-2 transition-colors hover:bg-primary/10"
+            >
+              <Share2 className="w-4 h-4" />
+              Share recipe card
+            </button>
+            <button
+              onClick={() => navigate("/app/today", { replace: true })}
+              className="text-xs text-muted-foreground py-2"
+            >
+              Continue to home
+            </button>
+          </div>
         </motion.div>
+
+        <ShareRecipeCard
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          title={result?.title ?? "Meal"}
+          icon={result ? sanitizeMealIcon(result.icon) : undefined}
+          imageDataUrl={imageUrl}
+          calories={totalCalories}
+          protein={Math.round(totals.protein)}
+          carbs={Math.round(totals.carbs)}
+          fat={totalFat}
+        />
       </div>
     );
   }
