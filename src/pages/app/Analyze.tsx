@@ -48,6 +48,8 @@ const Analyze = () => {
   const [acceptHidden, setAcceptHidden] = useState(true);
   const [saved, setSaved] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [autoNavTimer, setAutoNavTimer] = useState<number | null>(null);
 
   useEffect(() => {
     const dataUrl = sessionStorage.getItem(LAST_IMAGE_KEY);
