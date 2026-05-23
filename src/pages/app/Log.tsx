@@ -84,26 +84,38 @@ const Log = () => {
             transition={{ delay: 0.3 }}
             className="absolute inset-0 bg-gradient-to-b from-muted/50 to-card flex items-center justify-center"
           >
-            <div className="w-64 h-64 border-2 border-primary/40 rounded-3xl relative">
-              <motion.div
-                animate={{ opacity: [0.3, 0.7, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 flex items-center justify-center"
-              >
-                <p className="text-sm text-primary font-medium">Place food here</p>
-              </motion.div>
-            </div>
+            <p className="text-sm text-primary font-medium tracking-wide">Place food in frame</p>
           </motion.div>
         )}
 
-        {scanning && (
-          <motion.div
-            initial={{ y: "-100%" }}
-            animate={{ y: "100%" }}
-            transition={{ duration: 1.2, ease: "easeInOut", repeat: Infinity }}
-            className="absolute left-0 right-0 h-12 bg-gradient-to-b from-transparent via-primary/40 to-transparent"
-          />
-        )}
+        {/* Thin bounding-box viewfinder with corner brackets */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="relative w-64 h-64">
+            <div className="absolute inset-0 border border-primary/30 rounded-2xl" />
+            {[
+              "top-0 left-0 border-t-2 border-l-2 rounded-tl-2xl",
+              "top-0 right-0 border-t-2 border-r-2 rounded-tr-2xl",
+              "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-2xl",
+              "bottom-0 right-0 border-b-2 border-r-2 rounded-br-2xl",
+            ].map((pos) => (
+              <div
+                key={pos}
+                className={`absolute w-6 h-6 border-primary ${pos}`}
+                style={{ boxShadow: "0 0 10px hsl(var(--primary) / 0.5)" }}
+              />
+            ))}
+            {scanning && (
+              <motion.div
+                initial={{ top: 0, opacity: 0.9 }}
+                animate={{ top: "100%", opacity: 1 }}
+                transition={{ duration: 1.2, ease: "easeInOut", repeat: Infinity }}
+                className="absolute left-0 right-0 h-[2px] bg-primary"
+                style={{ boxShadow: "0 0 16px hsl(var(--primary)), 0 0 32px hsl(var(--primary) / 0.6)" }}
+              />
+            )}
+          </div>
+        </div>
+
 
         <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex items-center justify-between z-10">
           <button
