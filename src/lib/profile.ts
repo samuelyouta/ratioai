@@ -7,6 +7,7 @@ export type Goal = "lose" | "muscle" | "maintain" | "endurance";
 export type Unit = "metric" | "imperial";
 
 export interface Profile {
+  name?: string;
   gender: Gender;
   age: number;
   heightCm: number;

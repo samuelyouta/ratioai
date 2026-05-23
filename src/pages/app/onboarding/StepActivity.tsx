@@ -48,6 +48,7 @@ const StepActivity = () => {
       goal: full.goal,
     });
     saveProfile({
+      name: full.name,
       gender: full.gender,
       age: full.age,
       heightCm: full.heightCm,
