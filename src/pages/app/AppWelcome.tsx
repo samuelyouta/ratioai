@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.jpg";
+import AuthOptions from "@/components/auth/AuthOptions";
 
 const AppWelcome = () => {
   const navigate = useNavigate();
@@ -45,6 +46,15 @@ const AppWelcome = () => {
         >
           Get Started <ArrowRight className="w-5 h-5" />
         </motion.button>
+
+        <div className="w-full max-w-xs mt-5">
+          <div className="flex items-center gap-3 py-1 mb-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">or sign in</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <AuthOptions redirectPath="/app" compact />
+        </div>
 
         <p className="text-xs text-muted-foreground mt-4">Free · No credit card · 2 min setup</p>
 
