@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles }
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
 import NativeFeaturesPanel from "@/components/NativeFeaturesPanel";
+import AuthOptions from "@/components/auth/AuthOptions";
 
 import appPreview1 from "@/assets/app-preview-1.png";
 import appPreview2 from "@/assets/app-preview-2.png";
