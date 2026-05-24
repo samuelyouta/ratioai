@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles }
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
 import NativeFeaturesPanel from "@/components/NativeFeaturesPanel";
+import AuthOptions from "@/components/auth/AuthOptions";
 
 import appPreview1 from "@/assets/app-preview-1.png";
 import appPreview2 from "@/assets/app-preview-2.png";
@@ -130,40 +131,50 @@ const Waitlist = () => {
             <p className="text-muted-foreground text-xs">See you inside soon. 🚀</p>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} className="w-full space-y-3 mb-10">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (status === "error") setStatus("idle");
-              }}
-              className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              maxLength={255}
-              required
-            />
-            {status === "error" && (
-              <p className="text-destructive text-xs">{errorMsg}</p>
-            )}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              type="submit"
-              disabled={status === "loading"}
-              className="gradient-glow text-primary-foreground font-semibold text-sm px-6 py-3.5 rounded-xl shadow-glow flex items-center gap-2 w-full justify-center disabled:opacity-60"
-            >
-              {status === "loading" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  Join Waitlist <ArrowRight className="w-4 h-4" />
-                </>
+          <div className="w-full space-y-4 mb-10">
+            <AuthOptions redirectPath="/app" />
+
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">or join waitlist</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            <form onSubmit={handleSubmit} className="w-full space-y-3">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (status === "error") setStatus("idle");
+                }}
+                className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                maxLength={255}
+                required
+              />
+              {status === "error" && (
+                <p className="text-destructive text-xs">{errorMsg}</p>
               )}
-            </motion.button>
-            <p className="text-[11px] text-muted-foreground text-center">
-              No spam. Unsubscribe anytime.
-            </p>
-          </form>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                type="submit"
+                disabled={status === "loading"}
+                className="gradient-glow text-primary-foreground font-semibold text-sm px-6 py-3.5 rounded-xl shadow-glow flex items-center gap-2 w-full justify-center disabled:opacity-60"
+              >
+                {status === "loading" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    Join Waitlist <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </motion.button>
+              <p className="text-[11px] text-muted-foreground text-center">
+                No spam. Unsubscribe anytime.
+              </p>
+            </form>
+          </div>
         )}
       </motion.div>
 

@@ -20,11 +20,11 @@ const StepGoal = () => {
   const handleNext = () => {
     if (!selected) return;
     setDraft({ goal: selected });
-    navigate("/app/onboarding/gender");
+    navigate("/app/onboarding/name");
   };
 
   return (
-    <OnboardingLayout step={0} totalSteps={4}>
+    <OnboardingLayout step={0} totalSteps={8}>
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">What's your goal?</h2>
         <p className="text-muted-foreground mt-2 text-base">We'll personalize everything around this.</p>

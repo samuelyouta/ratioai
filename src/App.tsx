@@ -14,8 +14,12 @@ import Terms from "./pages/Terms";
 import RequireOnboarding from "./components/RequireOnboarding";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
+import StepName from "./pages/app/onboarding/StepName";
 import StepGender from "./pages/app/onboarding/StepGender";
+import StepDob from "./pages/app/onboarding/StepDob";
 import StepBody from "./pages/app/onboarding/StepBody";
+import StepSource from "./pages/app/onboarding/StepSource";
+import StepBlocker from "./pages/app/onboarding/StepBlocker";
 import StepActivity from "./pages/app/onboarding/StepActivity";
 import Analyzing from "./pages/app/onboarding/Analyzing";
 import Today from "./pages/app/Today";
@@ -48,9 +52,13 @@ const AppRoutes = () => {
 
       {/* Onboarding (no gate) */}
       <Route path="/app/onboarding/goal" element={<StepGoal />} />
+      <Route path="/app/onboarding/name" element={<StepName />} />
       <Route path="/app/onboarding/gender" element={<StepGender />} />
+      <Route path="/app/onboarding/dob" element={<StepDob />} />
       <Route path="/app/onboarding/body" element={<StepBody />} />
       <Route path="/app/onboarding/activity" element={<StepActivity />} />
+      <Route path="/app/onboarding/source" element={<StepSource />} />
+      <Route path="/app/onboarding/blocker" element={<StepBlocker />} />
       <Route path="/app/onboarding/analyzing" element={<Analyzing />} />
 
       {/* Gated app routes */}
