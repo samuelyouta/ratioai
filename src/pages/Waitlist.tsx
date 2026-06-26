@@ -6,7 +6,7 @@ import { ArrowRight, CheckCircle, Loader2, Camera, Brain, TrendingUp, Sparkles }
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpg";
 import NativeFeaturesPanel from "@/components/NativeFeaturesPanel";
-import AuthOptions from "@/components/auth/AuthOptions";
+
 
 import appPreview1 from "@/assets/app-preview-1.png";
 import appPreview2 from "@/assets/app-preview-2.png";
@@ -132,13 +132,7 @@ const Waitlist = () => {
           </motion.div>
         ) : (
           <div className="w-full space-y-4 mb-10">
-            <AuthOptions redirectPath="/app" />
 
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">or join waitlist</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
 
             <form onSubmit={handleSubmit} className="w-full space-y-3">
               <input
