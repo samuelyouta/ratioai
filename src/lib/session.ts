@@ -47,19 +47,21 @@ export async function recordVisit() {
 
       // Restore data on this device if local is empty (e.g. cache cleared).
       if (!getProfile() && existing.profile) {
-        saveProfile(existing.profile as Profile);
+        saveProfile(existing.profile as unknown as Profile);
       }
       if (getMeals().length === 0 && Array.isArray(existing.meals)) {
         localStorage.setItem(MEALS_KEY, JSON.stringify(existing.meals));
       }
     } else {
-      await supabase.from("app_sessions").insert({
-        client_id,
-        platform: getPlatform(),
-        user_agent: navigator.userAgent,
-        profile: getProfile() as unknown as object | null,
-        meals: getMeals() as unknown as object,
-      });
+      await supabase.from("app_sessions").insert([
+        {
+          client_id,
+          platform: getPlatform(),
+          user_agent: navigator.userAgent,
+          profile: (getProfile() ?? null) as unknown as never,
+          meals: getMeals() as unknown as never,
+        },
+      ]);
     }
   } catch (e) {
     console.warn("recordVisit failed", e);
@@ -73,8 +75,8 @@ export async function syncSession() {
     await supabase
       .from("app_sessions")
       .update({
-        profile: getProfile() as unknown as object | null,
-        meals: getMeals() as unknown as object,
+        profile: (getProfile() ?? null) as unknown as never,
+        meals: getMeals() as unknown as never,
         last_seen_at: new Date().toISOString(),
       })
       .eq("client_id", client_id);
