@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { startReminderScheduler, ensureNotificationPermission } from "@/lib/reminders";
 import { useHardwareBack } from "@/hooks/useHardwareBack";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
+import { recordVisit, startSessionAutoSync } from "@/lib/session";
 import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
@@ -79,12 +80,15 @@ const AppRoutes = () => {
 
 const App = () => {
   useEffect(() => {
-    // Best-effort: ask once for browser notification permission, then start
-    // the in-app scheduler that checks for the 2 PM lunch reminder.
     ensureNotificationPermission();
     applyTheme(getActiveTheme());
+    recordVisit();
+    const stopSync = startSessionAutoSync();
     const stop = startReminderScheduler();
-    return stop;
+    return () => {
+      stopSync();
+      stop();
+    };
   }, []);
 
   return (

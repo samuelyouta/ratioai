@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_sessions: {
+        Row: {
+          client_id: string
+          created_at: string
+          email: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          meals: Json | null
+          platform: string | null
+          profile: Json | null
+          updated_at: string
+          user_agent: string | null
+          visit_count: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          meals?: Json | null
+          platform?: string | null
+          profile?: Json | null
+          updated_at?: string
+          user_agent?: string | null
+          visit_count?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          meals?: Json | null
+          platform?: string | null
+          profile?: Json | null
+          updated_at?: string
+          user_agent?: string | null
+          visit_count?: number
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string
