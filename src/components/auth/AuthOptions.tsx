@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Mail, CheckCircle } from "lucide-react";
-import { lovable } from "@/integrations/lovable/index";
+import { signInWithOAuth, getEmailRedirectUrl } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthOptionsProps {
@@ -13,8 +13,8 @@ interface AuthOptionsProps {
 
 /**
  * Reusable Google + email sign-in card.
- * - Google uses Lovable managed OAuth.
- * - Email uses Supabase magic link (passwordless) — fast for first-time users.
+ * - Google uses Supabase OAuth.
+ * - Email uses Supabase magic link (passwordless).
  */
 const AuthOptions = ({ redirectPath = "/app", compact }: AuthOptionsProps) => {
   const [email, setEmail] = useState("");
@@ -26,15 +26,11 @@ const AuthOptions = ({ redirectPath = "/app", compact }: AuthOptionsProps) => {
     setErr(null);
     setBusy("google");
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + redirectPath,
-      });
-      if (result.error) {
+      const { error } = await signInWithOAuth("google", redirectPath);
+      if (error) {
         setErr("Google sign-in failed. Try again.");
         setBusy(null);
-        return;
       }
-      // result.redirected → browser is navigating away; nothing else to do.
     } catch (e) {
       console.error(e);
       setErr("Google sign-in failed. Try again.");
@@ -53,7 +49,7 @@ const AuthOptions = ({ redirectPath = "/app", compact }: AuthOptionsProps) => {
     setBusy("email");
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { emailRedirectTo: window.location.origin + redirectPath },
+      options: { emailRedirectTo: getEmailRedirectUrl(redirectPath) },
     });
     setBusy(null);
     if (error) {

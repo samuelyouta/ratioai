@@ -15,6 +15,7 @@ import Terms from "./pages/Terms";
 import RequireOnboarding from "./components/RequireOnboarding";
 import RequireAuth from "./components/RequireAuth";
 import SignIn from "./pages/app/SignIn";
+import AuthCallback from "./pages/app/AuthCallback";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
 import StepName from "./pages/app/onboarding/StepName";
@@ -66,6 +67,7 @@ const AppRoutes = () => {
 
       {/* Sign-in (after onboarding, before app) */}
       <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
+      <Route path="/app/auth/callback" element={<RequireOnboarding><AuthCallback /></RequireOnboarding>} />
 
       {/* Gated app routes — must be onboarded AND signed in */}
       <Route path="/app/today" element={<RequireOnboarding><RequireAuth><Today /></RequireAuth></RequireOnboarding>} />
