@@ -59,6 +59,129 @@ export type Database = {
         }
         Relationships: []
       }
+      meals: {
+        Row: {
+          calories: number | null
+          carbs: number | null
+          client_id: string | null
+          created_at: string
+          data: Json | null
+          fat: number | null
+          icon: string | null
+          id: string
+          image_url: string | null
+          logged_at: string
+          name: string | null
+          protein: number | null
+          source: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calories?: number | null
+          carbs?: number | null
+          client_id?: string | null
+          created_at?: string
+          data?: Json | null
+          fat?: number | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          logged_at?: string
+          name?: string | null
+          protein?: number | null
+          source?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calories?: number | null
+          carbs?: number | null
+          client_id?: string | null
+          created_at?: string
+          data?: Json | null
+          fat?: number | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          logged_at?: string
+          name?: string | null
+          protein?: number | null
+          source?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          activity: string | null
+          age: number | null
+          blocker: string | null
+          calorie_target: number | null
+          carbs_target: number | null
+          created_at: string
+          data: Json | null
+          dob_day: number | null
+          dob_month: number | null
+          dob_year: number | null
+          fat_target: number | null
+          gender: string | null
+          goal: string | null
+          height_cm: number | null
+          id: string
+          name: string | null
+          protein_target: number | null
+          source: string | null
+          updated_at: string
+          weight_kg: number | null
+        }
+        Insert: {
+          activity?: string | null
+          age?: number | null
+          blocker?: string | null
+          calorie_target?: number | null
+          carbs_target?: number | null
+          created_at?: string
+          data?: Json | null
+          dob_day?: number | null
+          dob_month?: number | null
+          dob_year?: number | null
+          fat_target?: number | null
+          gender?: string | null
+          goal?: string | null
+          height_cm?: number | null
+          id: string
+          name?: string | null
+          protein_target?: number | null
+          source?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          activity?: string | null
+          age?: number | null
+          blocker?: string | null
+          calorie_target?: number | null
+          carbs_target?: number | null
+          created_at?: string
+          data?: Json | null
+          dob_day?: number | null
+          dob_month?: number | null
+          dob_year?: number | null
+          fat_target?: number | null
+          gender?: string | null
+          goal?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string | null
+          protein_target?: number | null
+          source?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string

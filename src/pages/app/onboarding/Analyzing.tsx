@@ -22,7 +22,7 @@ const Analyzing = () => {
       STEP_MS,
     );
     const tLeave = setTimeout(() => setLeaving(true), TOTAL_MS - 350);
-    const tNav = setTimeout(() => navigate("/app/today", { replace: true }), TOTAL_MS);
+    const tNav = setTimeout(() => navigate("/app/signin", { replace: true }), TOTAL_MS);
     return () => {
       clearInterval(t1);
       clearTimeout(tLeave);

@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import RequireOnboarding from "./components/RequireOnboarding";
+import RequireAuth from "./components/RequireAuth";
+import SignIn from "./pages/app/SignIn";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
 import StepName from "./pages/app/onboarding/StepName";
@@ -62,16 +64,19 @@ const AppRoutes = () => {
       <Route path="/app/onboarding/blocker" element={<StepBlocker />} />
       <Route path="/app/onboarding/analyzing" element={<Analyzing />} />
 
-      {/* Gated app routes */}
-      <Route path="/app/today" element={<RequireOnboarding><Today /></RequireOnboarding>} />
-      <Route path="/app/insights" element={<RequireOnboarding><Insights /></RequireOnboarding>} />
-      <Route path="/app/profile" element={<RequireOnboarding><Profile /></RequireOnboarding>} />
-      <Route path="/app/log" element={<RequireOnboarding><Log /></RequireOnboarding>} />
-      <Route path="/app/analyze" element={<RequireOnboarding><Analyze /></RequireOnboarding>} />
-      <Route path="/app/history" element={<RequireOnboarding><History /></RequireOnboarding>} />
-      <Route path="/app/history/:id" element={<RequireOnboarding><MealDetails /></RequireOnboarding>} />
-      <Route path="/app/manual" element={<RequireOnboarding><Manual /></RequireOnboarding>} />
-      <Route path="/app/describe" element={<RequireOnboarding><Describe /></RequireOnboarding>} />
+      {/* Sign-in (after onboarding, before app) */}
+      <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
+
+      {/* Gated app routes — must be onboarded AND signed in */}
+      <Route path="/app/today" element={<RequireOnboarding><RequireAuth><Today /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/insights" element={<RequireOnboarding><RequireAuth><Insights /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/profile" element={<RequireOnboarding><RequireAuth><Profile /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/log" element={<RequireOnboarding><RequireAuth><Log /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/analyze" element={<RequireOnboarding><RequireAuth><Analyze /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/history" element={<RequireOnboarding><RequireAuth><History /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/history/:id" element={<RequireOnboarding><RequireAuth><MealDetails /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/manual" element={<RequireOnboarding><RequireAuth><Manual /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/describe" element={<RequireOnboarding><RequireAuth><Describe /></RequireAuth></RequireOnboarding>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
