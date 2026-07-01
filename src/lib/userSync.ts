@@ -76,12 +76,11 @@ export async function syncUserData(userId: string) {
     const cloudProfile = rowToProfile(cloudProfileRow as Record<string, unknown> | null);
 
     if (localProfile) {
-      // Push local → cloud (user just finished onboarding on this device)
       await supabase
         .from("profiles")
-        .upsert({ id: userId, ...profileToRow(localProfile) }, { onConflict: "id" });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .upsert({ id: userId, ...profileToRow(localProfile) } as any, { onConflict: "id" });
     } else if (cloudProfile) {
-      // Pull cloud → local (returning user on a fresh device)
       saveProfile(cloudProfile);
     }
 
@@ -89,12 +88,12 @@ export async function syncUserData(userId: string) {
     const localMeals = getMeals();
     if (localMeals.length > 0) {
       const rows = localMeals.map((m) => mealToRow(m, userId));
-      // Chunk to avoid oversized payloads
       const chunkSize = 100;
       for (let i = 0; i < rows.length; i += chunkSize) {
         await supabase
           .from("meals")
-          .upsert(rows.slice(i, i + chunkSize), { onConflict: "user_id,client_id" });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .upsert(rows.slice(i, i + chunkSize) as any, { onConflict: "user_id,client_id" });
       }
     } else {
       const { data: cloudMeals } = await supabase
