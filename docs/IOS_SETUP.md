@@ -15,6 +15,16 @@ npx cap open ios
 3. **Capabilities** — enable Push Notifications and HealthKit if using those features.
 4. **In-App Purchases** — add the StoreKit capability for RevenueCat subscriptions.
 
+## RevenueCat (native iOS)
+
+RevenueCat is configured in **AppDelegate** on launch (Capacitor UIKit app — not SwiftUI `@main`):
+
+- API key: `ios/App/App/Info.plist` → `RevenueCatAPIKey`
+- Bootstrap: `ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift`
+- JS paywall: `@revenuecat/purchases-capacitor` via `src/lib/subscriptions.ts`
+
+Replace the test key with your production `appl_...` key before App Store release.
+
 ## Info.plist privacy strings
 
 Configured in `ios/App/App/Info.plist`:

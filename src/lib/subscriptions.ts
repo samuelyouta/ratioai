@@ -51,9 +51,20 @@ export async function configureRevenueCat(appUserId?: string): Promise<boolean> 
   if (!isNative()) return false;
   if (configured && !appUserId) return true;
 
+  const platform = Capacitor.getPlatform();
+
+  // iOS: native AppDelegate configures RevenueCat on launch (see Info.plist RevenueCatAPIKey).
+  if (platform === "ios") {
+    if (appUserId) {
+      await Purchases.logIn({ appUserID: appUserId });
+    }
+    configured = true;
+    return true;
+  }
+
   const apiKey = getApiKey();
   if (!apiKey) {
-    console.warn("RevenueCat API key missing for platform", Capacitor.getPlatform());
+    console.warn("RevenueCat API key missing for platform", platform);
     return false;
   }
 

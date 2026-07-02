@@ -36,6 +36,8 @@
 	<string>RatioAi reads steps and activity from Apple Health to improve your calorie targets.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>RatioAi may write activity summaries to Apple Health when you enable integrations.</string>
+	<key>RevenueCatAPIKey</key>
+	<string>test_mxJvcSoUMFnfohtMEiPrVwcJiVK</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
