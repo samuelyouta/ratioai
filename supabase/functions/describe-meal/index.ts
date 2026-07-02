@@ -1,11 +1,7 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { getUserFromRequest } from "../_shared/auth.ts";
+import { consumeRateLimit, getClientIp, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const SYSTEM_PROMPT = `You are RatioAi's text-based food estimator. The user describes a meal in natural language
 (e.g. "a big bowl of homemade lasagna and a side salad", "two eggs on toast with butter").
@@ -67,6 +63,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await getUserFromRequest(req);
+    const bucket = user ? `describe-meal:user:${user.id}` : `describe-meal:ip:${getClientIp(req)}`;
+    const limit = await consumeRateLimit(bucket, user ? 60 : 15, 3_600);
+    if (!limit.allowed) return rateLimitResponse(limit.retryAfterSeconds);
+
     const { description } = await req.json();
     if (!description || typeof description !== "string" || description.trim().length < 3) {
       return new Response(JSON.stringify({ error: "description required" }), {

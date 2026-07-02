@@ -11,6 +11,10 @@ const config: CapacitorConfig = {
   appId: "app.lovable.c9c7af010da54a22a51eb40ca37bcbd2",
   appName: "ratioai",
   webDir: "dist",
+  ios: {
+    contentInset: "automatic",
+    scheme: "RatioAi",
+  },
   ...(devServerUrl
     ? {
         server: {
