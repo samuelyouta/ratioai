@@ -55,7 +55,10 @@ const SignIn = () => {
     setBusy("email");
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { emailRedirectTo: getEmailRedirectUrl(from) },
+      options: {
+        emailRedirectTo: getEmailRedirectUrl(from),
+        shouldCreateUser: true,
+      },
     });
     setBusy(null);
     if (error) {

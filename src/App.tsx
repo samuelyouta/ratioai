@@ -14,6 +14,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import RequireOnboarding from "./components/RequireOnboarding";
 import RequireAuth from "./components/RequireAuth";
+import AuthSync from "./components/AuthSync";
 import SignIn from "./pages/app/SignIn";
 import AuthCallback from "./pages/app/AuthCallback";
 import AppWelcome from "./pages/app/AppWelcome";
@@ -104,6 +105,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
+          <AuthSync />
           <AppRoutes />
         </BrowserRouter>
       </TooltipProvider>

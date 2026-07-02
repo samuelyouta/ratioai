@@ -49,7 +49,10 @@ const AuthOptions = ({ redirectPath = "/app", compact }: AuthOptionsProps) => {
     setBusy("email");
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { emailRedirectTo: getEmailRedirectUrl(redirectPath) },
+      options: {
+        emailRedirectTo: getEmailRedirectUrl(redirectPath),
+        shouldCreateUser: true,
+      },
     });
     setBusy(null);
     if (error) {

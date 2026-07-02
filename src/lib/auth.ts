@@ -29,11 +29,21 @@ export function consumeAuthRedirect(fallback = "/app/today"): string {
 export async function signInWithOAuth(provider: OAuthProvider, redirectPath = "/app/today") {
   storeAuthRedirect(redirectPath);
 
+  const options: {
+    redirectTo: string;
+    queryParams?: Record<string, string>;
+    scopes?: string;
+  } = {
+    redirectTo: getAppUrl("/app/auth/callback"),
+  };
+
+  if (provider === "apple") {
+    options.scopes = "name email";
+  }
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: {
-      redirectTo: getAppUrl("/app/auth/callback"),
-    },
+    options,
   });
 
   return { error };
