@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { clearProfile, getProfile } from "@/lib/profile";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 const goalLabels: Record<string, string> = {
@@ -21,6 +22,7 @@ const activityLabels: Record<string, string> = {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { restore } = useSubscription();
   const profile = getProfile()!;
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -44,11 +46,17 @@ const Profile = () => {
     navigate("/app/welcome", { replace: true });
   };
 
-  const handleRestore = () => {
-    // No subscription provider connected yet — gracefully acknowledge.
-    toast.message("Restore Purchases", {
-      description: "No active purchases were found on this account.",
-    });
+  const handleRestore = async () => {
+    const ok = await restore();
+    if (ok) {
+      toast.success("Subscription restored", {
+        description: "Your RatioAi Pro access is active.",
+      });
+    } else {
+      toast.message("Restore Purchases", {
+        description: "No active purchases were found on this account.",
+      });
+    }
   };
 
   return (

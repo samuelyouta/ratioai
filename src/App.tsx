@@ -14,9 +14,12 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import RequireOnboarding from "./components/RequireOnboarding";
 import RequireAuth from "./components/RequireAuth";
+import RequireSubscription from "./components/RequireSubscription";
 import AuthSync from "./components/AuthSync";
+import { SubscriptionProvider } from "@/hooks/useSubscription";
 import SignIn from "./pages/app/SignIn";
 import AuthCallback from "./pages/app/AuthCallback";
+import Paywall from "./pages/app/Paywall";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
 import StepName from "./pages/app/onboarding/StepName";
@@ -66,20 +69,21 @@ const AppRoutes = () => {
       <Route path="/app/onboarding/blocker" element={<StepBlocker />} />
       <Route path="/app/onboarding/analyzing" element={<Analyzing />} />
 
-      {/* Sign-in (after onboarding, before app) */}
+      {/* Sign-in (after onboarding, before paywall) */}
       <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
       <Route path="/app/auth/callback" element={<RequireOnboarding><AuthCallback /></RequireOnboarding>} />
+      <Route path="/app/paywall" element={<RequireOnboarding><RequireAuth><Paywall /></RequireAuth></RequireOnboarding>} />
 
-      {/* Gated app routes — must be onboarded AND signed in */}
-      <Route path="/app/today" element={<RequireOnboarding><RequireAuth><Today /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/insights" element={<RequireOnboarding><RequireAuth><Insights /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/profile" element={<RequireOnboarding><RequireAuth><Profile /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/log" element={<RequireOnboarding><RequireAuth><Log /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/analyze" element={<RequireOnboarding><RequireAuth><Analyze /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/history" element={<RequireOnboarding><RequireAuth><History /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/history/:id" element={<RequireOnboarding><RequireAuth><MealDetails /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/manual" element={<RequireOnboarding><RequireAuth><Manual /></RequireAuth></RequireOnboarding>} />
-      <Route path="/app/describe" element={<RequireOnboarding><RequireAuth><Describe /></RequireAuth></RequireOnboarding>} />
+      {/* Gated app routes — onboarded, signed in, and subscribed */}
+      <Route path="/app/today" element={<RequireOnboarding><RequireAuth><RequireSubscription><Today /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/insights" element={<RequireOnboarding><RequireAuth><RequireSubscription><Insights /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/profile" element={<RequireOnboarding><RequireAuth><RequireSubscription><Profile /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/log" element={<RequireOnboarding><RequireAuth><RequireSubscription><Log /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/analyze" element={<RequireOnboarding><RequireAuth><RequireSubscription><Analyze /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/history" element={<RequireOnboarding><RequireAuth><RequireSubscription><History /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/history/:id" element={<RequireOnboarding><RequireAuth><RequireSubscription><MealDetails /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/manual" element={<RequireOnboarding><RequireAuth><RequireSubscription><Manual /></RequireSubscription></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/describe" element={<RequireOnboarding><RequireAuth><RequireSubscription><Describe /></RequireSubscription></RequireAuth></RequireOnboarding>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -105,8 +109,10 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
-          <AuthSync />
-          <AppRoutes />
+          <SubscriptionProvider>
+            <AuthSync />
+            <AppRoutes />
+          </SubscriptionProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
