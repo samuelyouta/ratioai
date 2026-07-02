@@ -12,7 +12,7 @@ Click **Generate new token**, copy it.
 
 ### 2. Get your database password
 
-Open: https://supabase.com/dashboard/project/uxreusxycozxpifaeeyq/settings/database
+Open: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/settings/database
 
 Copy the **Database password** (or reset it if unknown).
 
@@ -35,15 +35,15 @@ Click **New repository secret** and add:
 This runs:
 
 ```bash
-supabase link --project-ref uxreusxycozxpifaeeyq
+supabase link --project-ref myyjjtclthflfgxkgubr
 supabase db push
 supabase functions deploy delete-account analyze-meal describe-meal
 ```
 
 ## Verify
 
-- **Tables:** https://supabase.com/dashboard/project/uxreusxycozxpifaeeyq/editor → `edge_rate_limits`, `profiles`, `meals`
-- **Functions:** https://supabase.com/dashboard/project/uxreusxycozxpifaeeyq/functions
+- **Tables:** https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/editor → `edge_rate_limits`, `profiles`, `meals`
+- **Functions:** https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/functions
 
 ## Cursor Cloud Agent
 
