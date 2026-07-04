@@ -1,11 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { getUserFromRequest } from "../_shared/auth.ts";
+import { consumeRateLimit, getClientIp, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const SYSTEM_PROMPT = `You are RatioAi's vision-powered food analyst. The user sends a single photo of food.
 
@@ -76,6 +73,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await getUserFromRequest(req);
+    const bucket = user ? `analyze-meal:user:${user.id}` : `analyze-meal:ip:${getClientIp(req)}`;
+    const limit = await consumeRateLimit(bucket, user ? 40 : 10, 3_600);
+    if (!limit.allowed) return rateLimitResponse(limit.retryAfterSeconds);
+
     const { imageBase64 } = await req.json();
     if (!imageBase64 || typeof imageBase64 !== "string") {
       return new Response(JSON.stringify({ error: "imageBase64 required" }), {

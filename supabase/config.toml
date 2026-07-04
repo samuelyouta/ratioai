@@ -1,4 +1,4 @@
-project_id = "uxreusxycozxpifaeeyq"
+project_id = "myyjjtclthflfgxkgubr"
 
 [functions.send-nurture-emails]
 verify_jwt = false
@@ -13,4 +13,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.describe-meal]
+verify_jwt = false
+
+[functions.delete-account]
 verify_jwt = false

@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Mail, CheckCircle } from "lucide-react";
-import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
-import { syncUserData } from "@/lib/userSync";
+import { signInWithOAuth, getEmailRedirectUrl } from "@/lib/auth";
 
 /**
  * Sign-in gate shown after onboarding completes and before the paywall / app.
@@ -13,34 +12,31 @@ import { syncUserData } from "@/lib/userSync";
 const SignIn = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from || "/app/today";
+  const from = (location.state as { from?: string; error?: string } | null)?.from || "/app/today";
 
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<"apple" | "google" | "email" | null>(null);
   const [sent, setSent] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(
+    (location.state as { error?: string } | null)?.error ?? null,
+  );
 
-  const afterAuth = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) await syncUserData(data.user.id);
-    navigate(from, { replace: true });
-  };
+  useEffect(() => {
+    if ((location.state as { error?: string } | null)?.error) {
+      navigate(location.pathname, { replace: true, state: { from } });
+    }
+  }, [from, location.pathname, location.state, navigate]);
 
   const handleOAuth = async (provider: "google" | "apple") => {
     setErr(null);
     setBusy(provider);
     try {
-      const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin + "/app/today",
-      });
-      if (result.error) {
+      const { error } = await signInWithOAuth(provider, from);
+      if (error) {
         setErr(`${provider === "google" ? "Google" : "Apple"} sign-in failed. Try again.`);
         setBusy(null);
-        return;
       }
-      if (result.redirected) return; // browser navigating away
-      // Token flow — session already set
-      await afterAuth();
+      // On success the browser navigates away to the provider.
     } catch (e) {
       console.error(e);
       setErr("Sign-in failed. Try again.");
@@ -59,7 +55,10 @@ const SignIn = () => {
     setBusy("email");
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { emailRedirectTo: window.location.origin + "/app/today" },
+      options: {
+        emailRedirectTo: getEmailRedirectUrl(from),
+        shouldCreateUser: true,
+      },
     });
     setBusy(null);
     if (error) {

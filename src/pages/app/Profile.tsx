@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { clearProfile, getProfile } from "@/lib/profile";
+import { getProfile } from "@/lib/profile";
+import { deleteAccount } from "@/lib/account";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 const goalLabels: Record<string, string> = {
@@ -21,34 +23,44 @@ const activityLabels: Record<string, string> = {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { restore } = useSubscription();
   const profile = getProfile()!;
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const handleRedo = () => navigate("/app/onboarding/goal");
 
-  const handleConfirmDelete = () => {
-    // Wipe all on-device biological + macro + weight + meal data
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
     try {
-      clearProfile();
-      // Clear streak + draft + cached image for full account-style wipe
-      localStorage.removeItem("ratioai.streakState");
-      localStorage.removeItem("ratioai.onboarding.draft");
-      localStorage.removeItem("ratioai.theme");
-      sessionStorage.removeItem("ratioai.lastImage");
-    } catch {
-      /* ignore */
+      await deleteAccount();
+      setDeleteOpen(false);
+      toast.success("Account deleted", {
+        description: "Your account and cloud data have been permanently removed.",
+      });
+      navigate("/app/welcome", { replace: true });
+    } catch (e) {
+      console.error(e);
+      toast.error("Could not delete account", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setDeleting(false);
     }
-    setDeleteOpen(false);
-    toast.success("Account deleted", { description: "All your data has been wiped." });
-    navigate("/app/welcome", { replace: true });
   };
 
-  const handleRestore = () => {
-    // No subscription provider connected yet — gracefully acknowledge.
-    toast.message("Restore Purchases", {
-      description: "No active purchases were found on this account.",
-    });
+  const handleRestore = async () => {
+    const ok = await restore();
+    if (ok) {
+      toast.success("Subscription restored", {
+        description: "Your RatioAi Pro access is active.",
+      });
+    } else {
+      toast.message("Restore Purchases", {
+        description: "No active purchases were found on this account.",
+      });
+    }
   };
 
   return (
@@ -197,11 +209,11 @@ const Profile = () => {
                   Cancel
                 </button>
                 <button
-                  disabled={confirmText.trim().toUpperCase() !== "DELETE"}
+                  disabled={confirmText.trim().toUpperCase() !== "DELETE" || deleting}
                   onClick={handleConfirmDelete}
                   className="flex-1 bg-destructive text-destructive-foreground font-semibold text-sm py-3 rounded-xl disabled:opacity-40"
                 >
-                  Permanently delete
+                  {deleting ? "Deleting…" : "Permanently delete"}
                 </button>
               </div>
             </motion.div>

@@ -68,9 +68,16 @@ export async function recordVisit() {
   }
 }
 
-/** Push the latest local profile + meals snapshot to the cloud row. */
+/** Push the latest local profile + meals snapshot to the cloud. */
 export async function syncSession() {
   try {
+    const { data: auth } = await supabase.auth.getSession();
+    if (auth.session?.user) {
+      const { pushLocalChangesIfAuthenticated } = await import("@/lib/userSync");
+      await pushLocalChangesIfAuthenticated();
+      return;
+    }
+
     const client_id = getClientId();
     await supabase
       .from("app_sessions")

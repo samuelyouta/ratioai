@@ -1,6 +1,8 @@
 // LocalStorage-backed profile + meal log for RatioAi
 // All app state lives on-device per user request.
 
+import { notifyLocalDataChanged } from "@/lib/cloudSyncTrigger";
+
 export type Gender = "male" | "female" | "other";
 export type Activity = "sedentary" | "light" | "moderate" | "very";
 export type Goal = "lose" | "muscle" | "maintain" | "endurance";
@@ -64,6 +66,7 @@ export function getProfile(): Profile | null {
 
 export function saveProfile(p: Profile) {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  notifyLocalDataChanged();
 }
 
 export function clearProfile() {
@@ -128,6 +131,7 @@ export function saveMeal(meal: Meal) {
   const meals = getMeals();
   meals.push(meal);
   localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
+  notifyLocalDataChanged();
 }
 
 export function updateMeal(id: string, patch: Partial<Meal>) {
@@ -143,11 +147,14 @@ export function updateMeal(id: string, patch: Partial<Meal>) {
     return merged;
   });
   localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
+  notifyLocalDataChanged();
 }
 
 export function deleteMeal(id: string) {
   const meals = getMeals().filter((m) => m.id !== id);
   localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
+  notifyLocalDataChanged();
+  void import("@/lib/userSync").then(({ deleteMealFromCloud }) => deleteMealFromCloud(id));
 }
 
 export function getTodayMeals(): Meal[] {

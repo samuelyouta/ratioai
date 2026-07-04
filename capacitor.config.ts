@@ -1,16 +1,31 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from "@capacitor/cli";
+
+/**
+ * Production builds load bundled assets from `webDir` (no remote server).
+ * For live-reload dev against a local or preview URL, set CAPACITOR_DEV_SERVER:
+ *   CAPACITOR_DEV_SERVER=http://localhost:8080 npx cap run ios
+ */
+const devServerUrl = process.env.CAPACITOR_DEV_SERVER;
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.c9c7af010da54a22a51eb40ca37bcbd2',
-  appName: 'ratioai',
-  webDir: 'dist',
-  server: {
-    url: 'https://c9c7af01-0da5-4a22-a51e-b40ca37bcbd2.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
+  appId: "com.ratioai.ios",
+  appName: "ratioai",
+  webDir: "dist",
+  ios: {
+    contentInset: "automatic",
+    scheme: "RatioAi",
   },
+  ...(devServerUrl
+    ? {
+        server: {
+          url: devServerUrl,
+          cleartext: devServerUrl.startsWith("http://"),
+        },
+      }
+    : {}),
   plugins: {
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
+      presentationOptions: ["badge", "sound", "alert"],
     },
   },
 };
