@@ -8,7 +8,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const devServerUrl = process.env.CAPACITOR_DEV_SERVER;
 
 const config: CapacitorConfig = {
-  appId: "app.lovable.c9c7af010da54a22a51eb40ca37bcbd2",
+  appId: "com.ratioai.ios",
   appName: "ratioai",
   webDir: "dist",
   ios: {
