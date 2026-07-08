@@ -37,7 +37,7 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>RatioAi may write activity summaries to Apple Health when you enable integrations.</string>
 	<key>RevenueCatAPIKey</key>
-	<string>test_mxJvcSoUMFnfohtMEiPrVwcJiVK</string>
+	<string>appl_CEwnanMdaFcELNOLPeEDZySNdUX</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
