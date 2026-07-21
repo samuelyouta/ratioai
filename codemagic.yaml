@@ -19,6 +19,9 @@ workflows:
         BUNDLE_ID: "com.ratioai.ios"
       xcode: latest
       node: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.ratioai.ios
     integrations:
       app_store_connect: RatioAi
     scripts:
