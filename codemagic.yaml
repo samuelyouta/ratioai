@@ -26,15 +26,19 @@ workflows:
       app_store_connect: RatioAi
     scripts:
       - name: Install npm dependencies
-        script: |
-          npm install
+        script: npm install
       - name: Build web assets
-        script: |
-          npm run build
+        script: npm run build
       - name: Sync Capacitor iOS
+        script: npx cap sync ios
+      - name: Fetch signing files
         script: |
-          npx cap sync ios
-      - name: Set up code signing
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Add certificates to keychain
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
       - name: Build ipa for distribution
