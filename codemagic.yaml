@@ -10,9 +10,15 @@ workflows:
         - pattern: main
           include: true
           source: true
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.ratioai.ios
+    environment:
+      groups:
+        - ratioai_env
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.ratioai.ios"
+      xcode: latest
+      node: latest
     integrations:
       app_store_connect: RatioAi
     scripts:
@@ -30,8 +36,7 @@ workflows:
       - name: Add certificates to keychain
         script: keychain add-certificates
       - name: Set up code signing settings on Xcode project
-        script: |
-          xcode-project use-profiles
+        script: xcode-project use-profiles
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
