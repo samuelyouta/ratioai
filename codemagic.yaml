@@ -10,15 +10,6 @@ workflows:
         - pattern: main
           include: true
           source: true
-    environment:
-      groups:
-        - ratioai_env
-      vars:
-        XCODE_WORKSPACE: "ios/App/App.xcodeproj"
-        XCODE_SCHEME: "App"
-        BUNDLE_ID: "com.ratioai.ios"
-      xcode: latest
-      node: latest
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.ratioai.ios
