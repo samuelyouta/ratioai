@@ -35,15 +35,16 @@ workflows:
             --create
       - name: Add certificates to keychain
         script: keychain add-certificates
+      - name: Install Apple WWDR intermediate certificate
+        script: |
+          curl -o AppleWWDRCAG3.cer https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+          sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain AppleWWDRCAG3.cer
       - name: Keep keychain unlocked
         script: keychain unlock
       - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
       - name: Build ipa for distribution
         script: |
-          xcode-project build-ipa \
-            --project "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" || \
           xcode-project build-ipa \
             --project "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
