@@ -31,7 +31,7 @@ workflows:
       - name: Increment build number
         script: |
           cd ios/App
-          agvtool new-version -all $(($(app-store-connect get-latest-build-number "$BUNDLE_ID") + 1))
+          agvtool new-version -all $(date +%s)
           cd ../..
       - name: Set up keychain
         script: keychain initialize
