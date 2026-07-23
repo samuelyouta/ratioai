@@ -27,6 +27,11 @@ workflows:
       - name: Build web assets
         script: npm run build
       - name: Sync Capacitor iOS
+      - name: Increment build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $(($(app-store-connect get-latest-build-number "$BUNDLE_ID") + 1))
+          cd ../..
         script: npx cap sync ios
       - name: Set up keychain
         script: keychain initialize
