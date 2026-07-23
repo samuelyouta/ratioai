@@ -1,3 +1,4 @@
+import RevenueCat
 import PurchasesHybridCommon
 
 /// Native RevenueCat bootstrap for the Capacitor shell (called from AppDelegate).
