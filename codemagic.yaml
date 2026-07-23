@@ -28,6 +28,8 @@ workflows:
         script: npm run build
       - name: Sync Capacitor iOS
         script: npx cap sync ios
+      - name: Set up keychain
+        script: keychain initialize
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
@@ -35,6 +37,10 @@ workflows:
             --create
       - name: Add certificates to keychain
         script: keychain add-certificates
+      - name: Grant codesign access to keychain
+        script: |
+          KEYCHAIN_PATH=$(security default-keychain -d user | tr -d '[:space:]"')
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN_PATH" || true
       - name: Install Apple WWDR intermediate certificate
         script: |
           curl -o AppleWWDRCAG3.cer https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
@@ -48,3 +54,11 @@ workflows:
             --scheme "$XCODE_SCHEME" \
             --archive-xcargs "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=PH2P9DD974" \
             --archive-flags "-destination 'generic/platform=iOS' CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=NO"
+    artifacts:
+      - "**/*.ipa"
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
