@@ -14,14 +14,21 @@ Set these in **Vercel** (and locally in `.env`):
 
 ## 2. Auth redirect URLs
 
-**Authentication → URL Configuration → Redirect URLs**
-
-Add:
-
-- `https://ratioai.vercel.app/app/auth/callback`
-- `http://localhost:8080/app/auth/callback` (local dev)
+**Authentication → URL Configuration**
 
 **Site URL:** `https://ratioai.vercel.app`
+
+**Redirect URLs** (add all you use):
+
+- `https://ratioai.vercel.app/app/auth/callback`
+- `https://ratioai.vercel.app/**`
+- `http://localhost:8080/app/auth/callback`
+- `http://localhost:8080/**`
+- For Cursor / Cloudflare preview tunnels (ephemeral — add the exact host you see in the address bar, or a wildcard if enabled):
+  - `https://*.trycloudflare.com/**`
+  - `https://*.trycloudflare.com/app/auth/callback`
+
+If a redirect host is **not** allowlisted, Google returns to Site URL (`/`) instead of `/app/auth/callback`. The app now recovers that case, but the preview tunnel must still be alive when Google returns.
 
 Enable providers: **Google**, **Apple**, **Email**.
 

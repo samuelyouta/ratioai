@@ -96,7 +96,7 @@ const StepBody = () => {
   };
 
   return (
-    <OnboardingLayout step={4} totalSteps={8}>
+    <OnboardingLayout step={4} totalSteps={8} backTo="/app/onboarding/dob">
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Your body</h2>
         <p className="text-muted-foreground mt-2 text-base">Drag to adjust. We use this for your metabolic rate.</p>

@@ -38,7 +38,7 @@ const StepActivity = () => {
   };
 
   return (
-    <OnboardingLayout step={5} totalSteps={8}>
+    <OnboardingLayout step={5} totalSteps={8} backTo="/app/onboarding/body">
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Activity level</h2>
         <p className="text-muted-foreground mt-2 text-base">Be honest — we calibrate your targets from this.</p>

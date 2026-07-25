@@ -28,7 +28,7 @@ const StepSource = () => {
   };
 
   return (
-    <OnboardingLayout step={6} totalSteps={8}>
+    <OnboardingLayout step={6} totalSteps={8} backTo="/app/onboarding/activity">
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
           How did you find us?

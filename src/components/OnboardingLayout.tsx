@@ -1,16 +1,39 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 interface OnboardingLayoutProps {
   step: number;
   totalSteps: number;
+  /** Previous onboarding route. When set, shows a Back control. */
+  backTo?: string;
   children: React.ReactNode;
 }
 
-const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps) => {
+const OnboardingLayout = ({ step, totalSteps, backTo, children }: OnboardingLayoutProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Progress bar */}
+      {/* Progress bar + back */}
       <div className="px-6 pt-4 pb-2">
+        <div className="flex items-center gap-3 mb-3">
+          {backTo ? (
+            <button
+              type="button"
+              onClick={() => navigate(backTo)}
+              aria-label="Go back to previous step"
+              className="w-9 h-9 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground hover:border-primary/50 transition-colors shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="w-9 h-9 shrink-0" aria-hidden />
+          )}
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            Step {Math.min(step + 1, totalSteps)} of {totalSteps}
+          </p>
+        </div>
         <div className="flex gap-1.5">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-muted">

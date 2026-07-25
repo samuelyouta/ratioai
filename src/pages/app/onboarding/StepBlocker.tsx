@@ -76,7 +76,7 @@ const StepBlocker = () => {
   };
 
   return (
-    <OnboardingLayout step={7} totalSteps={8}>
+    <OnboardingLayout step={7} totalSteps={8} backTo="/app/onboarding/source">
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
           What's holding you back?
