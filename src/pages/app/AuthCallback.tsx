@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeAuthRedirect } from "@/lib/auth";
 import { syncUserData } from "@/lib/userSync";
+import { getProfile } from "@/lib/profile";
 
 /**
  * Landing page after OAuth or email magic-link redirects.
@@ -20,7 +21,9 @@ const AuthCallback = () => {
       if (finished) return;
       finished = true;
       await syncUserData(userId);
-      navigate(consumeAuthRedirect(), { replace: true });
+      // Prefer stored destination; fall back to welcome if onboarding isn't done yet.
+      const next = getProfile() ? consumeAuthRedirect() : "/app/welcome";
+      navigate(next, { replace: true });
     };
 
     const fail = (reason?: string) => {
@@ -32,10 +35,23 @@ const AuthCallback = () => {
       });
     };
 
-    // PKCE / magic-link: Supabase processes the URL automatically.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) finish(session.user.id);
-    });
+    // Explicitly exchange ?code= when present (covers Site URL fallback to /).
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) {
+          console.error("exchangeCodeForSession failed", error);
+          fail(error.message || "Sign-in failed. Try again.");
+          return;
+        }
+        if (data.session?.user) finish(data.session.user.id);
+      });
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) finish(session.user.id);
+      });
+    }
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
@@ -44,12 +60,13 @@ const AuthCallback = () => {
     });
 
     const timeout = window.setTimeout(() => {
-      if (!finished) {
-        setMessage("Still working…");
-      }
+      if (!finished) setMessage("Still working…");
     }, 4000);
 
-    const hardTimeout = window.setTimeout(() => fail("Sign-in timed out. Try again."), 15000);
+    const hardTimeout = window.setTimeout(
+      () => fail("Sign-in timed out. Try again."),
+      15000,
+    );
 
     return () => {
       finished = true;

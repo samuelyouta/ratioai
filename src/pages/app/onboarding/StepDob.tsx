@@ -46,7 +46,7 @@ const StepDob = () => {
   };
 
   return (
-    <OnboardingLayout step={3} totalSteps={8}>
+    <OnboardingLayout step={3} totalSteps={8} backTo="/app/onboarding/gender">
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
           When were you born?

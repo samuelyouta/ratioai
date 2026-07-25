@@ -24,7 +24,7 @@ const StepGender = () => {
   };
 
   return (
-    <OnboardingLayout step={2} totalSteps={8}>
+    <OnboardingLayout step={2} totalSteps={8} backTo="/app/onboarding/name">
       <div className="mb-8">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
           Biological sex

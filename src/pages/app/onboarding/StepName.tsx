@@ -19,7 +19,7 @@ const StepName = () => {
   };
 
   return (
-    <OnboardingLayout step={1} totalSteps={8}>
+    <OnboardingLayout step={1} totalSteps={8} backTo="/app/onboarding/goal">
       <div className="mb-8">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
           What should we call you?

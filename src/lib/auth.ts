@@ -8,6 +8,7 @@ const AUTH_REDIRECT_KEY = "ratioai.auth_redirect";
 export function getAppUrl(path: string): string {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  // Must use the current origin so Supabase PKCE code verifier stays on the same host.
   return `${window.location.origin}${base}${normalizedPath}`;
 }
 
@@ -21,21 +22,37 @@ export function consumeAuthRedirect(fallback = "/app/today"): string {
   return stored || fallback;
 }
 
+/** True when the current URL looks like a Supabase auth callback (code or tokens). */
+export function hasAuthCallbackParams(
+  search = typeof window !== "undefined" ? window.location.search : "",
+  hash = typeof window !== "undefined" ? window.location.hash : "",
+): boolean {
+  const query = new URLSearchParams(search);
+  if (query.has("code") || query.has("error") || query.has("error_description")) return true;
+  if (!hash || hash.length < 2) return false;
+  const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+  return (
+    hashParams.has("access_token") ||
+    hashParams.has("refresh_token") ||
+    hashParams.has("error") ||
+    hashParams.has("error_description")
+  );
+}
+
 /**
- * Sign in with Google or Apple via Supabase OAuth (works on any host).
- * The browser navigates away to the provider; on return, /app/auth/callback
- * completes the session and redirects to the stored destination.
+ * Sign in with Google or Apple via Supabase OAuth.
+ * Returns to /app/auth/callback on the same origin (required for PKCE).
  */
 export async function signInWithOAuth(provider: OAuthProvider, redirectPath = "/app/today") {
   storeAuthRedirect(redirectPath);
+
+  const redirectTo = getAppUrl("/app/auth/callback");
 
   const options: {
     redirectTo: string;
     queryParams?: Record<string, string>;
     scopes?: string;
-  } = {
-    redirectTo: getAppUrl("/app/auth/callback"),
-  };
+  } = { redirectTo };
 
   if (provider === "apple") {
     options.scopes = "name email";

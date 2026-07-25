@@ -24,7 +24,7 @@ const StepGoal = () => {
   };
 
   return (
-    <OnboardingLayout step={0} totalSteps={8}>
+    <OnboardingLayout step={0} totalSteps={8} backTo="/app/welcome">
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">What's your goal?</h2>
         <p className="text-muted-foreground mt-2 text-base">We'll personalize everything around this.</p>

@@ -19,6 +19,7 @@ import AuthSync from "./components/AuthSync";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import SignIn from "./pages/app/SignIn";
 import AuthCallback from "./pages/app/AuthCallback";
+import AuthEntry from "./components/AuthEntry";
 import Paywall from "./pages/app/Paywall";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
@@ -48,8 +49,8 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Native app entry point — waitlist page kept at /waitlist for the marketing site only */}
-      <Route path="/" element={<Navigate to="/app/welcome" replace />} />
+      {/* Native app entry — preserve OAuth ?code= if Supabase returns to Site URL */}
+      <Route path="/" element={<AuthEntry fallbackTo="/app/welcome" />} />
       <Route path="/waitlist" element={<Waitlist />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
@@ -71,7 +72,8 @@ const AppRoutes = () => {
 
       {/* Sign-in (after onboarding, before paywall) */}
       <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
-      <Route path="/app/auth/callback" element={<RequireOnboarding><AuthCallback /></RequireOnboarding>} />
+      {/* Auth callback must NOT require onboarding — OAuth returns here before gates run */}
+      <Route path="/app/auth/callback" element={<AuthCallback />} />
       <Route path="/app/paywall" element={<RequireOnboarding><RequireAuth><Paywall /></RequireAuth></RequireOnboarding>} />
 
       {/* Gated app routes — onboarded, signed in, and subscribed */}
