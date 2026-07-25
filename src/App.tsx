@@ -48,8 +48,8 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Waitlist (pre-launch landing) */}
-      <Route path="/" element={<Waitlist />} />
+      {/* Native app entry point — waitlist page kept at /waitlist for the marketing site only */}
+      <Route path="/" element={<Navigate to="/app/welcome" replace />} />
       <Route path="/waitlist" element={<Waitlist />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
