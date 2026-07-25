@@ -53,12 +53,26 @@ export async function configureRevenueCat(appUserId?: string): Promise<boolean> 
 
   const platform = Capacitor.getPlatform();
 
-  // iOS: native AppDelegate configures RevenueCat on launch (see Info.plist RevenueCatAPIKey).
   if (platform === "ios") {
+    const apiKey = import.meta.env.VITE_REVENUECAT_IOS_API_KEY;
+    if (!apiKey) {
+      console.warn("RevenueCat iOS API key missing");
+      return false;
+    }
+    if (!configured) {
+      if (import.meta.env.DEV) {
+        await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
+      }
+      await Purchases.configure({
+        apiKey,
+        appUserID: appUserId,
+      });
+      configured = true;
+      return true;
+    }
     if (appUserId) {
       await Purchases.logIn({ appUserID: appUserId });
     }
-    configured = true;
     return true;
   }
 
