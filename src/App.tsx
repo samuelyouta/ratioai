@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { supabase } from "@/integrations/supabase/client";
 import { startReminderScheduler, ensureNotificationPermission } from "@/lib/reminders";
 import { useHardwareBack } from "@/hooks/useHardwareBack";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
@@ -43,22 +45,16 @@ import Describe from "./pages/app/Describe";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  // Hardware back button (Android) + Capacitor edge-swipe → router-aware nav.
   useHardwareBack();
 
   return (
     <Routes>
-      {/* Native app entry point — waitlist page kept at /waitlist for the marketing site only */}
       <Route path="/" element={<Navigate to="/app/welcome" replace />} />
       <Route path="/waitlist" element={<Waitlist />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
-
-      {/* App entry — redirects into onboarding or today */}
       <Route path="/app" element={<Navigate to="/app/today" replace />} />
       <Route path="/app/welcome" element={<AppWelcome />} />
-
-      {/* Onboarding (no gate) */}
       <Route path="/app/onboarding/goal" element={<StepGoal />} />
       <Route path="/app/onboarding/name" element={<StepName />} />
       <Route path="/app/onboarding/gender" element={<StepGender />} />
@@ -68,13 +64,9 @@ const AppRoutes = () => {
       <Route path="/app/onboarding/source" element={<StepSource />} />
       <Route path="/app/onboarding/blocker" element={<StepBlocker />} />
       <Route path="/app/onboarding/analyzing" element={<Analyzing />} />
-
-      {/* Sign-in (after onboarding, before paywall) */}
       <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
       <Route path="/app/auth/callback" element={<RequireOnboarding><AuthCallback /></RequireOnboarding>} />
       <Route path="/app/paywall" element={<RequireOnboarding><RequireAuth><Paywall /></RequireAuth></RequireOnboarding>} />
-
-      {/* Gated app routes — onboarded, signed in, and subscribed */}
       <Route path="/app/today" element={<RequireOnboarding><RequireAuth><RequireSubscription><Today /></RequireSubscription></RequireAuth></RequireOnboarding>} />
       <Route path="/app/insights" element={<RequireOnboarding><RequireAuth><RequireSubscription><Insights /></RequireSubscription></RequireAuth></RequireOnboarding>} />
       <Route path="/app/profile" element={<RequireOnboarding><RequireAuth><RequireSubscription><Profile /></RequireSubscription></RequireAuth></RequireOnboarding>} />
@@ -84,7 +76,6 @@ const AppRoutes = () => {
       <Route path="/app/history/:id" element={<RequireOnboarding><RequireAuth><RequireSubscription><MealDetails /></RequireSubscription></RequireAuth></RequireOnboarding>} />
       <Route path="/app/manual" element={<RequireOnboarding><RequireAuth><RequireSubscription><Manual /></RequireSubscription></RequireAuth></RequireOnboarding>} />
       <Route path="/app/describe" element={<RequireOnboarding><RequireAuth><RequireSubscription><Describe /></RequireSubscription></RequireAuth></RequireOnboarding>} />
-
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -97,9 +88,24 @@ const App = () => {
     recordVisit();
     const stopSync = startSessionAutoSync();
     const stop = startReminderScheduler();
+
+    const listenerPromise = CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
+      if (url.includes("auth-callback")) {
+        try {
+          const code = new URL(url).searchParams.get("code");
+          if (code) {
+            await supabase.auth.exchangeCodeForSession(code);
+          }
+        } catch (e) {
+          console.error("Failed to complete OAuth deep link", e);
+        }
+      }
+    });
+
     return () => {
       stopSync();
       stop();
+      listenerPromise.then((listener) => listener.remove());
     };
   }, []);
 
