@@ -12,18 +12,30 @@ Set these in **Vercel** (and locally in `.env`):
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | your `sb_publishable_...` key |
 | `VITE_SUPABASE_PROJECT_ID` | `myyjjtclthflfgxkgubr` |
 
-## 2. Auth redirect URLs
+## 2. Auth redirect URLs (required for Google / Apple / Email)
 
-**Authentication → URL Configuration → Redirect URLs**
-
-Add:
-
-- `https://ratioai.vercel.app/app/auth/callback`
-- `http://localhost:8080/app/auth/callback` (local dev)
+Open: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/auth/url-configuration
 
 **Site URL:** `https://ratioai.vercel.app`
 
-Enable providers: **Google**, **Apple**, **Email**.
+**Redirect URLs** — add every line below:
+
+```
+https://ratioai.vercel.app/**
+https://ratioai.vercel.app/app/auth/callback
+http://localhost:8080/**
+http://localhost:8080/app/auth/callback
+com.ratioai.ios://**
+com.ratioai.ios://auth-callback
+```
+
+Providers under **Authentication → Providers** (already enabled on this project):
+
+- Google ✅
+- Apple ✅
+- Email ✅
+
+Without these redirect URLs, Google/Apple return to Site URL (`/`) and login can fail.
 
 ## 3. Database setup (SQL Editor)
 
