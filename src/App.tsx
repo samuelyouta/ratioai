@@ -10,6 +10,7 @@ import { startReminderScheduler, ensureNotificationPermission } from "@/lib/remi
 import { useHardwareBack } from "@/hooks/useHardwareBack";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
 import { recordVisit, startSessionAutoSync } from "@/lib/session";
+import { Browser } from "@capacitor/browser";
 import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
@@ -21,6 +22,7 @@ import AuthSync from "./components/AuthSync";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import SignIn from "./pages/app/SignIn";
 import AuthCallback from "./pages/app/AuthCallback";
+import AuthEntry from "./components/AuthEntry";
 import Paywall from "./pages/app/Paywall";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
@@ -49,7 +51,8 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/app/welcome" replace />} />
+      {/* Preserve OAuth ?code= if Supabase returns to Site URL (/) */}
+      <Route path="/" element={<AuthEntry fallbackTo="/app/welcome" />} />
       <Route path="/waitlist" element={<Waitlist />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
@@ -65,7 +68,8 @@ const AppRoutes = () => {
       <Route path="/app/onboarding/blocker" element={<StepBlocker />} />
       <Route path="/app/onboarding/analyzing" element={<Analyzing />} />
       <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
-      <Route path="/app/auth/callback" element={<RequireOnboarding><AuthCallback /></RequireOnboarding>} />
+      {/* Must NOT require onboarding — OAuth/email return here before gates */}
+      <Route path="/app/auth/callback" element={<AuthCallback />} />
       <Route path="/app/paywall" element={<RequireOnboarding><RequireAuth><Paywall /></RequireAuth></RequireOnboarding>} />
       <Route path="/app/today" element={<RequireOnboarding><RequireAuth><RequireSubscription><Today /></RequireSubscription></RequireAuth></RequireOnboarding>} />
       <Route path="/app/insights" element={<RequireOnboarding><RequireAuth><RequireSubscription><Insights /></RequireSubscription></RequireAuth></RequireOnboarding>} />
@@ -89,18 +93,30 @@ const App = () => {
     const stopSync = startSessionAutoSync();
     const stop = startReminderScheduler();
 
+    // Native OAuth / magic-link returns: com.ratioai.ios://auth-callback?code=...
     const listenerPromise = CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
-      if (url.includes("auth-callback")) {
-        try {
-          const code = new URL(url).searchParams.get("code");
-          if (code) {
-            await supabase.auth.exchangeCodeForSession(code);
+      const isAuthReturn =
+        url.includes("auth-callback") ||
+        url.includes("/app/auth/callback") ||
+        url.startsWith("com.ratioai.ios://");
+      if (!isAuthReturn) return;
+      try {
+        const parsed = new URL(url);
+        const code = parsed.searchParams.get("code");
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            alert("Auth exchange failed: " + error.message);
+            return;
           }
-        } catch (e) {
-          console.error("Failed to complete OAuth deep link", e);
+          await Browser.close();
+          window.location.replace("/app/auth/callback");
+        } else {
+          alert("No code found in callback URL: " + url);
         }
+      } catch (e) {
+        alert("Deep link error: " + (e instanceof Error ? e.message : String(e)));
       }
-    });
 
     return () => {
       stopSync();
