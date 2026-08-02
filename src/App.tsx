@@ -104,6 +104,7 @@ const App = () => {
         const parsed = new URL(url);
         const code = parsed.searchParams.get("code");
         if (code) {
+<<<<<<< HEAD
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) {
             alert("Auth exchange failed: " + error.message);
@@ -116,6 +117,13 @@ const App = () => {
         }
       } catch (e) {
         alert("Deep link error: " + (e instanceof Error ? e.message : String(e)));
+=======
+          await supabase.auth.exchangeCodeForSession(code);
+          window.location.replace("/app/auth/callback");
+        }
+      } catch (e) {
+        console.error("Failed to complete OAuth deep link", e);
+>>>>>>> 06494439cf7ca81d27d45c9383b2c861be428b60
       }
 
     return () => {
