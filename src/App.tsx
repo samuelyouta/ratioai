@@ -4,13 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import { App as CapacitorApp } from "@capacitor/app";
-import { supabase } from "@/integrations/supabase/client";
 import { startReminderScheduler, ensureNotificationPermission } from "@/lib/reminders";
 import { useHardwareBack } from "@/hooks/useHardwareBack";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
 import { recordVisit, startSessionAutoSync } from "@/lib/session";
-import { Browser } from "@capacitor/browser";
 import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
@@ -51,7 +48,7 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Preserve OAuth ?code= if Supabase returns to Site URL (/) */}
+      {/* Preserve OAuth ?code= if Supabase returns to Site URL (/) — still used on web */}
       <Route path="/" element={<AuthEntry fallbackTo="/app/welcome" />} />
       <Route path="/waitlist" element={<Waitlist />} />
       <Route path="/privacy" element={<Privacy />} />
@@ -93,36 +90,9 @@ const App = () => {
     const stopSync = startSessionAutoSync();
     const stop = startReminderScheduler();
 
-    // Native OAuth / magic-link returns: com.ratioai.ios://auth-callback?code=...
-    const listenerPromise = CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
-      const isAuthReturn =
-        url.includes("auth-callback") ||
-        url.includes("/app/auth/callback") ||
-        url.startsWith("com.ratioai.ios://");
-      if (!isAuthReturn) return;
-      try {
-        const parsed = new URL(url);
-        const code = parsed.searchParams.get("code");
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) {
-            alert("Auth exchange failed: " + error.message);
-            return;
-          }
-          await Browser.close();
-          window.location.replace("/app/auth/callback");
-        } else {
-          alert("No code found in callback URL: " + url);
-        }
-      } catch (e) {
-        alert("Deep link error: " + (e instanceof Error ? e.message : String(e)));
-      }
-    });
-
     return () => {
       stopSync();
       stop();
-      listenerPromise.then((listener) => listener.remove());
     };
   }, []);
 
