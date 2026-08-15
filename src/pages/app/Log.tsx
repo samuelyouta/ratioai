@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useRef, useState } from "react";
-import { X, Camera, Image as ImageIcon, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { X, Camera, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
 import RecentMeals from "@/components/app/RecentMeals";
 import { compressImageForAnalysis } from "@/lib/image";
 import { isNative } from "@/lib/native";
@@ -10,16 +10,66 @@ import { toast } from "sonner";
 
 const LAST_IMAGE_KEY = "ratioai.lastImage";
 
+type CameraStatus = "starting" | "live" | "denied" | "unavailable";
+
 const Log = () => {
   const navigate = useNavigate();
-  const fileRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const [scanning, setScanning] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const { takePhoto } = useNativeFeatures();
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>("starting");
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const { takePhoto, tapHaptic } = useNativeFeatures();
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
+
+  const startCamera = useCallback(async (facing: "environment" | "user" = facingMode) => {
+    setCameraStatus("starting");
+    stopCamera();
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraStatus("unavailable");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: facing },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      });
+      streamRef.current = stream;
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        await video.play().catch(() => undefined);
+      }
+      setCameraStatus("live");
+    } catch (e) {
+      console.warn("getUserMedia failed", e);
+      const name = e instanceof DOMException ? e.name : "";
+      setCameraStatus(name === "NotAllowedError" || name === "PermissionDeniedError" ? "denied" : "unavailable");
+    }
+  }, [facingMode, stopCamera]);
+
+  useEffect(() => {
+    void startCamera(facingMode);
+    return () => stopCamera();
+  }, [facingMode, startCamera, stopCamera]);
 
   const storeAndAnalyze = async (dataUrl: string) => {
     setScanning(true);
+    stopCamera();
     try {
       const compressed = await compressImageForAnalysis(dataUrl);
       setPreviewUrl(compressed);
@@ -31,6 +81,34 @@ const Log = () => {
       navigate("/app/analyze");
     } catch {
       toast.error("Couldn't process that image", { description: "Try another photo." });
+      setScanning(false);
+      void startCamera();
+    }
+  };
+
+  const captureFromStream = async () => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) {
+      toast.error("Camera not ready", { description: "Wait a moment and try again." });
+      return;
+    }
+
+    setScanning(true);
+    void tapHaptic();
+
+    try {
+      const width = video.videoWidth || 1280;
+      const height = video.videoHeight || 720;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas unavailable");
+      ctx.drawImage(video, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      await storeAndAnalyze(dataUrl);
+    } catch {
+      toast.error("Couldn't capture photo");
       setScanning(false);
     }
   };
@@ -49,24 +127,43 @@ const Log = () => {
     await storeAndAnalyze(dataUrl);
   };
 
-  const handleCameraCapture = async () => {
-    if (isNative()) {
-      setScanning(true);
-      try {
-        const dataUrl = await takePhoto();
-        if (!dataUrl) {
-          setScanning(false);
-          return;
-        }
-        await storeAndAnalyze(dataUrl);
-      } catch {
-        toast.error("Camera unavailable", { description: "Check camera permissions in Settings." });
-        setScanning(false);
-      }
+  /** Fallback when live preview isn't available (permissions / old WebView). */
+  const handleNativeFallbackCapture = async () => {
+    if (!isNative()) {
+      toast.error("Camera unavailable", { description: "Allow camera access and try again." });
       return;
     }
-    fileRef.current?.click();
+    setScanning(true);
+    try {
+      const dataUrl = await takePhoto();
+      if (!dataUrl) {
+        setScanning(false);
+        void startCamera();
+        return;
+      }
+      await storeAndAnalyze(dataUrl);
+    } catch {
+      toast.error("Camera unavailable", { description: "Check camera permissions in Settings." });
+      setScanning(false);
+      void startCamera();
+    }
   };
+
+  const handleShutter = async () => {
+    if (scanning) return;
+    if (cameraStatus === "live") {
+      await captureFromStream();
+      return;
+    }
+    await handleNativeFallbackCapture();
+  };
+
+  const flipCamera = () => {
+    if (scanning) return;
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+  };
+
+  const showLive = cameraStatus === "live" && !previewUrl;
 
   return (
     <motion.div
@@ -74,23 +171,57 @@ const Log = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background flex flex-col relative"
     >
-      <div className="flex-1 relative bg-card overflow-hidden min-h-[42vh]">
+      <div className="flex-1 relative bg-black overflow-hidden min-h-[48vh]">
+        {/* Live camera feed */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity ${
+            showLive ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        />
+
         {previewUrl ? (
           <img src={previewUrl} alt="Captured meal" className="absolute inset-0 w-full h-full object-cover" />
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="absolute inset-0 bg-gradient-to-b from-muted/50 to-card flex items-center justify-center"
-          >
-            <p className="text-sm text-primary font-medium tracking-wide">Place food in frame</p>
-          </motion.div>
+        ) : null}
+
+        {!showLive && !previewUrl && (
+          <div className="absolute inset-0 bg-gradient-to-b from-muted/50 to-card flex flex-col items-center justify-center gap-3 px-6">
+            {cameraStatus === "starting" ? (
+              <>
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                <p className="text-sm text-primary font-medium tracking-wide">Starting camera…</p>
+              </>
+            ) : cameraStatus === "denied" ? (
+              <>
+                <p className="text-sm text-foreground font-medium text-center">Camera permission needed</p>
+                <p className="text-xs text-muted-foreground text-center">
+                  Allow camera access to frame your meal, or pick a photo from Gallery.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void startCamera()}
+                  className="mt-1 text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                  Try again
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-foreground font-medium text-center">Camera unavailable</p>
+                <p className="text-xs text-muted-foreground text-center">
+                  Use Gallery, or tap the shutter to open the system camera.
+                </p>
+              </>
+            )}
+          </div>
         )}
 
-        {/* Thin bounding-box viewfinder with corner brackets */}
+        {/* Viewfinder */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="relative w-64 h-64">
+          <div className="relative w-64 h-64 sm:w-72 sm:h-72">
             <div className="absolute inset-0 border border-primary/30 rounded-2xl" />
             {[
               "top-0 left-0 border-t-2 border-l-2 rounded-tl-2xl",
@@ -116,10 +247,12 @@ const Log = () => {
           </div>
         </div>
 
-
         <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex items-center justify-between z-10">
           <button
-            onClick={() => navigate("/app/today")}
+            onClick={() => {
+              stopCamera();
+              navigate("/app/today");
+            }}
             className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center"
             aria-label="Close"
           >
@@ -128,16 +261,22 @@ const Log = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.15 }}
             className="glass border border-border rounded-full px-3 py-1.5"
           >
             <span className="text-xs font-medium text-foreground">
-              {scanning ? "Preparing…" : "Snap a meal"}
+              {scanning ? "Capturing…" : showLive ? "Place food in frame" : "Snap a meal"}
             </span>
           </motion.div>
-          <div className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center">
-            <span className="text-sm">🔬</span>
-          </div>
+          <button
+            type="button"
+            disabled={scanning || cameraStatus !== "live"}
+            onClick={flipCamera}
+            className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center disabled:opacity-40"
+            aria-label="Flip camera"
+          >
+            <RefreshCw className="w-4 h-4 text-foreground" />
+          </button>
         </div>
 
         <div className="absolute bottom-6 left-4 right-4">
@@ -168,7 +307,7 @@ const Log = () => {
 
           <motion.button
             disabled={scanning}
-            onClick={handleCameraCapture}
+            onClick={() => void handleShutter()}
             whileTap={{ scale: 0.9 }}
             className="w-20 h-20 rounded-full gradient-glow shadow-glow flex items-center justify-center"
             aria-label="Take photo"
@@ -184,7 +323,10 @@ const Log = () => {
 
           <button
             disabled={scanning}
-            onClick={() => navigate("/app/manual")}
+            onClick={() => {
+              stopCamera();
+              navigate("/app/manual");
+            }}
             className="flex flex-col items-center gap-1"
           >
             <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
@@ -197,14 +339,20 @@ const Log = () => {
         <div className="mt-5 grid grid-cols-2 gap-2">
           <button
             disabled={scanning}
-            onClick={() => navigate("/app/manual")}
+            onClick={() => {
+              stopCamera();
+              navigate("/app/manual");
+            }}
             className="h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors text-sm font-medium text-foreground/90"
           >
             Search & Edit
           </button>
           <button
             disabled={scanning}
-            onClick={() => navigate("/app/describe")}
+            onClick={() => {
+              stopCamera();
+              navigate("/app/describe");
+            }}
             className="h-11 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-colors text-sm font-medium text-foreground"
           >
             Describe Meal
@@ -215,18 +363,6 @@ const Log = () => {
         </p>
       </motion.div>
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) void handleFile(file);
-        }}
-      />
       <input
         ref={galleryRef}
         type="file"
