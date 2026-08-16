@@ -30,6 +30,12 @@
 				<string>com.ratioai.ios</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
@@ -49,6 +55,8 @@
 	<string>RatioAi reads steps and activity from Apple Health to improve your calorie targets.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>RatioAi may write activity summaries to Apple Health when you enable integrations.</string>
+	<key>GIDClientID</key>
+	<string>115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com</string>
 	<key>RevenueCatAPIKey</key>
 	<string>appl_CEwnanMdaFcELNOLPeEDZySNdUX</string>
 	<key>UIBackgroundModes</key>
