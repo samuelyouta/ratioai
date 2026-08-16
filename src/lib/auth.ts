@@ -64,6 +64,17 @@ async function ensureSocialLoginInitialized() {
   socialLoginInitialized = true;
 }
 
+function generateNonce(length = 32): string {
+  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._";
+  let result = "";
+  const randomValues = new Uint8Array(length);
+  crypto.getRandomValues(randomValues);
+  randomValues.forEach((v) => {
+    result += chars[v % chars.length];
+  });
+  return result;
+}
+
 /**
  * Sign in with Google or Apple.
  * Native: uses on-device SDKs via capacitor-social-login (no browser redirect).
@@ -91,22 +102,23 @@ export async function signInWithOAuth(provider: OAuthProvider, redirectPath = "/
         provider: "google",
         options: { scopes: ["email", "profile"] },
       });
-      alert("SocialLogin result: " + JSON.stringify(result));
       const googleResult = result.result;
       if (!googleResult || googleResult.responseType !== "online" || !googleResult.idToken) {
-        alert("Google result invalid: " + JSON.stringify(googleResult));
         return { error: new Error("Google sign-in failed") };
       }
       const { error } = await supabase.auth.signInWithIdToken({
         provider: "google",
         token: googleResult.idToken,
       });
-      if (error) alert("signInWithIdToken error: " + error.message);
       return { error };
     }
 
     if (provider === "apple") {
-      const result = await SocialLogin.login({ provider: "apple", options: {} });
+      const nonce = generateNonce();
+      const result = await SocialLogin.login({
+        provider: "apple",
+        options: { nonce },
+      });
       const appleResult = result.result;
       if (!appleResult?.idToken) {
         return { error: new Error("Apple sign-in failed") };
@@ -114,13 +126,13 @@ export async function signInWithOAuth(provider: OAuthProvider, redirectPath = "/
       const { error } = await supabase.auth.signInWithIdToken({
         provider: "apple",
         token: appleResult.idToken,
+        nonce,
       });
       return { error };
     }
 
     return { error: new Error("Unknown provider") };
   } catch (e) {
-    alert("SignIn exception: " + (e instanceof Error ? e.message : String(e)));
     return { error: e instanceof Error ? e : new Error(String(e)) };
   }
 }
