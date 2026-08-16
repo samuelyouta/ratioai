@@ -104,12 +104,14 @@ export async function signInWithOAuth(provider: OAuthProvider, redirectPath = "/
       });
       const googleResult = result.result;
       if (!googleResult || googleResult.responseType !== "online" || !googleResult.idToken) {
+        alert("Google result invalid: " + JSON.stringify(googleResult));
         return { error: new Error("Google sign-in failed") };
       }
       const { error } = await supabase.auth.signInWithIdToken({
         provider: "google",
         token: googleResult.idToken,
       });
+      if (error) alert("Google signInWithIdToken error: " + error.message);
       return { error };
     }
 
@@ -121,6 +123,7 @@ export async function signInWithOAuth(provider: OAuthProvider, redirectPath = "/
       });
       const appleResult = result.result;
       if (!appleResult?.idToken) {
+        alert("Apple result invalid: " + JSON.stringify(appleResult));
         return { error: new Error("Apple sign-in failed") };
       }
       const { error } = await supabase.auth.signInWithIdToken({
@@ -128,11 +131,13 @@ export async function signInWithOAuth(provider: OAuthProvider, redirectPath = "/
         token: appleResult.idToken,
         nonce,
       });
+      if (error) alert("Apple signInWithIdToken error: " + error.message);
       return { error };
     }
 
     return { error: new Error("Unknown provider") };
   } catch (e) {
+    alert("SignIn exception (" + provider + "): " + (e instanceof Error ? e.message : String(e)));
     return { error: e instanceof Error ? e : new Error(String(e)) };
   }
 }
