@@ -11,6 +11,7 @@
     "cap:ios": "npm run cap:sync && npx cap open ios",
     "cap:android": "npm run cap:sync && npx cap open android",
     "ios:assets": "bash scripts/generate-ios-assets.sh",
+    "postinstall": "node scripts/patch-capgo-social-login.mjs",
     "supabase:deploy": "supabase db push && supabase functions deploy delete-account analyze-meal describe-meal",
     "lint": "eslint .",
     "preview": "vite preview",

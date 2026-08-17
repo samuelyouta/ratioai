@@ -16,6 +16,7 @@ import RequireOnboarding from "./components/RequireOnboarding";
 import RequireAuth from "./components/RequireAuth";
 import RequireSubscription from "./components/RequireSubscription";
 import AuthSync from "./components/AuthSync";
+import AuthDeepLink from "./components/AuthDeepLink";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import SignIn from "./pages/app/SignIn";
 import AuthCallback from "./pages/app/AuthCallback";
@@ -104,6 +105,7 @@ const App = () => {
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
           <SubscriptionProvider>
             <AuthSync />
+            <AuthDeepLink />
             <AppRoutes />
           </SubscriptionProvider>
         </BrowserRouter>

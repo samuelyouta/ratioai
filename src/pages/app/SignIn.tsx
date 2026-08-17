@@ -2,8 +2,16 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Mail, CheckCircle } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
-import { signInWithOAuth, getEmailRedirectUrl } from "@/lib/auth";
+import {
+  signInWithOAuth,
+  getEmailRedirectUrl,
+  formatOAuthError,
+  consumeAuthRedirect,
+} from "@/lib/auth";
+import { syncUserData } from "@/lib/userSync";
+import { getProfile } from "@/lib/profile";
 
 /**
  * Sign-in gate shown after onboarding completes and before the paywall / app.
@@ -27,19 +35,38 @@ const SignIn = () => {
     }
   }, [from, location.pathname, location.state, navigate]);
 
+  const finishNativeSession = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setErr("Signed in, but no session was created. Try again.");
+      return;
+    }
+    await syncUserData(session.user.id);
+    const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
+    navigate(next, { replace: true });
+  };
+
   const handleOAuth = async (provider: "google" | "apple") => {
     setErr(null);
     setBusy(provider);
     try {
-      const { error } = await signInWithOAuth(provider, from);
+      const { error, cancelled, nativeSession } = await signInWithOAuth(provider, from);
+      if (cancelled) return;
       if (error) {
-        setErr(`${provider === "google" ? "Google" : "Apple"} sign-in failed. Try again.`);
-        setBusy(null);
+        setErr(formatOAuthError(provider, error));
+        return;
       }
-      // On success the browser navigates away to the provider.
+      if (nativeSession || Capacitor.isNativePlatform()) {
+        await finishNativeSession();
+        return;
+      }
+      // Web: browser navigates away to the provider.
     } catch (e) {
       console.error(e);
       setErr("Sign-in failed. Try again.");
+    } finally {
       setBusy(null);
     }
   };

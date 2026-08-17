@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Mail, CheckCircle } from "lucide-react";
-import { signInWithOAuth, getEmailRedirectUrl } from "@/lib/auth";
+import { Capacitor } from "@capacitor/core";
+import { signInWithOAuth, getEmailRedirectUrl, formatOAuthError, consumeAuthRedirect } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { syncUserData } from "@/lib/userSync";
+import { getProfile } from "@/lib/profile";
 
 interface AuthOptionsProps {
   /** Optional path to send the user to after successful auth (email magic link redirect). */
@@ -13,27 +17,47 @@ interface AuthOptionsProps {
 
 /**
  * Reusable Google + email sign-in card.
- * - Google uses Supabase OAuth.
+ * - Google uses native SocialLogin on device, Supabase OAuth on web.
  * - Email uses Supabase magic link (passwordless).
  */
 const AuthOptions = ({ redirectPath = "/app", compact }: AuthOptionsProps) => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<"google" | "email" | null>(null);
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const finishNativeSession = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setErr("Signed in, but no session was created. Try again.");
+      return;
+    }
+    await syncUserData(session.user.id);
+    const next = getProfile() ? consumeAuthRedirect(redirectPath) : "/app/welcome";
+    navigate(next, { replace: true });
+  };
+
   const handleGoogle = async () => {
     setErr(null);
     setBusy("google");
     try {
-      const { error } = await signInWithOAuth("google", redirectPath);
+      const { error, cancelled, nativeSession } = await signInWithOAuth("google", redirectPath);
+      if (cancelled) return;
       if (error) {
-        setErr("Google sign-in failed. Try again.");
-        setBusy(null);
+        setErr(formatOAuthError("google", error));
+        return;
+      }
+      if (nativeSession || Capacitor.isNativePlatform()) {
+        await finishNativeSession();
+        return;
       }
     } catch (e) {
       console.error(e);
       setErr("Google sign-in failed. Try again.");
+    } finally {
       setBusy(null);
     }
   };
