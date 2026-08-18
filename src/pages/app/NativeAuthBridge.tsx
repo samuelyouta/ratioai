@@ -1,42 +1,51 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NATIVE_AUTH_CALLBACK } from "@/lib/auth";
 
 /**
- * Hosted on Vercel. Supabase OAuth redirects here from the in-app browser,
- * then this page immediately deep-links back into the iOS app with the auth code.
+ * Hosted on Vercel. Supabase redirects the in-app browser here with ?code=.
+ * We open the iOS app once via custom scheme (no retry loop — that blinks forever).
  */
 const NativeAuthBridge = () => {
-  useEffect(() => {
+  const [target] = useState(() => {
     const search = window.location.search || "";
     const hash = window.location.hash || "";
-    const error = new URLSearchParams(search).get("error_description")
-      || new URLSearchParams(search).get("error");
-
+    const error =
+      new URLSearchParams(search).get("error_description") ||
+      new URLSearchParams(search).get("error");
     if (error) {
-      window.location.replace(
-        `${NATIVE_AUTH_CALLBACK}?error=${encodeURIComponent(error)}`,
-      );
-      return;
+      return `${NATIVE_AUTH_CALLBACK}?error=${encodeURIComponent(error)}`;
     }
+    return `${NATIVE_AUTH_CALLBACK}${search}${hash}`;
+  });
 
-    const target = `${NATIVE_AUTH_CALLBACK}${search}${hash}`;
+  const hasCode = useMemo(
+    () => new URLSearchParams(window.location.search).has("code"),
+    [],
+  );
 
-    // Try custom scheme immediately; retry once for slow WebViews.
-    window.location.replace(target);
-    const retry = window.setTimeout(() => {
-      window.location.href = target;
-    }, 600);
-
-    return () => clearTimeout(retry);
-  }, []);
+  useEffect(() => {
+    const link = document.createElement("a");
+    link.href = target;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }, [target]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3 px-6">
-      <div className="w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-      <p className="text-sm text-muted-foreground text-center">Returning to RatioAi…</p>
-      <p className="text-[11px] text-muted-foreground text-center max-w-xs">
-        If nothing happens, switch back to the RatioAi app.
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6">
+      <p className="text-sm text-foreground text-center font-medium">Return to RatioAi to finish signing in</p>
+      <p className="text-xs text-muted-foreground text-center max-w-sm leading-relaxed">
+        {hasCode
+          ? "Tap the button below if the app doesn’t open automatically."
+          : "Waiting for sign-in details…"}
       </p>
+      <a
+        href={target}
+        className="mt-2 inline-flex items-center justify-center bg-primary text-primary-foreground rounded-xl px-5 py-3 text-sm font-semibold"
+      >
+        Open RatioAi
+      </a>
     </div>
   );
 };

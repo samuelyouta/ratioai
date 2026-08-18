@@ -37,6 +37,19 @@ const SignIn = () => {
     }
   }, [from, location.pathname, location.state, navigate]);
 
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session?.user) return;
+      if (event !== "SIGNED_IN" && event !== "TOKEN_REFRESHED" && event !== "INITIAL_SESSION") return;
+      const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
+      navigate(next, { replace: true });
+      void syncUserData(session.user.id);
+    });
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, [from, navigate]);
+
   const finishNativeSession = async () => {
     const {
       data: { session },

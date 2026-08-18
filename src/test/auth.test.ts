@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   hasAuthCallbackParams,
   authCallbackPathFromUrl,
+  parseAuthParamsFromUrl,
   formatOAuthError,
   browserPendingMessage,
   NATIVE_OAUTH_BRIDGE,
@@ -35,6 +36,13 @@ describe("authCallbackPathFromUrl", () => {
 
   it("returns null for unrelated deep links", () => {
     expect(authCallbackPathFromUrl("com.ratioai.ios://other")).toBeNull();
+  });
+
+  it("parses codes from custom-scheme URLs", () => {
+    expect(parseAuthParamsFromUrl("com.ratioai.ios://auth-callback?code=abc")).toEqual({
+      code: "abc",
+      error: null,
+    });
   });
 });
 

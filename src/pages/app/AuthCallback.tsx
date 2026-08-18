@@ -6,8 +6,8 @@ import { syncUserData } from "@/lib/userSync";
 import { getProfile } from "@/lib/profile";
 
 /**
- * Landing page after OAuth or email magic-link redirects.
- * Exchanges the auth code, syncs local data, then routes into the app.
+ * Web OAuth / magic-link landing page.
+ * Native iOS completes PKCE in AuthDeepLink instead of this route.
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -16,8 +16,6 @@ const AuthCallback = () => {
   const doneRef = useRef(false);
 
   useEffect(() => {
-    doneRef.current = false;
-
     const params = new URLSearchParams(location.search);
     const code = params.get("code");
     const authError = params.get("error_description") || params.get("error");
@@ -46,13 +44,12 @@ const AuthCallback = () => {
 
     let hardTimeout: number | undefined;
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+      if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION")) {
         finish(session.user.id);
       }
     });
 
     const run = async () => {
-      // getSession() waits for Supabase init — on a full reload this includes detectSessionInUrl PKCE exchange.
       const { data: initial } = await supabase.auth.getSession();
       if (initial.session?.user) {
         finish(initial.session.user.id);
@@ -85,7 +82,7 @@ const AuthCallback = () => {
         } else {
           fail("Sign-in timed out. Try again.");
         }
-      }, 12000);
+      }, 8000);
     };
 
     void run();
@@ -94,7 +91,9 @@ const AuthCallback = () => {
       sub.subscription.unsubscribe();
       if (hardTimeout) clearTimeout(hardTimeout);
     };
-  }, [location.search, navigate]);
+    // Intentionally once per mount — re-running on search changes caused reload loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">

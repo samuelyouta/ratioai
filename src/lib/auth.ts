@@ -96,6 +96,67 @@ export function authCallbackPathFromUrl(url: string): string | null {
   }
 }
 
+export function parseAuthParamsFromUrl(url: string): { code: string | null; error: string | null } {
+  try {
+    const parsed = new URL(url);
+    const query = new URLSearchParams(parsed.search);
+    const hash = new URLSearchParams((parsed.hash || "").replace(/^#/, ""));
+    return {
+      code: query.get("code") || hash.get("code"),
+      error:
+        query.get("error_description") ||
+        query.get("error") ||
+        hash.get("error_description") ||
+        hash.get("error"),
+    };
+  } catch {
+    return { code: null, error: null };
+  }
+}
+
+const HANDLED_AUTH_CODE_KEY = "ratioai.handled_oauth_code";
+
+function markAuthCodeHandled(code: string) {
+  try {
+    sessionStorage.setItem(HANDLED_AUTH_CODE_KEY, code);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function wasAuthCodeHandled(code: string): boolean {
+  try {
+    return sessionStorage.getItem(HANDLED_AUTH_CODE_KEY) === code;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Complete PKCE in the Capacitor WebView (where the code_verifier lives).
+ * Must not full-reload the app — that re-fires getLaunchUrl and loops.
+ */
+export async function completeNativeAuthFromUrl(url: string): Promise<{
+  ok: boolean;
+  error?: string;
+  alreadyHandled?: boolean;
+}> {
+  const { code, error } = parseAuthParamsFromUrl(url);
+  if (error) return { ok: false, error };
+  if (!code) return { ok: false, error: "Missing auth code" };
+  if (wasAuthCodeHandled(code)) return { ok: true, alreadyHandled: true };
+
+  markAuthCodeHandled(code);
+
+  const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  if (data.session?.user) return { ok: true };
+
+  const { data: existing } = await supabase.auth.getSession();
+  if (existing.session?.user) return { ok: true };
+
+  return { ok: false, error: exchangeError?.message || "Sign-in failed. Try again." };
+}
+
 async function ensureSocialLoginInitialized() {
   if (socialLoginInitialized) return;
   if (!socialLoginInitPromise) {
