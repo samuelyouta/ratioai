@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeAuthRedirect } from "@/lib/auth";
 import { syncUserData } from "@/lib/userSync";
@@ -11,78 +11,90 @@ import { getProfile } from "@/lib/profile";
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [message, setMessage] = useState("Signing you in…");
+  const doneRef = useRef(false);
 
   useEffect(() => {
-    let finished = false;
+    doneRef.current = false;
 
-    const finish = async (userId: string) => {
-      if (finished) return;
-      finished = true;
-      await syncUserData(userId);
-      // If onboarding data is missing (new browser / magic link on another device),
-      // send them through welcome instead of a gated route.
-      const next = getProfile() ? consumeAuthRedirect() : "/app/welcome";
-      navigate(next, { replace: true });
-    };
-
-    const fail = (reason?: string) => {
-      if (finished) return;
-      finished = true;
-      navigate("/app/signin", {
-        replace: true,
-        state: { error: reason ?? "Sign-in failed. Try again." },
-      });
-    };
-
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     const code = params.get("code");
     const authError = params.get("error_description") || params.get("error");
 
+    const finish = (userId: string) => {
+      if (doneRef.current) return;
+      doneRef.current = true;
+      const next = getProfile() ? consumeAuthRedirect() : "/app/welcome";
+      navigate(next, { replace: true });
+      void syncUserData(userId);
+    };
+
+    const fail = (reason: string) => {
+      if (doneRef.current) return;
+      doneRef.current = true;
+      navigate("/app/signin", {
+        replace: true,
+        state: { error: reason },
+      });
+    };
+
     if (authError) {
       fail(authError);
-      return () => {
-        finished = true;
-      };
+      return;
     }
 
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error) {
-          console.error("exchangeCodeForSession failed", error);
-          fail(error.message || "Sign-in failed. Try again.");
-          return;
-        }
-        if (data.session?.user) finish(data.session.user.id);
-      });
-    } else {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) finish(session.user.id);
-      });
-    }
-
+    let hardTimeout: number | undefined;
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
+      if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
         finish(session.user.id);
       }
     });
 
-    const timeout = window.setTimeout(() => {
-      if (!finished) setMessage("Still working…");
-    }, 4000);
+    const run = async () => {
+      // getSession() waits for Supabase init — on a full reload this includes detectSessionInUrl PKCE exchange.
+      const { data: initial } = await supabase.auth.getSession();
+      if (initial.session?.user) {
+        finish(initial.session.user.id);
+        return;
+      }
 
-    const hardTimeout = window.setTimeout(
-      () => fail("Sign-in timed out. Try again."),
-      15000,
-    );
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (data.session?.user) {
+          finish(data.session.user.id);
+          return;
+        }
+        if (error) {
+          const { data: retry } = await supabase.auth.getSession();
+          if (retry.session?.user) {
+            finish(retry.session.user.id);
+            return;
+          }
+          fail(error.message || "Sign-in failed. Try again.");
+          return;
+        }
+      }
+
+      hardTimeout = window.setTimeout(async () => {
+        if (doneRef.current) return;
+        setMessage("Still working…");
+        const { data: last } = await supabase.auth.getSession();
+        if (last.session?.user) {
+          finish(last.session.user.id);
+        } else {
+          fail("Sign-in timed out. Try again.");
+        }
+      }, 12000);
+    };
+
+    void run();
 
     return () => {
-      finished = true;
       sub.subscription.unsubscribe();
-      clearTimeout(timeout);
-      clearTimeout(hardTimeout);
+      if (hardTimeout) clearTimeout(hardTimeout);
     };
-  }, [navigate]);
+  }, [location.search, navigate]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
