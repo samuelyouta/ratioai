@@ -20,6 +20,7 @@ import AuthDeepLink from "./components/AuthDeepLink";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import SignIn from "./pages/app/SignIn";
 import AuthCallback from "./pages/app/AuthCallback";
+import NativeAuthBridge from "./pages/app/NativeAuthBridge";
 import AuthEntry from "./components/AuthEntry";
 import Paywall from "./pages/app/Paywall";
 import AppWelcome from "./pages/app/AppWelcome";
@@ -68,6 +69,7 @@ const AppRoutes = () => {
       <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
       {/* Must NOT require onboarding — OAuth/email return here before gates */}
       <Route path="/app/auth/callback" element={<AuthCallback />} />
+      <Route path="/app/auth/native-bridge" element={<NativeAuthBridge />} />
       <Route path="/app/paywall" element={<RequireOnboarding><RequireAuth><Paywall /></RequireAuth></RequireOnboarding>} />
       <Route path="/app/today" element={<RequireOnboarding><RequireAuth><RequireSubscription><Today /></RequireSubscription></RequireAuth></RequireOnboarding>} />
       <Route path="/app/insights" element={<RequireOnboarding><RequireAuth><RequireSubscription><Insights /></RequireSubscription></RequireAuth></RequireOnboarding>} />

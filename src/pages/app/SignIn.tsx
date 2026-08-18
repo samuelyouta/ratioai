@@ -8,6 +8,7 @@ import {
   signInWithOAuth,
   getEmailRedirectUrl,
   formatOAuthError,
+  browserPendingMessage,
   consumeAuthRedirect,
 } from "@/lib/auth";
 import { syncUserData } from "@/lib/userSync";
@@ -25,6 +26,7 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<"apple" | "google" | "email" | null>(null);
   const [sent, setSent] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(
     (location.state as { error?: string } | null)?.error ?? null,
   );
@@ -50,6 +52,7 @@ const SignIn = () => {
 
   const handleOAuth = async (provider: "google" | "apple") => {
     setErr(null);
+    setPending(null);
     setBusy(provider);
     try {
       const { error, cancelled, nativeSession, browserPending } = await signInWithOAuth(provider, from);
@@ -59,13 +62,12 @@ const SignIn = () => {
         return;
       }
       if (browserPending) {
-        // Session completes when the browser redirects to com.ratioai.ios://auth-callback (AuthDeepLink).
+        setPending(browserPendingMessage(provider));
         return;
       }
       if (nativeSession) {
         await finishNativeSession();
       }
-      // Web OAuth navigates away automatically.
     } catch (e) {
       console.error(e);
       setErr("Sign-in failed. Try again.");
@@ -200,6 +202,9 @@ const SignIn = () => {
               </form>
             )}
 
+            {pending && (
+              <p className="text-primary text-xs text-center pt-1 leading-relaxed">{pending}</p>
+            )}
             {err && <p className="text-destructive text-xs text-center pt-1">{err}</p>}
           </div>
 

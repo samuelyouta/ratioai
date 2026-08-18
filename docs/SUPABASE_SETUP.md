@@ -23,8 +23,10 @@ Open: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/auth/url-confi
 ```
 https://ratioai.vercel.app/**
 https://ratioai.vercel.app/app/auth/callback
+https://ratioai.vercel.app/app/auth/native-bridge
 http://localhost:8080/**
 http://localhost:8080/app/auth/callback
+http://localhost:8080/app/auth/native-bridge
 com.ratioai.ios://**
 com.ratioai.ios://auth-callback
 ```

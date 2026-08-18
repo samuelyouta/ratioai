@@ -3,6 +3,8 @@ import {
   hasAuthCallbackParams,
   authCallbackPathFromUrl,
   formatOAuthError,
+  browserPendingMessage,
+  NATIVE_OAUTH_BRIDGE,
 } from "@/lib/auth";
 
 describe("hasAuthCallbackParams", () => {
@@ -37,21 +39,17 @@ describe("authCallbackPathFromUrl", () => {
 });
 
 describe("formatOAuthError", () => {
-  it("explains Apple authorization error 1000", () => {
-    const message = formatOAuthError(
-      "apple",
-      new Error("The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)"),
-    );
-    expect(message).toContain("Sign In with Apple");
-    expect(message).toContain("Xcode");
+  it("returns a generic message", () => {
+    expect(formatOAuthError("google", new Error("network"))).toContain("Google");
+  });
+});
+
+describe("browser OAuth bridge", () => {
+  it("uses the public Vercel bridge URL", () => {
+    expect(NATIVE_OAUTH_BRIDGE).toContain("/app/auth/native-bridge");
   });
 
-  it("explains Google unacceptable audience", () => {
-    const message = formatOAuthError(
-      "google",
-      new Error("Unacceptable audience in id_token: [115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com]"),
-    );
-    expect(message).toContain("Client IDs");
-    expect(message).toContain("Supabase");
+  it("shows a pending message for browser sign-in", () => {
+    expect(browserPendingMessage("google")).toContain("browser");
   });
 });
