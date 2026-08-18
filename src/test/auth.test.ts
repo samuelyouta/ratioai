@@ -45,4 +45,13 @@ describe("formatOAuthError", () => {
     expect(message).toContain("Sign In with Apple");
     expect(message).toContain("Xcode");
   });
+
+  it("explains Google unacceptable audience", () => {
+    const message = formatOAuthError(
+      "google",
+      new Error("Unacceptable audience in id_token: [115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com]"),
+    );
+    expect(message).toContain("Client IDs");
+    expect(message).toContain("Supabase");
+  });
 });

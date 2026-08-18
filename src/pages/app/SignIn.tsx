@@ -52,17 +52,20 @@ const SignIn = () => {
     setErr(null);
     setBusy(provider);
     try {
-      const { error, cancelled, nativeSession } = await signInWithOAuth(provider, from);
+      const { error, cancelled, nativeSession, browserPending } = await signInWithOAuth(provider, from);
       if (cancelled) return;
       if (error) {
         setErr(formatOAuthError(provider, error));
         return;
       }
-      if (nativeSession || Capacitor.isNativePlatform()) {
-        await finishNativeSession();
+      if (browserPending) {
+        // Session completes when the browser redirects to com.ratioai.ios://auth-callback (AuthDeepLink).
         return;
       }
-      // Web: browser navigates away to the provider.
+      if (nativeSession) {
+        await finishNativeSession();
+      }
+      // Web OAuth navigates away automatically.
     } catch (e) {
       console.error(e);
       setErr("Sign-in failed. Try again.");

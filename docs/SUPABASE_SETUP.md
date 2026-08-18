@@ -35,6 +35,26 @@ Providers under **Authentication → Providers** (already enabled on this projec
 - Apple ✅
 - Email ✅
 
+### Google — required for native iOS sign-in
+
+Open: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/auth/providers?provider=Google
+
+Under **Client IDs**, enter **both** IDs comma-separated (web first, then iOS):
+
+```
+115954156521-qr7bi7462eetkfcltjsid71d70nhccvl.apps.googleusercontent.com,115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com
+```
+
+Without the iOS client ID, native Google sign-in returns `Unacceptable audience in id_token`.
+
+Also enable **Skip nonce check** (recommended for native Apple/Google per Supabase docs).
+
+### Apple — required for native iOS sign-in
+
+Open: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/auth/providers?provider=Apple
+
+Confirm the Apple provider is enabled. In Xcode, the App target must include **Sign In with Apple** under Signing & Capabilities (entitlements file `ios/App/App/App.entitlements`).
+
 Without these redirect URLs, Google/Apple return to Site URL (`/`) and login can fail.
 
 ## 3. Database setup (SQL Editor)

@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
 import { SocialLogin } from "@capgo/capacitor-social-login";
 
@@ -10,6 +11,12 @@ const NATIVE_LOGIN_TIMEOUT_MS = 90_000;
 const PUBLIC_WEB_ORIGIN = (
   import.meta.env.VITE_PUBLIC_APP_URL || "https://ratioai.vercel.app"
 ).replace(/\/$/, "");
+
+/** Google OAuth client IDs (must match Info.plist + Supabase Auth → Google → Client IDs). */
+export const GOOGLE_WEB_CLIENT_ID =
+  "115954156521-qr7bi7462eetkfcltjsid71d70nhccvl.apps.googleusercontent.com";
+export const GOOGLE_IOS_CLIENT_ID =
+  "115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com";
 
 let socialLoginInitialized = false;
 let socialLoginInitPromise: Promise<void> | null = null;
@@ -23,6 +30,8 @@ export type SignInResult = {
   cancelled?: boolean;
   /** True when native SDKs completed and a Supabase session was created (no browser redirect). */
   nativeSession?: boolean;
+  /** True when an in-app browser OAuth sheet was opened (session completes via deep link). */
+  browserPending?: boolean;
 };
 
 /** Build an absolute app URL that respects Vite's BASE_URL. */
@@ -93,8 +102,9 @@ async function ensureSocialLoginInitialized() {
   if (!socialLoginInitPromise) {
     socialLoginInitPromise = SocialLogin.initialize({
       google: {
-        webClientId: "115954156521-qr7bi7462eetkfcltjsid71d70nhccvl.apps.googleusercontent.com",
-        iOSClientId: "115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com",
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        iOSClientId: GOOGLE_IOS_CLIENT_ID,
+        iOSServerClientId: GOOGLE_WEB_CLIENT_ID,
         mode: "online",
       },
       apple: {},
@@ -156,7 +166,6 @@ function isCancelledError(err: unknown): boolean {
     lower.includes("cancelled") ||
     lower.includes("canceled") ||
     lower.includes("error 1001") ||
-    // Google Sign-In cancelled
     lower.includes("the user canceled") ||
     lower.includes("code: 12501") ||
     lower.includes("code=-5")
@@ -165,6 +174,90 @@ function isCancelledError(err: unknown): boolean {
 
 function toError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
+}
+
+function isGoogleAudienceError(message: string): boolean {
+  return message.toLowerCase().includes("unacceptable audience");
+}
+
+/** Opens Supabase OAuth in the system browser; session completes via AuthDeepLink → AuthCallback. */
+async function signInWithBrowserOAuth(
+  provider: OAuthProvider,
+  redirectPath: string,
+): Promise<SignInResult> {
+  storeAuthRedirect(redirectPath);
+  const options: { redirectTo: string; scopes?: string; skipBrowserRedirect: boolean } = {
+    redirectTo: NATIVE_AUTH_CALLBACK,
+    skipBrowserRedirect: true,
+  };
+  if (provider === "apple") {
+    options.scopes = "name email";
+  }
+  const { data, error } = await supabase.auth.signInWithOAuth({ provider, options });
+  if (error || !data?.url) {
+    return { error: new Error(error?.message ?? "Could not start sign-in.") };
+  }
+  await Browser.open({ url: data.url });
+  return { error: null, browserPending: true };
+}
+
+async function nativeGoogleSignIn(redirectPath: string): Promise<SignInResult> {
+  const result = await withTimeout(
+    SocialLogin.login({
+      provider: "google",
+      options: {
+        scopes: ["email", "profile"],
+        forcePrompt: true,
+      },
+    }),
+    NATIVE_LOGIN_TIMEOUT_MS,
+    "Google sign-in",
+  );
+  const googleResult = result.result;
+  if (!googleResult || googleResult.responseType !== "online" || !googleResult.idToken) {
+    return { error: new Error("Google sign-in did not return an ID token.") };
+  }
+  const accessToken = googleResult.accessToken?.token ?? undefined;
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: googleResult.idToken,
+    access_token: accessToken,
+  });
+  if (error) {
+    if (isGoogleAudienceError(error.message)) {
+      console.warn("Google native token rejected by Supabase audience check; falling back to browser OAuth");
+      return signInWithBrowserOAuth("google", redirectPath);
+    }
+    return { error: new Error(error.message) };
+  }
+  return { error: null, nativeSession: true };
+}
+
+async function nativeAppleSignIn(): Promise<SignInResult> {
+  const rawNonce = generateNonce();
+  const hashedNonce = await sha256Hex(rawNonce);
+  const result = await withTimeout(
+    SocialLogin.login({
+      provider: "apple",
+      options: {
+        scopes: ["name", "email"],
+        nonce: hashedNonce,
+      },
+    }),
+    NATIVE_LOGIN_TIMEOUT_MS,
+    "Apple sign-in",
+  );
+  const appleResult = result.result;
+  if (!appleResult?.idToken) {
+    return { error: new Error("Apple sign-in did not return an ID token.") };
+  }
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: "apple",
+    token: appleResult.idToken,
+    nonce: rawNonce,
+  });
+  if (error) return { error: new Error(error.message) };
+  return { error: null, nativeSession: true };
 }
 
 /**
@@ -191,66 +284,23 @@ export async function signInWithOAuth(
 
   try {
     await ensureSocialLoginInitialized();
-
     if (provider === "google") {
-      const result = await withTimeout(
-        SocialLogin.login({
-          provider: "google",
-          options: {
-            scopes: ["email", "profile"],
-            // Skip restorePreviousSignIn — that path can hang when a stale Google session exists.
-            forcePrompt: true,
-          },
-        }),
-        NATIVE_LOGIN_TIMEOUT_MS,
-        "Google sign-in",
-      );
-      const googleResult = result.result;
-      if (!googleResult || googleResult.responseType !== "online" || !googleResult.idToken) {
-        return { error: new Error("Google sign-in did not return an ID token.") };
-      }
-      const { error } = await supabase.auth.signInWithIdToken({
-        provider: "google",
-        token: googleResult.idToken,
-      });
-      if (error) return { error: new Error(error.message) };
-      return { error: null, nativeSession: true };
+      return nativeGoogleSignIn(redirectPath);
     }
-
     if (provider === "apple") {
-      // Apple expects SHA-256(nonce) on the request; Supabase re-hashes the raw nonce.
-      const rawNonce = generateNonce();
-      const hashedNonce = await sha256Hex(rawNonce);
-      const result = await withTimeout(
-        SocialLogin.login({
-          provider: "apple",
-          options: {
-            scopes: ["name", "email"],
-            nonce: hashedNonce,
-          },
-        }),
-        NATIVE_LOGIN_TIMEOUT_MS,
-        "Apple sign-in",
-      );
-      const appleResult = result.result;
-      if (!appleResult?.idToken) {
-        return { error: new Error("Apple sign-in did not return an ID token.") };
-      }
-      const { error } = await supabase.auth.signInWithIdToken({
-        provider: "apple",
-        token: appleResult.idToken,
-        nonce: rawNonce,
-      });
-      if (error) return { error: new Error(error.message) };
-      return { error: null, nativeSession: true };
+      return nativeAppleSignIn();
     }
-
     return { error: new Error("Unknown provider") };
   } catch (e) {
     if (isCancelledError(e)) {
       return { error: null, cancelled: true };
     }
-    return { error: toError(e) };
+    const err = toError(e);
+    // If native Apple sheet fails to present, try browser OAuth as a last resort.
+    if (provider === "apple" && (err.message.includes("1000") || err.message.includes("1001"))) {
+      return signInWithBrowserOAuth("apple", redirectPath);
+    }
+    return { error: err };
   }
 }
 
@@ -261,10 +311,8 @@ export async function signInWithOAuth(
 export function getEmailRedirectUrl(redirectPath = "/app/today"): string {
   storeAuthRedirect(redirectPath);
   if (Capacitor.isNativePlatform()) {
-    // Custom scheme is listed in Supabase redirect allow-list and opens the app.
     return NATIVE_AUTH_CALLBACK;
   }
-  // When origin is a Capacitor/web preview host, fall back to the public site.
   if (
     typeof window !== "undefined" &&
     (window.location.protocol === "capacitor:" ||
@@ -276,13 +324,19 @@ export function getEmailRedirectUrl(redirectPath = "/app/today"): string {
   return getAppUrl("/app/auth/callback");
 }
 
-/** User-facing message for OAuth failures (Apple 1000, etc.). */
+/** User-facing message for OAuth failures (Apple 1000, Google audience, etc.). */
 export function formatOAuthError(provider: OAuthProvider, err: Error): string {
   const msg = err.message || "";
+  if (isGoogleAudienceError(msg)) {
+    return (
+      "Google sign-in needs your iOS client ID in Supabase. Open Authentication → Providers → Google " +
+      "and add both client IDs (web + iOS) under Client IDs, comma-separated. Retrying in browser…"
+    );
+  }
   if (msg.includes("1000") || msg.toLowerCase().includes("authorizationerror")) {
     return (
-      "Apple Sign In is not available on this build. In Xcode, confirm Signing & Capabilities " +
-      "includes Sign In with Apple, then rebuild with a fresh provisioning profile."
+      "Apple Sign In could not start. Confirm Sign In with Apple is enabled in Xcode Signing & Capabilities, " +
+      "then rebuild. If it still fails, we will open the browser sign-in sheet."
     );
   }
   if (msg.toLowerCase().includes("timed out")) {

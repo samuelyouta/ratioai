@@ -1,9 +1,7 @@
 /**
  * Patch @capgo/capacitor-social-login iOS presentation anchors.
- * UIApplication.shared.windows.first is unreliable on modern iOS (scenes),
- * which causes Apple ASAuthorizationError 1000 and Google sign-in hangs.
- *
- * Runs on postinstall so Cap sync picks up the fixed sources.
+ * Uses Capacitor bridge window + scene key window instead of deprecated
+ * UIApplication.shared.windows.first (causes Apple crash / error 1000).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -46,30 +44,61 @@ const KEY_WINDOW_HELPER = `
 function patchApple(filePath) {
   if (!fs.existsSync(filePath)) return false;
   let src = fs.readFileSync(filePath, "utf8");
-  if (src.includes("ratioKeyWindow()")) {
-    console.log("AppleProvider already patched");
-    return true;
+
+  if (!src.includes("private weak var ratioPresentationWindow")) {
+    const classMarker = "class AppleProvider: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {";
+    if (!src.includes(classMarker)) {
+      console.warn("AppleProvider: class marker not found");
+      return false;
+    }
+    src = src.replace(
+      classMarker,
+      `${classMarker}
+    private weak var ratioPresentationWindow: UIWindow?
+
+    func setPresentationWindow(_ window: UIWindow?) {
+        self.ratioPresentationWindow = window
+    }
+`,
+    );
   }
 
   const oldAnchor = `    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         return UIApplication.shared.windows.first!
     }`;
 
-  const newAnchor = `    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+  const brokenPatch = `    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         if let window = ratioKeyWindow() {
             return window
         }
         // Last resort — never force-unwrap a missing window (causes ASAuthorizationError 1000).
         return UIWindow(frame: UIScreen.main.bounds)
-    }
+    }`;
 
-${KEY_WINDOW_HELPER}`;
+  const newAnchor = `    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        if let window = ratioPresentationWindow ?? ratioKeyWindow() {
+            return window
+        }
+        // Match SocialLoginPlugin — do not allocate a new UIWindow (can crash the app).
+        return ASPresentationAnchor()
+    }`;
 
-  if (!src.includes(oldAnchor)) {
-    console.warn("AppleProvider: expected presentationAnchor block not found; skip");
+  if (src.includes(oldAnchor)) {
+    src = src.replace(oldAnchor, newAnchor);
+  } else if (src.includes(brokenPatch)) {
+    src = src.replace(brokenPatch, newAnchor);
+  } else if (!src.includes("ratioPresentationWindow ?? ratioKeyWindow()")) {
+    console.warn("AppleProvider: presentationAnchor block not found; skip");
     return false;
   }
-  src = src.replace(oldAnchor, newAnchor);
+
+  if (!src.includes("private func ratioKeyWindow()")) {
+    const insertBefore = "    private func persistName(userId: String";
+    if (src.includes(insertBefore)) {
+      src = src.replace(insertBefore, `${KEY_WINDOW_HELPER}\n${insertBefore}`);
+    }
+  }
+
   fs.writeFileSync(filePath, src);
   console.log("Patched AppleProvider presentationAnchor");
   return true;
@@ -78,7 +107,7 @@ ${KEY_WINDOW_HELPER}`;
 function patchGoogle(filePath) {
   if (!fs.existsSync(filePath)) return false;
   let src = fs.readFileSync(filePath, "utf8");
-  if (src.includes("ratioKeyWindow()")) {
+  if (src.includes("ratioKeyWindow()") && src.includes("ratioTopViewController")) {
     console.log("GoogleProvider already patched");
     return true;
   }
@@ -100,8 +129,6 @@ function patchGoogle(filePath) {
   }
   src = src.replace(oldGuard, newGuard);
 
-  // Insert helpers before the closing of the class — find last closing brace of file's GoogleProvider class.
-  // Safer: append helpers just before `func logout`.
   const logoutMarker = `    func logout(completion: @escaping (Result<Void, Error>) -> Void) {`;
   if (!src.includes(logoutMarker)) {
     console.warn("GoogleProvider: logout marker not found; skip helper inject");
@@ -114,9 +141,38 @@ function patchGoogle(filePath) {
   return true;
 }
 
+function patchSocialLoginPlugin(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  let src = fs.readFileSync(filePath, "utf8");
+
+  const oldAppleLogin = `            apple.login(payload: payload) { (result: Result<AppleProviderResponse, Error>) in
+                self.handleLoginResult(result, call: call)
+            }`;
+
+  const newAppleLogin = `            if let window = self.bridge?.viewController?.view.window {
+                self.apple.setPresentationWindow(window)
+            }
+            apple.login(payload: payload) { (result: Result<AppleProviderResponse, Error>) in
+                self.handleLoginResult(result, call: call)
+            }`;
+
+  if (src.includes("self.apple.setPresentationWindow(window)")) {
+    console.log("SocialLoginPlugin already patched for Apple window");
+    return true;
+  }
+  if (!src.includes(oldAppleLogin)) {
+    console.warn("SocialLoginPlugin: apple login block not found; skip");
+    return false;
+  }
+  src = src.replace(oldAppleLogin, newAppleLogin);
+  fs.writeFileSync(filePath, src);
+  console.log("Patched SocialLoginPlugin to pass Capacitor bridge window to Apple");
+  return true;
+}
+
 const appleOk = patchApple(path.join(iosSrc, "AppleProvider.swift"));
 const googleOk = patchGoogle(path.join(iosSrc, "GoogleProvider.swift"));
-if (!appleOk || !googleOk) {
+const pluginOk = patchSocialLoginPlugin(path.join(iosSrc, "SocialLoginPlugin.swift"));
+if (!appleOk || !googleOk || !pluginOk) {
   console.warn("One or more Capgo social-login patches did not apply. Native auth may still fail on device.");
-  process.exitCode = 0; // don't break installs
 }

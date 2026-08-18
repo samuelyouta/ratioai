@@ -44,15 +44,15 @@ const AuthOptions = ({ redirectPath = "/app", compact }: AuthOptionsProps) => {
     setErr(null);
     setBusy("google");
     try {
-      const { error, cancelled, nativeSession } = await signInWithOAuth("google", redirectPath);
+      const { error, cancelled, nativeSession, browserPending } = await signInWithOAuth("google", redirectPath);
       if (cancelled) return;
       if (error) {
         setErr(formatOAuthError("google", error));
         return;
       }
-      if (nativeSession || Capacitor.isNativePlatform()) {
+      if (browserPending) return;
+      if (nativeSession) {
         await finishNativeSession();
-        return;
       }
     } catch (e) {
       console.error(e);
