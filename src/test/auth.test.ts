@@ -52,6 +52,12 @@ describe("formatOAuthError", () => {
   it("returns a generic message", () => {
     expect(formatOAuthError("google", new Error("network"))).toContain("Google");
   });
+
+  it("explains Apple audience errors", () => {
+    expect(
+      formatOAuthError("apple", new Error("Unacceptable audience in id_token")),
+    ).toContain("com.ratioai.ios");
+  });
 });
 
 describe("browser OAuth bridge", () => {

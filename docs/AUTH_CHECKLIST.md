@@ -53,8 +53,20 @@ Open: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/auth/providers
 
 ### Apple
 - [ ] Apple provider **enabled**
-- [ ] Services ID / client ID from Apple Developer (used for web/browser fallback)
-- [ ] Secret key (JWT) generated from your Apple `.p8` key (Supabase docs: Auth → Apple)
+- [ ] **Client IDs** include the iOS bundle ID (required for native Sign in with Apple):
+
+```
+com.ratioai.ios
+```
+
+  If you also use web Apple sign-in, comma-separate your Services ID:
+
+```
+com.ratioai.ios,YOUR_APPLE_SERVICES_ID
+```
+
+- [ ] Services ID + secret key (JWT from your Apple `.p8`) — needed if native falls back to browser
+- [ ] **Skip nonce check** enabled
 
 ## 3. Google Cloud
 

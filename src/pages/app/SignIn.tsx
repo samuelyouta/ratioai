@@ -38,11 +38,12 @@ const SignIn = () => {
 
   const finishNativeSession = async () => {
     const { data: userResult } = await supabase.auth.getUser();
-    if (!userResult.user) {
+    const user = userResult.user ?? (await supabase.auth.getSession()).data.session?.user;
+    if (!user) {
       setErr("Signed in, but no account was created. Try again.");
       return;
     }
-    await syncUserData(userResult.user.id);
+    await syncUserData(user.id);
     const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
     navigate(next, { replace: true });
   };

@@ -209,14 +209,6 @@ function generateNonce(length = 32): string {
   return result;
 }
 
-async function sha256Hex(value: string): Promise<string> {
-  const data = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -323,11 +315,12 @@ async function nativeGoogleSignIn(redirectPath: string): Promise<SignInResult> {
 
 async function nativeAppleSignIn(redirectPath: string): Promise<SignInResult> {
   const rawNonce = generateNonce();
-  const hashedNonce = await sha256Hex(rawNonce);
+  // Apple hashes request.nonce with SHA-256 into the ID token.
+  // Passing a pre-hashed value causes "nonce mismatch" with Supabase.
   const result = await withTimeout(
     SocialLogin.login({
       provider: "apple",
-      options: { scopes: ["name", "email"], nonce: hashedNonce },
+      options: { scopes: ["name", "email"], nonce: rawNonce },
     }),
     NATIVE_LOGIN_TIMEOUT_MS,
     "Apple sign-in",
@@ -336,18 +329,23 @@ async function nativeAppleSignIn(redirectPath: string): Promise<SignInResult> {
   if (!appleResult?.idToken) {
     return signInWithBrowserOAuth("apple", redirectPath);
   }
-  const { error } = await supabase.auth.signInWithIdToken({
-    provider: "apple",
-    token: appleResult.idToken,
-    nonce: rawNonce,
-  });
-  if (error) {
-    if (isRecoverableNativeError(error.message)) {
-      return signInWithBrowserOAuth("apple", redirectPath);
+
+  const attempts: Array<{ nonce?: string }> = [{ nonce: rawNonce }, {}];
+  let lastError: Error | null = null;
+  for (const opts of attempts) {
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: "apple",
+      token: appleResult.idToken,
+      nonce: opts.nonce,
+    });
+    if (!error && data.user) {
+      return { error: null, nativeSession: true };
     }
-    return { error: new Error(error.message) };
+    lastError = error ? new Error(error.message) : lastError;
   }
-  return { error: null, nativeSession: true };
+
+  console.warn("Native Apple ID token rejected, falling back to browser OAuth", lastError?.message);
+  return signInWithBrowserOAuth("apple", redirectPath);
 }
 
 export async function signInWithOAuth(
@@ -369,7 +367,11 @@ export async function signInWithOAuth(
     await ensureSocialLoginInitialized();
     // App Store Guideline 4.8: Sign in with Apple must be a native equivalent to Google.
     if (provider === "apple") {
-      return nativeAppleSignIn(redirectPath);
+      const native = await nativeAppleSignIn(redirectPath);
+      if (native.error && !native.cancelled) {
+        return signInWithBrowserOAuth("apple", redirectPath);
+      }
+      return native;
     }
     if (provider === "google") {
       if (USE_NATIVE_SOCIAL_LOGIN) return nativeGoogleSignIn(redirectPath);
@@ -401,6 +403,12 @@ export function getEmailRedirectUrl(redirectPath = "/app/today"): string {
 export function formatOAuthError(provider: OAuthProvider, err: Error): string {
   const msg = err.message || "";
   if (msg.toLowerCase().includes("timed out")) return msg;
+  if (msg.toLowerCase().includes("audience")) {
+    return (
+      "Apple is not allowed in Supabase yet. In Authentication → Providers → Apple, " +
+      "add Client ID com.ratioai.ios, then try again."
+    );
+  }
   return `${provider === "google" ? "Google" : "Apple"} sign-in failed. Try again.`;
 }
 
