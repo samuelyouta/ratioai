@@ -62,9 +62,32 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    touch-action: manipulation;
+    min-height: 100%;
+    min-height: 100dvh;
+  }
+
+  /* iOS Safari auto-zooms inputs below 16px — keep forms at native size */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }
 

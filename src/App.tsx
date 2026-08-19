@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { startReminderScheduler, ensureNotificationPermission } from "@/lib/reminders";
 import { useHardwareBack } from "@/hooks/useHardwareBack";
+import { useViewportFix } from "@/hooks/useViewportFix";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
 import { recordVisit, startSessionAutoSync } from "@/lib/session";
 import Waitlist from "./pages/Waitlist";
@@ -87,6 +88,8 @@ const AppRoutes = () => {
 };
 
 const App = () => {
+  useViewportFix();
+
   useEffect(() => {
     ensureNotificationPermission();
     applyTheme(getActiveTheme());

@@ -12,7 +12,9 @@ const config: CapacitorConfig = {
   appName: "ratioai",
   webDir: "dist",
   ios: {
-    contentInset: "automatic",
+    contentInset: "never",
+    preferredContentMode: "mobile",
+    zoomEnabled: false,
     scheme: "RatioAi",
   },
   ...(devServerUrl
