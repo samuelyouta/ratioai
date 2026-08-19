@@ -14,6 +14,7 @@ const ROOT_ROUTES = new Set<string>([
   "/app",
   "/app/today",
   "/app/welcome",
+  "/app/signin",
   "/app/onboarding/goal",
 ]);
 

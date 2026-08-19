@@ -2,6 +2,8 @@
 
 Dashboard: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr
 
+**App Store / TestFlight sign-in checklist:** see [`docs/AUTH_CHECKLIST.md`](./AUTH_CHECKLIST.md).
+
 ## 1. App environment variables
 
 Set these in **Vercel** (and locally in `.env`):

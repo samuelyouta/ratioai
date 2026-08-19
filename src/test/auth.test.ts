@@ -6,6 +6,7 @@ import {
   formatOAuthError,
   browserPendingMessage,
   NATIVE_OAUTH_BRIDGE,
+  getLaunchPath,
 } from "@/lib/auth";
 
 describe("hasAuthCallbackParams", () => {
@@ -59,5 +60,20 @@ describe("browser OAuth bridge", () => {
 
   it("shows a pending message for browser sign-in", () => {
     expect(browserPendingMessage("google")).toContain("browser");
+  });
+});
+
+describe("getLaunchPath", () => {
+  it("sends new users to welcome", () => {
+    expect(getLaunchPath(false, false)).toBe("/app/welcome");
+    expect(getLaunchPath(false, true)).toBe("/app/welcome");
+  });
+
+  it("requires sign-in after onboarding when there is no session", () => {
+    expect(getLaunchPath(true, false)).toBe("/app/signin");
+  });
+
+  it("opens the app when onboarded and signed in", () => {
+    expect(getLaunchPath(true, true)).toBe("/app/today");
   });
 });

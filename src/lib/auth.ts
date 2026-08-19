@@ -58,6 +58,13 @@ export function storeAuthRedirect(path: string) {
   }
 }
 
+/** Where to send the user on cold start after handling OAuth URL params. */
+export function getLaunchPath(hasProfile: boolean, hasSession: boolean): string {
+  if (!hasProfile) return "/app/welcome";
+  if (!hasSession) return "/app/signin";
+  return "/app/today";
+}
+
 export function consumeAuthRedirect(fallback = "/app/today"): string {
   try {
     const stored = sessionStorage.getItem(AUTH_REDIRECT_KEY);
@@ -347,15 +354,16 @@ export async function signInWithOAuth(
     return { error: error ? new Error(error.message) : null };
   }
 
-  // Default: browser OAuth (works with web client ID only — best for TestFlight).
-  if (!USE_NATIVE_SOCIAL_LOGIN) {
-    return signInWithBrowserOAuth(provider, redirectPath);
-  }
-
   try {
     await ensureSocialLoginInitialized();
-    if (provider === "google") return nativeGoogleSignIn(redirectPath);
-    if (provider === "apple") return nativeAppleSignIn(redirectPath);
+    // App Store Guideline 4.8: Sign in with Apple must be a native equivalent to Google.
+    if (provider === "apple") {
+      return nativeAppleSignIn(redirectPath);
+    }
+    if (provider === "google") {
+      if (USE_NATIVE_SOCIAL_LOGIN) return nativeGoogleSignIn(redirectPath);
+      return signInWithBrowserOAuth("google", redirectPath);
+    }
     return { error: new Error("Unknown provider") };
   } catch (e) {
     if (isCancelledError(e)) return { error: null, cancelled: true };

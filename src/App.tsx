@@ -66,7 +66,7 @@ const AppRoutes = () => {
       <Route path="/app/onboarding/source" element={<StepSource />} />
       <Route path="/app/onboarding/blocker" element={<StepBlocker />} />
       <Route path="/app/onboarding/analyzing" element={<Analyzing />} />
-      <Route path="/app/signin" element={<RequireOnboarding><SignIn /></RequireOnboarding>} />
+      <Route path="/app/signin" element={<SignIn />} />
       {/* Must NOT require onboarding — OAuth/email return here before gates */}
       <Route path="/app/auth/callback" element={<AuthCallback />} />
       <Route path="/app/auth/native-bridge" element={<NativeAuthBridge />} />

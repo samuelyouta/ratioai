@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 const STEPS = [
   "Parsing biological framework...",
@@ -22,7 +23,17 @@ const Analyzing = () => {
       STEP_MS,
     );
     const tLeave = setTimeout(() => setLeaving(true), TOTAL_MS - 350);
-    const tNav = setTimeout(() => navigate("/app/signin", { replace: true }), TOTAL_MS);
+    const tNav = setTimeout(() => {
+      void (async () => {
+        // Force a fresh sign-in after onboarding (App Store / leftover sessions).
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          /* ignore */
+        }
+        navigate("/app/signin", { replace: true });
+      })();
+    }, TOTAL_MS);
     return () => {
       clearInterval(t1);
       clearTimeout(tLeave);

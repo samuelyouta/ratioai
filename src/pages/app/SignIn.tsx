@@ -39,8 +39,8 @@ const SignIn = () => {
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session?.user) return;
-      if (event !== "SIGNED_IN" && event !== "TOKEN_REFRESHED" && event !== "INITIAL_SESSION") return;
+      // Only leave this screen after a real sign-in (not a leftover INITIAL_SESSION).
+      if (event !== "SIGNED_IN" || !session?.user) return;
       const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
       navigate(next, { replace: true });
       void syncUserData(session.user.id);

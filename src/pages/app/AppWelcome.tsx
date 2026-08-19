@@ -47,6 +47,14 @@ const AppWelcome = () => {
           Get Started <ArrowRight className="w-5 h-5" />
         </motion.button>
 
+        <button
+          type="button"
+          onClick={() => navigate("/app/signin")}
+          className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          I already have an account
+        </button>
+
 
         
 
