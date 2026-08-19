@@ -1,30 +1,13 @@
-import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * Gate that only lets signed-in users through.
- * Placed AFTER RequireOnboarding, so unauthenticated users who finished
- * onboarding are pushed to /app/signin (with the intended path preserved).
+ * Session comes from AuthProvider so changing tabs does not remount a loading spinner.
  */
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const [status, setStatus] = useState<"loading" | "in" | "out">("loading");
-
-  useEffect(() => {
-    let unmounted = false;
-    supabase.auth.getSession().then(({ data }) => {
-      if (unmounted) return;
-      setStatus(data.session ? "in" : "out");
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setStatus(session ? "in" : "out");
-    });
-    return () => {
-      unmounted = true;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
+  const { status } = useAuth();
 
   if (status === "loading") {
     return (

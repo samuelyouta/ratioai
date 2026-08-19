@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Mail, CheckCircle } from "lucide-react";
-import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import {
   signInWithOAuth,
@@ -37,28 +36,13 @@ const SignIn = () => {
     }
   }, [from, location.pathname, location.state, navigate]);
 
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only leave this screen after a real sign-in (not a leftover INITIAL_SESSION).
-      if (event !== "SIGNED_IN" || !session?.user) return;
-      const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
-      navigate(next, { replace: true });
-      void syncUserData(session.user.id);
-    });
-    return () => {
-      sub.subscription.unsubscribe();
-    };
-  }, [from, navigate]);
-
   const finishNativeSession = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
-      setErr("Signed in, but no session was created. Try again.");
+    const { data: userResult } = await supabase.auth.getUser();
+    if (!userResult.user) {
+      setErr("Signed in, but no account was created. Try again.");
       return;
     }
-    await syncUserData(session.user.id);
+    await syncUserData(userResult.user.id);
     const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
     navigate(next, { replace: true });
   };

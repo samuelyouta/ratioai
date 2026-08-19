@@ -1,38 +1,60 @@
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { App as CapApp } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
-import { completeNativeAuthFromUrl, consumeAuthRedirect, parseAuthParamsFromUrl } from "@/lib/auth";
+import {
+  completeNativeAuthFromUrl,
+  consumeAuthRedirect,
+  isAuthFlowPath,
+  parseAuthParamsFromUrl,
+} from "@/lib/auth";
 import { getProfile } from "@/lib/profile";
 import { syncUserData } from "@/lib/userSync";
 import { supabase } from "@/integrations/supabase/client";
 
+const seenAuthUrls = new Set<string>();
+
 /**
  * Completes OAuth when iOS opens com.ratioai.ios://auth-callback?...
- * Exchanges the PKCE code in this WebView (where the verifier is stored).
- * Never full-reloads — that re-reads getLaunchUrl and loops on "Signing you in…".
+ * Ignores stale launch URLs once the user is already inside the app so tab
+ * changes are not yanked back to Today.
  */
 const AuthDeepLink = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const inFlight = useRef(false);
+  const pathRef = useRef(location.pathname);
+  pathRef.current = location.pathname;
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const goNext = async () => {
-      const { data } = await supabase.auth.getSession();
-      const userId = data.session?.user?.id;
+      const { data } = await supabase.auth.getUser();
+      const userId = data.user?.id;
+      if (!userId) {
+        navigate("/app/signin", { replace: true, state: { error: "Sign-in did not complete. Try again." } });
+        return;
+      }
       const next = getProfile() ? consumeAuthRedirect() : "/app/welcome";
       navigate(next, { replace: true });
-      if (userId) void syncUserData(userId);
+      void syncUserData(userId);
     };
 
-    const finish = async (url: string) => {
+    const finish = async (url: string, source: "launch" | "open") => {
       const { code, error } = parseAuthParamsFromUrl(url);
       if (!code && !error) return;
+      if (seenAuthUrls.has(url)) return;
+
+      if (source === "launch" && !isAuthFlowPath(pathRef.current)) {
+        seenAuthUrls.add(url);
+        return;
+      }
+
       if (inFlight.current) return;
       inFlight.current = true;
+      seenAuthUrls.add(url);
 
       void Browser.close().catch(() => {
         /* already closed */
@@ -40,8 +62,10 @@ const AuthDeepLink = () => {
 
       const result = await completeNativeAuthFromUrl(url);
       if (result.alreadyHandled) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user) await goNext();
+        const { data } = await supabase.auth.getUser();
+        if (data.user && isAuthFlowPath(pathRef.current)) {
+          await goNext();
+        }
         inFlight.current = false;
         return;
       }
@@ -58,14 +82,14 @@ const AuthDeepLink = () => {
     let listener: { remove: () => Promise<void> } | undefined;
 
     CapApp.addListener("appUrlOpen", ({ url }) => {
-      void finish(url);
+      void finish(url, "open");
     }).then((handle) => {
       listener = handle;
     });
 
     CapApp.getLaunchUrl()
       .then((result) => {
-        if (result?.url) void finish(result.url);
+        if (result?.url) void finish(result.url, "launch");
       })
       .catch(() => {
         /* no launch URL */

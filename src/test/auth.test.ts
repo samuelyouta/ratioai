@@ -7,6 +7,7 @@ import {
   browserPendingMessage,
   NATIVE_OAUTH_BRIDGE,
   getLaunchPath,
+  isAuthFlowPath,
 } from "@/lib/auth";
 
 describe("hasAuthCallbackParams", () => {
@@ -75,5 +76,14 @@ describe("getLaunchPath", () => {
 
   it("opens the app when onboarded and signed in", () => {
     expect(getLaunchPath(true, true)).toBe("/app/today");
+  });
+});
+
+describe("isAuthFlowPath", () => {
+  it("treats sign-in and callback as auth screens", () => {
+    expect(isAuthFlowPath("/app/signin")).toBe(true);
+    expect(isAuthFlowPath("/app/auth/callback")).toBe(true);
+    expect(isAuthFlowPath("/app/today")).toBe(false);
+    expect(isAuthFlowPath("/app/insights")).toBe(false);
   });
 });

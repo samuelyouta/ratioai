@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { getProfile } from "@/lib/profile";
 import { deleteAccount } from "@/lib/account";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const goalLabels: Record<string, string> = {
@@ -24,6 +25,7 @@ const activityLabels: Record<string, string> = {
 const Profile = () => {
   const navigate = useNavigate();
   const { restore } = useSubscription();
+  const { user } = useAuth();
   const profile = getProfile()!;
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -74,6 +76,11 @@ const Profile = () => {
           <p className="font-semibold text-foreground">
             {profile.name?.trim() || "RatioAi Athlete"}
           </p>
+          {user?.email ? (
+            <p className="text-xs text-primary mt-1">{user.email}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">Signed in</p>
+          )}
           <p className="text-xs text-muted-foreground mt-1">
             {profile.gender} · {profile.age} yrs · {profile.heightCm}cm · {profile.weightKg}kg
           </p>

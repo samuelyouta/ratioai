@@ -18,6 +18,7 @@ import RequireSubscription from "./components/RequireSubscription";
 import AuthSync from "./components/AuthSync";
 import AuthDeepLink from "./components/AuthDeepLink";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
+import { AuthProvider } from "@/hooks/useAuth";
 import SignIn from "./pages/app/SignIn";
 import AuthCallback from "./pages/app/AuthCallback";
 import NativeAuthBridge from "./pages/app/NativeAuthBridge";
@@ -105,11 +106,13 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
-          <SubscriptionProvider>
-            <AuthSync />
-            <AuthDeepLink />
-            <AppRoutes />
-          </SubscriptionProvider>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <AuthSync />
+              <AuthDeepLink />
+              <AppRoutes />
+            </SubscriptionProvider>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

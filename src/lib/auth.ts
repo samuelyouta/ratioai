@@ -65,6 +65,17 @@ export function getLaunchPath(hasProfile: boolean, hasSession: boolean): string 
   return "/app/today";
 }
 
+/** True when the current path is an auth/onboarding screen that may consume a launch URL. */
+export function isAuthFlowPath(pathname: string): boolean {
+  const path = pathname.replace(/\/$/, "") || "/";
+  return (
+    path.endsWith("/app/signin") ||
+    path.includes("/app/auth/") ||
+    path.endsWith("/app/welcome") ||
+    path === "/"
+  );
+}
+
 export function consumeAuthRedirect(fallback = "/app/today"): string {
   try {
     const stored = sessionStorage.getItem(AUTH_REDIRECT_KEY);
