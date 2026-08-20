@@ -156,7 +156,11 @@ const Analyze = () => {
         className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center"
       >
         <p className="text-base font-semibold text-foreground">Couldn't analyze that photo</p>
-        <p className="text-sm text-muted-foreground mt-1 mb-6">{error ?? "No result"}</p>
+        <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm">
+          {error?.toLowerCase().includes("not configured") || error?.toLowerCase().includes("api_key")
+            ? "Meal AI isn’t set up yet. Add a GEMINI_API_KEY in Supabase Edge Function secrets (see docs/AI_SETUP.md), then try again."
+            : (error ?? "No result")}
+        </p>
         <button
           onClick={() => navigate("/app/log")}
           className="gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"

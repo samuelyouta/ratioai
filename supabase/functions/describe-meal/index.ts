@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getUserFromRequest } from "../_shared/auth.ts";
 import { consumeRateLimit, getClientIp, rateLimitResponse } from "../_shared/rateLimit.ts";
+import { aiErrorResponse, completeToolCall, type ToolDefinition } from "../_shared/ai.ts";
 
 const SYSTEM_PROMPT = `You are RatioAi's text-based food estimator. The user describes a meal in natural language
 (e.g. "a big bowl of homemade lasagna and a side salad", "two eggs on toast with butter").
@@ -16,7 +17,7 @@ Your job:
 
 Return ONLY a tool call to log_meal. If the text doesn't describe food, return items: [] and explain in notes.`;
 
-const tools = [
+const tools: ToolDefinition[] = [
   {
     type: "function",
     function: {
@@ -76,66 +77,25 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    const parsed = await completeToolCall({
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Estimate this meal: ${description.trim()}` },
+      ],
+      tools,
+      toolName: "log_meal",
+      models: {
+        lovable: "google/gemini-2.5-flash",
+        gemini: "gemini-2.0-flash",
+        openai: "gpt-4o-mini",
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Estimate this meal: ${description.trim()}` },
-        ],
-        tools,
-        tool_choice: { type: "function", function: { name: "log_meal" } },
-      }),
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("AI gateway error", response.status, text);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit reached, please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Add funds in Lovable workspace settings." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await response.json();
-    const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      console.error("No tool call returned", JSON.stringify(data));
-      return new Response(JSON.stringify({ error: "AI did not return structured result" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const parsed = JSON.parse(toolCall.function.arguments);
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("describe-meal error", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return aiErrorResponse(e, corsHeaders);
   }
 });
