@@ -38,6 +38,7 @@ This runs:
 supabase link --project-ref myyjjtclthflfgxkgubr
 supabase db push
 supabase functions deploy delete-account analyze-meal describe-meal
+node scripts/update-auth-email-templates.mjs
 ```
 
 ## Verify

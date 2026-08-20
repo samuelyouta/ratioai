@@ -1,5 +1,13 @@
 project_id = "myyjjtclthflfgxkgubr"
 
+[auth.email.template.magic_link]
+subject = "Your RatioAi signup link"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your RatioAi signup"
+content_path = "./supabase/templates/confirmation.html"
+
 [functions.send-nurture-emails]
 verify_jwt = false
 

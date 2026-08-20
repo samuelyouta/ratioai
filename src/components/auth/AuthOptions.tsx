@@ -110,7 +110,7 @@ const AuthOptions = ({ redirectPath = "/app", compact }: AuthOptionsProps) => {
       {sent ? (
         <div className="flex items-center justify-center gap-2 bg-primary/10 border border-primary/30 rounded-xl px-4 py-3 text-sm text-foreground">
           <CheckCircle className="w-4 h-4 text-primary" />
-          Check your inbox for the sign-in link.
+          Check your inbox for the RatioAi signup link.
         </div>
       ) : (
         <form onSubmit={handleEmail} className="flex gap-2">

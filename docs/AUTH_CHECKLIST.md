@@ -37,6 +37,9 @@ Open: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/auth/providers
 ### Email
 - [ ] Email provider **enabled**
 - [ ] Confirm email / magic link is enabled (passwordless OTP is fine)
+- [ ] Magic Link email subject is **Your RatioAi signup link**  
+      Dashboard: https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/auth/templates  
+      (also applied by `npm run auth:emails` / GitHub Action `Deploy Supabase` when `SUPABASE_ACCESS_TOKEN` is set)
 
 ### Google
 - [ ] Google provider **enabled**
