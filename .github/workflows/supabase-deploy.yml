@@ -30,3 +30,6 @@ jobs:
 
       - name: Deploy edge functions
         run: supabase functions deploy delete-account analyze-meal describe-meal
+
+      - name: Update Auth email templates
+        run: node scripts/update-auth-email-templates.mjs
