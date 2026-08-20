@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: "never",
     preferredContentMode: "mobile",
-    zoomEnabled: false,
+    zoomEnabled: true,
     scheme: "RatioAi",
   },
   ...(devServerUrl
