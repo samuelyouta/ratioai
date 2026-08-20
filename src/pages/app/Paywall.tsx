@@ -82,8 +82,10 @@ const Paywall = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="h-1 w-full bg-muted">
-        <div className="h-full w-3/4 gradient-glow" />
+      <div className="safe-top-sticky">
+        <div className="h-1 w-full bg-muted">
+          <div className="h-full w-3/4 gradient-glow" />
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col px-6 pt-8 pb-10 max-w-sm mx-auto w-full">

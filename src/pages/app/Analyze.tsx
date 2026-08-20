@@ -222,7 +222,7 @@ const Analyze = () => {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <div className="px-6 pt-6 pb-4 flex items-center justify-between">
+      <div className="px-6 safe-top pb-4 flex items-center justify-between">
         <button
           onClick={() => navigate("/app/log")}
           className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"

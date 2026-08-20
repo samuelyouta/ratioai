@@ -67,7 +67,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-6 safe-top pb-4">
         <h1 className="text-2xl font-bold text-foreground">Profile</h1>
       </div>
 

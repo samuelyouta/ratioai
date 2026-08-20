@@ -247,7 +247,7 @@ const Log = () => {
           </div>
         </div>
 
-        <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex items-center justify-between z-10">
+        <div className="absolute top-0 left-0 right-0 px-4 safe-top-sm flex items-center justify-between z-10">
           <button
             onClick={() => {
               stopCamera();

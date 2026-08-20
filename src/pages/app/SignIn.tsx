@@ -100,8 +100,10 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="h-1 w-full bg-muted">
-        <div className="h-full w-full gradient-glow" />
+      <div className="safe-top-sticky">
+        <div className="h-1 w-full bg-muted">
+          <div className="h-full w-full gradient-glow" />
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6">

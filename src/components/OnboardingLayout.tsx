@@ -10,7 +10,7 @@ const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps)
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Progress bar */}
-      <div className="px-6 pt-4 pb-2">
+      <div className="px-6 safe-top-sm pb-2">
         <div className="flex gap-1.5">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-muted">

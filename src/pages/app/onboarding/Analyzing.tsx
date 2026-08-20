@@ -48,13 +48,15 @@ const Analyzing = () => {
       className="min-h-screen bg-background flex flex-col"
     >
       {/* Top progress line — fully filled by end */}
-      <div className="h-1 w-full bg-muted">
-        <motion.div
-          className="h-full gradient-glow"
-          initial={{ width: "0%" }}
-          animate={{ width: "100%" }}
-          transition={{ duration: TOTAL_MS / 1000, ease: "easeOut" }}
-        />
+      <div className="safe-top-sticky">
+        <div className="h-1 w-full bg-muted">
+          <motion.div
+            className="h-full gradient-glow"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: TOTAL_MS / 1000, ease: "easeOut" }}
+          />
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6">

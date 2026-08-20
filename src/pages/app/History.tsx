@@ -91,7 +91,7 @@ const History = () => {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="px-6 pt-6 pb-3 flex items-center gap-3">
+      <div className="px-6 safe-top pb-3 flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"

@@ -121,7 +121,7 @@ const Manual = () => {
   return (
     <div className="min-h-screen bg-background pb-40">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b border-border">
+      <div className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b border-border safe-top-sticky">
         <div className="px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}

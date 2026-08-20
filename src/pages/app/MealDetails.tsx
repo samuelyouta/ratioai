@@ -58,7 +58,7 @@ const MealDetails = () => {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <div className="px-6 pt-6 pb-3 flex items-center justify-between">
+      <div className="px-6 safe-top pb-3 flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"

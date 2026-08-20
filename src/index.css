@@ -120,6 +120,19 @@
     -webkit-backdrop-filter: blur(20px);
   }
 
+  /* Keep headers below the iOS status bar / Dynamic Island */
+  .safe-top {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+  }
+
+  .safe-top-sm {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  }
+
+  .safe-top-sticky {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
   .safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 16px);
   }

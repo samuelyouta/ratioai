@@ -65,7 +65,7 @@ const Today = () => {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-6 safe-top pb-4">
         <p className="text-sm text-muted-foreground">{greeting}</p>
         <h1 className="text-xl font-bold text-foreground">Athlete</h1>
       </div>
