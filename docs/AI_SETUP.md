@@ -1,38 +1,41 @@
 # Meal AI setup (photo scan + describe)
 
-RatioAi’s `analyze-meal` and `describe-meal` edge functions need an AI API key in **Supabase secrets**. Without one, photo scan shows “LOVABLE_API_KEY missing” / “Meal AI is not configured”.
+RatioAi’s `analyze-meal` and `describe-meal` edge functions call an AI provider using a secret in **Supabase Edge Function secrets**.
 
-## Recommended (free): Google Gemini
+## Production setup (OpenAI)
 
-1. Create a key: https://aistudio.google.com/apikey  
-2. Open Supabase secrets:  
-   https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/settings/functions  
-3. Under **Edge Function Secrets**, add:
+You already use `OPENAI_API_KEY`. Confirm it here:
+
+https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/settings/functions
 
 | Name | Value |
 |------|--------|
-| `GEMINI_API_KEY` | your Google AI Studio key |
+| `OPENAI_API_KEY` | your OpenAI secret key (`sk-…`) |
 
-4. Save. No app rebuild is required for the secret itself — only redeploy functions if you haven’t shipped the multi-provider update yet.
+Then **redeploy** the functions so the latest code (which reads `OPENAI_API_KEY`) is live. Secrets alone are not enough if an older function build is still deployed.
 
-## Alternatives
-
-Any **one** of these works (first found wins):
-
-1. `LOVABLE_API_KEY` — from Lovable Cloud → Secrets (if still linked)
-2. `GEMINI_API_KEY` or `GOOGLE_AI_API_KEY` — Google AI Studio
-3. `OPENAI_API_KEY` — OpenAI platform key (vision model)
-
-## Deploy functions after this code change
+### Deploy from your Mac (recommended)
 
 ```bash
-supabase functions deploy analyze-meal describe-meal
+npx supabase login
+npx supabase functions deploy analyze-meal describe-meal --project-ref myyjjtclthflfgxkgubr
 ```
 
-Or run the GitHub Action: **Deploy Supabase**.
+### Or GitHub Action
+
+1. Refresh the token at https://supabase.com/dashboard/account/tokens  
+2. Update GitHub secret `SUPABASE_ACCESS_TOKEN`  
+3. Run **Deploy Supabase**: https://github.com/samuelyouta/ratioai/actions/workflows/supabase-deploy.yml  
+
+## Provider order
+
+1. `OPENAI_API_KEY` (preferred)
+2. `LOVABLE_API_KEY`
+3. `GEMINI_API_KEY` / `GOOGLE_AI_API_KEY`
 
 ## Verify
 
-1. Open the iOS app / https://ratioai.vercel.app  
-2. Log → take a meal photo → analyze  
-3. You should get items, macros, and a save button (not a missing-key error)
+1. Snap a meal photo in the app  
+2. Analysis should return items + macros (not a missing-key error)  
+3. Check function logs if it still fails:  
+   https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/functions/analyze-meal/logs  

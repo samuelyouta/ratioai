@@ -1,10 +1,10 @@
 /**
  * Multi-provider meal AI helper for RatioAi edge functions.
  *
- * Preference order:
- * 1. LOVABLE_API_KEY  → https://ai.gateway.lovable.dev (OpenAI-compatible)
- * 2. GEMINI_API_KEY / GOOGLE_AI_API_KEY → Google Generative Language API
- * 3. OPENAI_API_KEY → OpenAI Chat Completions
+ * Preference order (RatioAi production uses OpenAI):
+ * 1. OPENAI_API_KEY → OpenAI Chat Completions (gpt-4o)
+ * 2. LOVABLE_API_KEY → https://ai.gateway.lovable.dev
+ * 3. GEMINI_API_KEY / GOOGLE_AI_API_KEY → Google Generative Language API
  */
 
 export type ChatContentPart =
@@ -37,20 +37,30 @@ type Provider =
   | { kind: "gemini"; key: string }
   | { kind: "openai"; key: string };
 
+/** Trim + strip accidental quotes copied from dashboards. */
+function readSecret(...names: string[]): string | undefined {
+  for (const name of names) {
+    const raw = Deno.env.get(name);
+    if (!raw) continue;
+    const cleaned = raw.trim().replace(/^['"]|['"]$/g, "").trim();
+    if (cleaned) return cleaned;
+  }
+  return undefined;
+}
+
 function resolveProvider(): Provider {
-  const lovable = Deno.env.get("LOVABLE_API_KEY")?.trim();
-  if (lovable) return { kind: "lovable", key: lovable };
-
-  const gemini =
-    Deno.env.get("GEMINI_API_KEY")?.trim() ||
-    Deno.env.get("GOOGLE_AI_API_KEY")?.trim();
-  if (gemini) return { kind: "gemini", key: gemini };
-
-  const openai = Deno.env.get("OPENAI_API_KEY")?.trim();
+  // Prefer OpenAI — RatioAi already stores OPENAI_API_KEY in Supabase secrets.
+  const openai = readSecret("OPENAI_API_KEY");
   if (openai) return { kind: "openai", key: openai };
 
+  const lovable = readSecret("LOVABLE_API_KEY");
+  if (lovable) return { kind: "lovable", key: lovable };
+
+  const gemini = readSecret("GEMINI_API_KEY", "GOOGLE_AI_API_KEY");
+  if (gemini) return { kind: "gemini", key: gemini };
+
   throw new AiConfigError(
-    "Meal AI is not configured. Add GEMINI_API_KEY (or LOVABLE_API_KEY / OPENAI_API_KEY) in Supabase → Edge Functions → Secrets.",
+    "Meal AI is not configured. Add OPENAI_API_KEY in Supabase → Project Settings → Edge Functions → Secrets, then redeploy analyze-meal.",
   );
 }
 
@@ -85,13 +95,17 @@ async function callOpenAiCompatible(
   if (!response.ok) {
     const text = await response.text();
     console.error("OpenAI-compatible gateway error", response.status, text);
-    const err = new Error(
-      response.status === 429
-        ? "Rate limit reached, please try again in a moment."
-        : response.status === 402
-          ? "AI credits exhausted. Add funds or switch API keys in Supabase secrets."
-          : "AI gateway error",
-    );
+    let message = "AI gateway error";
+    if (response.status === 429) {
+      message = "Rate limit reached, please try again in a moment.";
+    } else if (response.status === 402) {
+      message = "AI credits exhausted. Add funds or switch API keys in Supabase secrets.";
+    } else if (response.status === 401) {
+      message = "OpenAI rejected the API key. Check OPENAI_API_KEY in Supabase Edge Function secrets.";
+    } else if (response.status === 400) {
+      message = "OpenAI could not process this photo. Try a clearer, smaller meal photo.";
+    }
+    const err = new Error(message);
     (err as Error & { status?: number }).status = response.status;
     throw err;
   }
@@ -243,18 +257,8 @@ export async function completeToolCall(opts: {
   const provider = resolveProvider();
   const models = opts.models ?? {};
 
-  if (provider.kind === "lovable") {
-    return callOpenAiCompatible(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      provider.key,
-      models.lovable ?? "google/gemini-2.5-flash",
-      opts.messages,
-      opts.tools,
-      opts.toolName,
-    );
-  }
-
   if (provider.kind === "openai") {
+    console.log("analyze-ai: using OpenAI provider");
     return callOpenAiCompatible(
       "https://api.openai.com/v1/chat/completions",
       provider.key,
@@ -265,6 +269,19 @@ export async function completeToolCall(opts: {
     );
   }
 
+  if (provider.kind === "lovable") {
+    console.log("analyze-ai: using Lovable provider");
+    return callOpenAiCompatible(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      provider.key,
+      models.lovable ?? "google/gemini-2.5-flash",
+      opts.messages,
+      opts.tools,
+      opts.toolName,
+    );
+  }
+
+  console.log("analyze-ai: using Gemini provider");
   return callGemini(
     provider.key,
     models.gemini ?? "gemini-2.0-flash",

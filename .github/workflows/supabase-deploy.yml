@@ -22,11 +22,22 @@ jobs:
         with:
           version: latest
 
+      - name: Check access token
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN GitHub secret is missing. Create a token at https://supabase.com/dashboard/account/tokens"
+            exit 1
+          fi
+
       - name: Link Supabase project
+        continue-on-error: true
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
 
       - name: Push database migrations
+        continue-on-error: true
         run: supabase db push
 
       - name: Deploy edge functions
-        run: supabase functions deploy delete-account analyze-meal describe-meal
+        run: |
+          supabase functions deploy delete-account analyze-meal describe-meal \
+            --project-ref "$SUPABASE_PROJECT_ID"

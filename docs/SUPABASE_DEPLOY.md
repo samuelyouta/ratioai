@@ -24,7 +24,7 @@ Click **New repository secret** and add:
 
 | Name | Value |
 |------|--------|
-| `SUPABASE_ACCESS_TOKEN` | token from step 1 |
+| `SUPABASE_ACCESS_TOKEN` | token from step 1 (must stay valid — regenerate if Deploy Supabase fails with Unauthorized) |
 | `SUPABASE_DB_PASSWORD` | password from step 2 |
 
 ## Deploy (one click)
