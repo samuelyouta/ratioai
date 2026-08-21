@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
 import RecentMeals from "@/components/app/RecentMeals";
-import { compressImageForAnalysis } from "@/lib/image";
+import { compressImageForAnalysis, isLikelyImageFile } from "@/lib/image";
 import { isNative } from "@/lib/native";
 import { useNativeFeatures } from "@/hooks/useNativeFeatures";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ const Log = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("starting");
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
-  const { takePhoto, tapHaptic } = useNativeFeatures();
+  const { takePhoto, pickFromGallery, tapHaptic } = useNativeFeatures();
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -79,8 +79,10 @@ const Log = () => {
         toast.warning("Couldn't cache preview", { description: "Analysis will still run." });
       }
       navigate("/app/analyze");
-    } catch {
-      toast.error("Couldn't process that image", { description: "Try another photo." });
+      } catch {
+      toast.error("Couldn't load that photo", {
+        description: "Try another image, or take a new photo with the camera.",
+      });
       setScanning(false);
       void startCamera();
     }
@@ -114,17 +116,56 @@ const Log = () => {
   };
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
+    if (!isLikelyImageFile(file)) {
       toast.error("Please choose an image file");
       return;
     }
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    await storeAndAnalyze(dataUrl);
+    setScanning(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error ?? new Error("Failed to read image"));
+        reader.readAsDataURL(file);
+      });
+      await storeAndAnalyze(dataUrl);
+    } catch {
+      toast.error("Couldn't load that photo", {
+        description: "Try another image, or take a new photo with the camera.",
+      });
+      setScanning(false);
+      void startCamera();
+    }
+  };
+
+  const openGallery = async () => {
+    if (scanning) return;
+
+    // Native: use Capacitor Photos picker (converts HEIC → JPEG).
+    if (isNative()) {
+      setScanning(true);
+      stopCamera();
+      try {
+        const dataUrl = await pickFromGallery();
+        if (!dataUrl) {
+          setScanning(false);
+          void startCamera();
+          return;
+        }
+        await storeAndAnalyze(dataUrl);
+      } catch (e) {
+        console.error(e);
+        toast.error("Couldn't load that photo", {
+          description:
+            e instanceof Error ? e.message : "Allow Photos access in Settings, then try again.",
+        });
+        setScanning(false);
+        void startCamera();
+      }
+      return;
+    }
+
+    galleryRef.current?.click();
   };
 
   /** Fallback when live preview isn't available (permissions / old WebView). */
@@ -296,7 +337,7 @@ const Log = () => {
         <div className="flex items-center justify-around">
           <button
             disabled={scanning}
-            onClick={() => galleryRef.current?.click()}
+            onClick={() => void openGallery()}
             className="flex flex-col items-center gap-1"
           >
             <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
@@ -366,7 +407,7 @@ const Log = () => {
       <input
         ref={galleryRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif,image/heic,image/heif"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
