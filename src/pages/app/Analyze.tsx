@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Minus, Plus, Share2 } from "lucide-react";
 import { saveMeal, type Meal } from "@/lib/profile";
-import { invokeEdgeFunction } from "@/lib/edgeFunction";
+import { analyzeMealPhoto } from "@/lib/mealAiClient";
 import { sanitizeMealIcon } from "@/lib/mealIcon";
 import PortionGuideOverlay from "@/components/app/PortionGuideOverlay";
 import ShareRecipeCard from "@/components/app/ShareRecipeCard";
@@ -61,9 +61,7 @@ const Analyze = () => {
 
     (async () => {
       try {
-        const r = await invokeEdgeFunction<AnalysisResult>("analyze-meal", {
-          imageBase64: dataUrl,
-        });
+        const r = await analyzeMealPhoto<AnalysisResult>(dataUrl);
         if (!r.items?.length) {
           setError(r.notes || "No food detected in this photo. Try a clearer shot of your meal.");
           return;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Mic, MicOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { describeMealText } from "@/lib/mealAiClient";
 import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
@@ -235,12 +235,7 @@ const Describe = () => {
     setLoading(true);
     setResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke("describe-meal", {
-        body: { description: desc },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const r = data as AIResult;
+      const r = await describeMealText<AIResult>(desc);
       if (!r.items || r.items.length === 0) {
         toast({ title: "No food detected", description: r.notes || "Try rephrasing your description." });
       }

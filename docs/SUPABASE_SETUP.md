@@ -92,4 +92,4 @@ After setup:
 - `meals` and `edge_rate_limits` tables exist in Table Editor
 - Edge Functions list includes `delete-account`, `analyze-meal`, `describe-meal`
 - App sign-in and meal logging work on https://ratioai.vercel.app
-- **Meal AI secret is set** — see [`docs/AI_SETUP.md`](./AI_SETUP.md) (`OPENAI_API_KEY` preferred; redeploy `analyze-meal` after code changes)
+- **Meal AI** — photo/describe analysis runs on Vercel with `OPENAI_API_KEY` (see [`docs/AI_SETUP.md`](./AI_SETUP.md))

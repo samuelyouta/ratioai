@@ -1,41 +1,36 @@
-# Meal AI setup (photo scan + describe)
+# Meal AI setup (OpenAI via Vercel)
 
-RatioAi’s `analyze-meal` and `describe-meal` edge functions call an AI provider using a secret in **Supabase Edge Function secrets**.
+Photo scan no longer depends on the broken Supabase edge-function deploy.
+The app calls **Vercel serverless** routes that use your **OpenAI** key:
 
-## Production setup (OpenAI)
+- `POST https://ratioai.vercel.app/api/analyze-meal`
+- `POST https://ratioai.vercel.app/api/describe-meal`
 
-You already use `OPENAI_API_KEY`. Confirm it here:
+## One-time: add OPENAI_API_KEY on Vercel
 
-https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/settings/functions
+1. Open: https://vercel.com/samueljryouta-7135s-projects/ratioai/settings/environment-variables  
+   (or Vercel → ratioai → Settings → Environment Variables)
+2. Add:
 
-| Name | Value |
-|------|--------|
-| `OPENAI_API_KEY` | your OpenAI secret key (`sk-…`) |
+| Name | Value | Environments |
+|------|--------|----------------|
+| `OPENAI_API_KEY` | same `sk-…` key you already have in Supabase | Production, Preview, Development |
 
-Then **redeploy** the functions so the latest code (which reads `OPENAI_API_KEY`) is live. Secrets alone are not enough if an older function build is still deployed.
+3. Click **Save**, then **Redeploy** the latest production deployment (Deployments → ⋮ → Redeploy).
 
-### Deploy from your Mac (recommended)
+You do **not** need a Gemini key. You do **not** need to fix Supabase function deploy for meal scan to work.
 
-```bash
-npx supabase login
-npx supabase functions deploy analyze-meal describe-meal --project-ref myyjjtclthflfgxkgubr
-```
+## After this PR merges
 
-### Or GitHub Action
-
-1. Refresh the token at https://supabase.com/dashboard/account/tokens  
-2. Update GitHub secret `SUPABASE_ACCESS_TOKEN`  
-3. Run **Deploy Supabase**: https://github.com/samuelyouta/ratioai/actions/workflows/supabase-deploy.yml  
-
-## Provider order
-
-1. `OPENAI_API_KEY` (preferred)
-2. `LOVABLE_API_KEY`
-3. `GEMINI_API_KEY` / `GOOGLE_AI_API_KEY`
+- Web (`ratioai.vercel.app`): works after Vercel redeploy + env var
+- iOS TestFlight: run `npm run cap:sync`, Archive, upload (client now calls `/api/analyze-meal`)
 
 ## Verify
 
-1. Snap a meal photo in the app  
-2. Analysis should return items + macros (not a missing-key error)  
-3. Check function logs if it still fails:  
-   https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/functions/analyze-meal/logs  
+1. Snap a meal photo  
+2. You should get items + macros  
+3. If you see “OPENAI_API_KEY is missing on the server”, the Vercel env var is not set or not redeployed yet
+
+## Optional: still fix Supabase deploy later
+
+Refresh https://supabase.com/dashboard/account/tokens and update GitHub secret `SUPABASE_ACCESS_TOKEN` if you want the Supabase edge functions updated too. Meal scan no longer requires that.
