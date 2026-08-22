@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Disabled: RatioAI production is on Vercel. GitHub Pages is not enabled on this
+# repo, so `actions/deploy-pages` fails with 404 and turns main red for no reason.
+# Keep the workflow file for optional manual use after enabling Pages in settings.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

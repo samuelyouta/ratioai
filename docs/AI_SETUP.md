@@ -25,6 +25,16 @@ You do **not** need a Gemini key. You do **not** need to fix Supabase function d
 - Web (`ratioai.vercel.app`): works after Vercel auto-redeploy (or Deployments → Redeploy) + env var
 - iOS TestFlight: run `npm run cap:sync`, Archive, upload (client now calls `/api/analyze-meal`)
 
+## Status (verified 2026-08-22)
+
+Production `POST /api/analyze-meal` **boots correctly** (returns JSON, not `FUNCTION_INVOCATION_FAILED`).
+
+It currently returns:
+
+`OPENAI_API_KEY is missing on the server…`
+
+Until that env var is set on Vercel and the project is redeployed, meal scans will still fail in the app (often as “Load failed” on iOS).
+
 ## Verify
 
 1. `curl -X POST https://ratioai.vercel.app/api/analyze-meal -H 'Content-Type: application/json' -d '{}'`  
