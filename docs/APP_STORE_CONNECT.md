@@ -76,3 +76,11 @@ Onboarding → Sign in (Apple / Google / Email) → Paywall → App
 - **RequireSubscription** blocks `/app/*` routes until `pro` entitlement is active.
 - Purchases are linked to the Supabase user ID via `Purchases.logIn`.
 - **Restore Purchases** is available on the paywall and Profile screen.
+
+## 6. App Store support URL
+
+Use this public page for App Store Connect → App Information → **Support URL**:
+
+`https://ratioai.vercel.app/support`
+
+It includes contact email (`support@ratioai.app`), FAQ, and links to Privacy / Terms.
