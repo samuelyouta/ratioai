@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
-import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Health } from "capacitor-health";
 import { isNative, getPlatform } from "@/lib/native";
+import { captureCameraPhoto, pickGalleryPhoto } from "@/lib/nativePhoto";
 import { supabase } from "@/integrations/supabase/client";
 
 type PushPermission = "prompt" | "granted" | "denied" | "unsupported";
@@ -72,45 +72,12 @@ export function useNativeFeatures(email?: string) {
 
   const takePhoto = useCallback(async () => {
     if (!isNative()) return null;
-    const photo = await Camera.getPhoto({
-      quality: 85,
-      width: 1600,
-      height: 1600,
-      correctOrientation: true,
-      resultType: CameraResultType.DataUrl,
-      source: CameraSource.Camera,
-    });
-    return photo.dataUrl ?? null;
+    return captureCameraPhoto();
   }, []);
 
-  /**
-   * Pick a photo from the library. Uses the native picker so iOS HEIC assets
-   * are converted to JPEG (WKWebView cannot decode HEIC from <input type="file">).
-   */
   const pickFromGallery = useCallback(async (): Promise<string | null> => {
     if (!isNative()) return null;
-
-    const perm = await Camera.requestPermissions({ permissions: ["photos"] });
-    if (perm.photos !== "granted" && perm.photos !== "limited") {
-      throw new Error("Photo library permission is required. Enable it in Settings.");
-    }
-
-    try {
-      const photo = await Camera.getPhoto({
-        quality: 85,
-        width: 1600,
-        height: 1600,
-        correctOrientation: true,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Photos,
-      });
-      return photo.dataUrl ?? null;
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      // User cancelled the sheet — not an error.
-      if (/cancel/i.test(message)) return null;
-      throw e;
-    }
+    return pickGalleryPhoto();
   }, []);
 
   const requestHealth = useCallback(async () => {

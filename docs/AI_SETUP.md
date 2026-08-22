@@ -22,14 +22,16 @@ You do **not** need a Gemini key. You do **not** need to fix Supabase function d
 
 ## After this PR merges
 
-- Web (`ratioai.vercel.app`): works after Vercel redeploy + env var
+- Web (`ratioai.vercel.app`): works after Vercel auto-redeploy (or Deployments → Redeploy) + env var
 - iOS TestFlight: run `npm run cap:sync`, Archive, upload (client now calls `/api/analyze-meal`)
 
 ## Verify
 
-1. Snap a meal photo  
-2. You should get items + macros  
-3. If you see “OPENAI_API_KEY is missing on the server”, the Vercel env var is not set or not redeployed yet
+1. `curl -X POST https://ratioai.vercel.app/api/analyze-meal -H 'Content-Type: application/json' -d '{}'`  
+   should return JSON like `{"error":"imageBase64 required"}` (not `FUNCTION_INVOCATION_FAILED`)
+2. Snap a meal photo in the app — you should get items + macros  
+3. If you see “OPENAI_API_KEY is missing on the server”, the Vercel env var is not set or not redeployed yet  
+4. If you still see WebKit “Load failed”, the API route is still crashing — check Vercel function logs
 
 ## Optional: still fix Supabase deploy later
 

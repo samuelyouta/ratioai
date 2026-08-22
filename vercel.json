@@ -1,10 +1,10 @@
 {
   "functions": {
-    "api/analyze-meal.ts": {
+    "api/analyze-meal.js": {
       "maxDuration": 60,
       "memory": 1024
     },
-    "api/describe-meal.ts": {
+    "api/describe-meal.js": {
       "maxDuration": 30
     }
   },

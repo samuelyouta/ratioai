@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Minus, Plus, Share2 } from "lucide-react";
 import { saveMeal, type Meal } from "@/lib/profile";
 import { analyzeMealPhoto } from "@/lib/mealAiClient";
+import { consumePendingMealImage } from "@/lib/mealImageStore";
 import { sanitizeMealIcon } from "@/lib/mealIcon";
 import PortionGuideOverlay from "@/components/app/PortionGuideOverlay";
 import ShareRecipeCard from "@/components/app/ShareRecipeCard";
@@ -25,8 +26,6 @@ interface AnalysisResult {
   hiddenIngredientCalories?: number | null;
   notes: string;
 }
-
-const LAST_IMAGE_KEY = "ratioai.lastImage";
 
 function parseHiddenCalories(result: AnalysisResult): number {
   if (typeof result.hiddenIngredientCalories === "number" && result.hiddenIngredientCalories > 0) {
@@ -52,7 +51,7 @@ const Analyze = () => {
   const [autoNavTimer, setAutoNavTimer] = useState<number | null>(null);
 
   useEffect(() => {
-    const dataUrl = sessionStorage.getItem(LAST_IMAGE_KEY);
+    const dataUrl = consumePendingMealImage();
     if (!dataUrl) {
       navigate("/app/log", { replace: true });
       return;
@@ -69,8 +68,21 @@ const Analyze = () => {
         setResult(r);
         setCounts(r.items.map(() => 1));
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Analysis failed";
-        setError(msg);
+        const raw = e instanceof Error ? e.message : "Analysis failed";
+        const lower = raw.toLowerCase();
+        // WebKit often surfaces failed fetch as exactly "Load failed".
+        if (
+          lower === "load failed" ||
+          lower.includes("failed to fetch") ||
+          lower.includes("networkerror") ||
+          lower.includes("function_invocation_failed")
+        ) {
+          setError(
+            "Could not reach meal AI. Check your connection. If this keeps happening, redeploy Vercel with OPENAI_API_KEY set.",
+          );
+        } else {
+          setError(raw);
+        }
       } finally {
         setLoading(false);
       }
@@ -124,7 +136,6 @@ const Analyze = () => {
       notes: result.notes || undefined,
     };
     saveMeal(meal);
-    sessionStorage.removeItem(LAST_IMAGE_KEY);
     setSaved(true);
     const t = window.setTimeout(() => navigate("/app/today", { replace: true }), 3200);
     setAutoNavTimer(t);

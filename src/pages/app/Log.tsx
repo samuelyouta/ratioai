@@ -4,11 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
 import RecentMeals from "@/components/app/RecentMeals";
 import { compressImageForAnalysis, isLikelyImageFile } from "@/lib/image";
+import { setPendingMealImage } from "@/lib/mealImageStore";
 import { isNative } from "@/lib/native";
 import { useNativeFeatures } from "@/hooks/useNativeFeatures";
 import { toast } from "sonner";
-
-const LAST_IMAGE_KEY = "ratioai.lastImage";
 
 type CameraStatus = "starting" | "live" | "denied" | "unavailable";
 
@@ -73,15 +72,15 @@ const Log = () => {
     try {
       const compressed = await compressImageForAnalysis(dataUrl);
       setPreviewUrl(compressed);
-      try {
-        sessionStorage.setItem(LAST_IMAGE_KEY, compressed);
-      } catch {
-        toast.warning("Couldn't cache preview", { description: "Analysis will still run." });
-      }
+      setPendingMealImage(compressed);
       navigate("/app/analyze");
-      } catch {
+    } catch (e) {
+      console.error(e);
       toast.error("Couldn't load that photo", {
-        description: "Try another image, or take a new photo with the camera.",
+        description:
+          e instanceof Error
+            ? e.message
+            : "Try another image, or take a new photo with the camera.",
       });
       setScanning(false);
       void startCamera();

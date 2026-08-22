@@ -1,61 +1,93 @@
-/** Resize and compress a meal photo before API upload / sessionStorage. */
+/** Resize / compress meal photos. Never throws away an already-usable JPEG. */
+
+const MAX_EDGE = 1280;
+const JPEG_QUALITY = 0.82;
 
 export async function compressImageForAnalysis(
   source: File | string,
-  maxEdge = 1280,
-  quality = 0.82,
+  maxEdge = MAX_EDGE,
+  quality = JPEG_QUALITY,
 ): Promise<string> {
-  const dataUrl = typeof source === "string" ? source : await readFileAsDataUrl(source);
+  const dataUrl = typeof source === "string" ? source : await readBlobAsDataUrl(source);
+
+  // Already a compact JPEG — skip canvas work (avoids WKWebView decode quirks).
+  if (isJpegDataUrl(dataUrl) && dataUrl.length < 900_000) {
+    return dataUrl;
+  }
 
   try {
-    const img = await loadImage(dataUrl);
-    const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
-    const width = Math.max(1, Math.round(img.width * scale));
-    const height = Math.max(1, Math.round(img.height * scale));
+    const bitmap = await decodeToBitmap(dataUrl);
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return ensureJpegDataUrl(dataUrl);
-
-    ctx.drawImage(img, 0, 0, width, height);
-    return canvas.toDataURL("image/jpeg", quality);
-  } catch (err) {
-    // Already a browser-decodable JPEG/PNG/WebP — skip resize rather than fail the flow.
-    if (isRasterDataUrl(dataUrl)) {
-      return dataUrl;
+    if (!ctx) {
+      closeBitmap(bitmap);
+      return preferUsableDataUrl(dataUrl);
     }
-    throw err instanceof Error
-      ? err
-      : new Error("Failed to load image");
+
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    closeBitmap(bitmap);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return preferUsableDataUrl(dataUrl);
   }
 }
 
-/** Fetch a Capacitor webPath / blob URL into a data URL. */
 export async function urlToDataUrl(url: string): Promise<string> {
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to read photo");
-  const blob = await res.blob();
-  return readBlobAsDataUrl(blob);
+  return readBlobAsDataUrl(await res.blob());
 }
 
 export function isLikelyImageFile(file: File): boolean {
   if (file.type.startsWith("image/")) return true;
-  // iOS often omits MIME for HEIC / library picks
   return /\.(jpe?g|png|webp|heic|heif|gif|bmp|tiff?)$/i.test(file.name);
 }
 
+function preferUsableDataUrl(dataUrl: string): string {
+  if (isRasterDataUrl(dataUrl)) return dataUrl;
+  throw new Error(
+    "Couldn't decode that photo. Try a screenshot, or take a new photo with the camera.",
+  );
+}
+
+function isJpegDataUrl(dataUrl: string): boolean {
+  return /^data:image\/(jpeg|jpg);base64,/i.test(dataUrl);
+}
+
 function isRasterDataUrl(dataUrl: string): boolean {
-  return /^data:image\/(jpeg|jpg|png|webp|gif|bmp)/i.test(dataUrl);
+  return /^data:image\/(jpeg|jpg|png|webp|gif|bmp);base64,/i.test(dataUrl);
 }
 
-function ensureJpegDataUrl(dataUrl: string): string {
-  return isRasterDataUrl(dataUrl) ? dataUrl : dataUrl;
+async function decodeToBitmap(dataUrl: string): Promise<ImageBitmap | HTMLImageElement> {
+  // createImageBitmap handles more formats more reliably than new Image() on iOS.
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return await createImageBitmap(blob);
+  } catch {
+    return loadHtmlImage(dataUrl);
+  }
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return readBlobAsDataUrl(file);
+function closeBitmap(bitmap: ImageBitmap | HTMLImageElement) {
+  if ("close" in bitmap && typeof bitmap.close === "function") {
+    bitmap.close();
+  }
+}
+
+function loadHtmlImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = src;
+  });
 }
 
 function readBlobAsDataUrl(blob: Blob): Promise<string> {
@@ -64,14 +96,5 @@ function readBlobAsDataUrl(blob: Blob): Promise<string> {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = () => reject(reader.error ?? new Error("Failed to read image"));
     reader.readAsDataURL(blob);
-  });
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Failed to load image"));
-    img.src = src;
   });
 }

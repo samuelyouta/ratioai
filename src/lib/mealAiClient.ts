@@ -25,23 +25,41 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
     data: { session },
   } = await supabase.auth.getSession();
 
-  const res = await fetch(`${mealAiBaseUrl()}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${mealAiBaseUrl()}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const raw = e instanceof Error ? e.message : String(e);
+    const lower = raw.toLowerCase();
+    if (lower === "load failed" || lower.includes("failed to fetch") || lower.includes("network")) {
+      throw new Error(
+        "Could not reach meal AI. Check your connection. If this keeps happening, redeploy Vercel with OPENAI_API_KEY set.",
+      );
+    }
+    throw e instanceof Error ? e : new Error(raw);
+  }
 
+  const text = await res.text();
   let payload: unknown = null;
   try {
-    payload = await res.json();
+    payload = text ? JSON.parse(text) : null;
   } catch {
     payload = null;
   }
 
   if (!res.ok) {
+    if (/FUNCTION_INVOCATION_FAILED/i.test(text)) {
+      throw new Error(
+        "Meal AI server crashed. Redeploy the latest Vercel build (CommonJS /api handlers) with OPENAI_API_KEY set.",
+      );
+    }
     const errMsg =
       payload && typeof payload === "object" && "error" in payload && (payload as { error?: string }).error
         ? String((payload as { error: string }).error)
