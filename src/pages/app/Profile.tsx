@@ -130,6 +130,12 @@ const Profile = () => {
         </button>
 
         <a
+          href="/support"
+          className="block w-full bg-card border border-border rounded-xl py-3 text-sm font-medium text-foreground text-center"
+        >
+          Support & FAQ
+        </a>
+        <a
           href="/privacy"
           className="block w-full bg-card border border-border rounded-xl py-3 text-sm font-medium text-foreground text-center"
         >

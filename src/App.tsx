@@ -13,6 +13,7 @@ import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Support from "./pages/Support";
 import RequireOnboarding from "./components/RequireOnboarding";
 import RequireAuth from "./components/RequireAuth";
 import RequireSubscription from "./components/RequireSubscription";
@@ -57,6 +58,7 @@ const AppRoutes = () => {
       <Route path="/waitlist" element={<Waitlist />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/support" element={<Support />} />
       <Route path="/app" element={<Navigate to="/app/today" replace />} />
       <Route path="/app/welcome" element={<AppWelcome />} />
       <Route path="/app/onboarding/goal" element={<StepGoal />} />
