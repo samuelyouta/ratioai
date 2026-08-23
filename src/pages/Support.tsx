@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, ChevronDown, LifeBuoy, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
-const SUPPORT_EMAIL = "support@ratioai.app";
+const SUPPORT_EMAIL = "samueljryouta@gmail.com";
 
 const faqs = [
   {
