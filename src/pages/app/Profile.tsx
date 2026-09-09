@@ -8,6 +8,7 @@ import { deleteAccount } from "@/lib/account";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 
 const goalLabels: Record<string, string> = {
   lose: "Lose Fat",
@@ -128,6 +129,8 @@ const Profile = () => {
         >
           Recalculate targets
         </button>
+
+        <MedicalDisclaimer className="mb-3" />
 
         <a
           href="/support"

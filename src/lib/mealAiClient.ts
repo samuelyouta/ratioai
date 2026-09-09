@@ -5,25 +5,59 @@ const PUBLIC_WEB_ORIGIN = (
   import.meta.env.VITE_PUBLIC_APP_URL || "https://ratioai.vercel.app"
 ).replace(/\/$/, "");
 
+const MEAL_AI_TIMEOUT_MS = 55_000;
+
 /**
  * Meal AI calls go to Vercel serverless routes that use OPENAI_API_KEY.
- * (Supabase edge deploy is currently blocked by an expired access token,
- * so production still has the old Lovable-only functions.)
  */
 function mealAiBaseUrl(): string {
-  // Native Capacitor always hits the public web origin.
   if (Capacitor.isNativePlatform()) return PUBLIC_WEB_ORIGIN;
-  // Local Vite: prefer same-origin only if /api is proxied; otherwise public origin.
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return PUBLIC_WEB_ORIGIN;
   }
   return PUBLIC_WEB_ORIGIN;
 }
 
+function userFacingAiError(raw: string, status?: number): string {
+  const lower = raw.toLowerCase();
+  if (
+    lower === "load failed" ||
+    lower.includes("failed to fetch") ||
+    lower.includes("network") ||
+    lower.includes("offline")
+  ) {
+    return "You appear to be offline or the connection dropped. Check your network and try again.";
+  }
+  if (lower.includes("abort") || lower.includes("timed out") || lower.includes("timeout")) {
+    return "Meal analysis timed out. Try a clearer photo or try again in a moment.";
+  }
+  if (lower.includes("api_key") || lower.includes("not configured") || lower.includes("openai")) {
+    return "Meal analysis is temporarily unavailable. Please try again later.";
+  }
+  if (status === 429 || lower.includes("rate limit")) {
+    return "Meal AI is busy right now. Please wait a moment and try again.";
+  }
+  if (/FUNCTION_INVOCATION_FAILED/i.test(raw)) {
+    return "Meal analysis is temporarily unavailable. Please try again later.";
+  }
+  // Strip internal ops hints from user-visible errors.
+  if (lower.includes("redeploy") || lower.includes("vercel") || lower.includes("supabase")) {
+    return "Meal analysis is temporarily unavailable. Please try again later.";
+  }
+  return raw || "Meal analysis failed. Please try again.";
+}
+
 async function postMealAi<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    throw new Error("You appear to be offline. Check your network and try again.");
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
+
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), MEAL_AI_TIMEOUT_MS);
 
   let res: Response;
   try {
@@ -34,16 +68,13 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
         ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
   } catch (e) {
     const raw = e instanceof Error ? e.message : String(e);
-    const lower = raw.toLowerCase();
-    if (lower === "load failed" || lower.includes("failed to fetch") || lower.includes("network")) {
-      throw new Error(
-        "Could not reach meal AI. Check your connection. If this keeps happening, redeploy Vercel with OPENAI_API_KEY set.",
-      );
-    }
-    throw e instanceof Error ? e : new Error(raw);
+    throw new Error(userFacingAiError(raw));
+  } finally {
+    window.clearTimeout(timer);
   }
 
   const text = await res.text();
@@ -55,20 +86,15 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
   }
 
   if (!res.ok) {
-    if (/FUNCTION_INVOCATION_FAILED/i.test(text)) {
-      throw new Error(
-        "Meal AI server crashed. Redeploy the latest Vercel build (CommonJS /api handlers) with OPENAI_API_KEY set.",
-      );
-    }
     const errMsg =
       payload && typeof payload === "object" && "error" in payload && (payload as { error?: string }).error
         ? String((payload as { error: string }).error)
-        : `Meal AI request failed (${res.status})`;
-    throw new Error(errMsg);
+        : text || `Meal AI request failed (${res.status})`;
+    throw new Error(userFacingAiError(errMsg, res.status));
   }
 
   if (payload && typeof payload === "object" && "error" in payload && (payload as { error?: string }).error) {
-    throw new Error(String((payload as { error: string }).error));
+    throw new Error(userFacingAiError(String((payload as { error: string }).error)));
   }
 
   return payload as T;

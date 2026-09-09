@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.jpg";
+import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 
 
 const AppWelcome = () => {
@@ -32,7 +33,7 @@ const AppWelcome = () => {
         </p>
 
         <div className="flex flex-wrap justify-center gap-2 mb-10 max-w-xs">
-          {["📸 Photo AI", "🔬 Hidden Ingredients", "📊 7-Day Trends", "🌍 200+ Cuisines"].map((tag) => (
+          {["📸 Photo AI", "🔬 Hidden Ingredients", "📊 Daily Trends", "🎯 Macro Targets"].map((tag) => (
             <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full">
               {tag}
             </span>
@@ -57,6 +58,8 @@ const AppWelcome = () => {
 
 
         
+
+        <MedicalDisclaimer compact className="mt-6 max-w-xs text-center" />
 
         <div className="flex items-center justify-center gap-2 mt-3">
           <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">

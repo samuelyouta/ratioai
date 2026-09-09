@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronDown, LifeBuoy, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 
-const SUPPORT_EMAIL = "samueljryouta@gmail.com";
+const SUPPORT_EMAIL = "support@ratioai.app";
 
 const faqs = [
   {
@@ -11,7 +12,7 @@ const faqs = [
   },
   {
     q: "Photo scan failed or says “Load failed”",
-    a: "Try a clearer, well-lit photo of the food (avoid screenshots of screens). Allow camera and Photos access in Settings. If it still fails, email us with your device model and iOS version.",
+    a: "Try a clearer, well-lit photo of the food (avoid screenshots of screens). Allow camera and Photos access in Settings. If you are offline, reconnect and try again. If it still fails, email us with your device model and iOS version.",
   },
   {
     q: "How do I manage or restore my subscription?",
@@ -19,15 +20,15 @@ const faqs = [
   },
   {
     q: "How do I delete my account?",
-    a: "Go to Profile → Delete Account. This permanently removes your account and associated data. You can also email us if you need help completing a deletion request.",
+    a: "Go to Profile → Delete Account. This permanently removes your account and associated cloud data. You can also email us if you need help completing a deletion request.",
   },
   {
-    q: "Are calorie estimates medical advice?",
-    a: "No. RatioAi provides AI-powered estimates for informational purposes only. Always consult a qualified healthcare professional before making significant dietary changes.",
+    q: "Is RatioAi medical advice? Do you track glucose?",
+    a: "No. RatioAi provides AI nutrition estimates for informational / fitness purposes only — not medical advice and not a medical device. We do not integrate with CGMs or collect continuous glucose readings. Body metrics you enter (height, weight, age, activity) are used only to personalize calorie targets.",
   },
   {
     q: "I can’t sign in with Apple or Google",
-    a: "Check your network connection, then try again. For Apple Sign In, make sure you’re signed into iCloud on the device. If the problem continues, tell us which sign-in method you used and any error text you saw.",
+    a: "Check your network connection, then try again. For Apple Sign In, make sure you’re signed into iCloud on the device. Password sign-in is also available for email accounts that have a password set.",
   },
 ];
 
@@ -60,6 +61,8 @@ const Support = () => {
           </div>
         </div>
 
+        <MedicalDisclaimer />
+
         <section className="space-y-3">
           <h3 className="text-sm font-bold text-foreground">Contact us</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -76,9 +79,6 @@ const Support = () => {
             <Mail className="w-4 h-4" />
             Email support
           </a>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Include your account email, device, and a short description of the issue so we can help faster.
-          </p>
         </section>
 
         <section className="space-y-3">

@@ -8,6 +8,11 @@ import { getProfile, saveProfile, getMeals, type Profile, type Meal } from "@/li
 const CLIENT_ID_KEY = "ratioai.client_id";
 const MEALS_KEY = "ratioai.meals";
 
+function mealsWithoutPhotos(meals: Meal[]): Meal[] {
+  return meals.map(({ imageDataUrl: _photo, ...rest }) => ({ ...rest, imageDataUrl: null }));
+}
+
+
 export function getClientId(): string {
   let id = localStorage.getItem(CLIENT_ID_KEY);
   if (!id) {
@@ -59,7 +64,7 @@ export async function recordVisit() {
           platform: getPlatform(),
           user_agent: navigator.userAgent,
           profile: (getProfile() ?? null) as unknown as never,
-          meals: getMeals() as unknown as never,
+          meals: mealsWithoutPhotos(getMeals()) as unknown as never,
         },
       ]);
     }
@@ -83,7 +88,7 @@ export async function syncSession() {
       .from("app_sessions")
       .update({
         profile: (getProfile() ?? null) as unknown as never,
-        meals: getMeals() as unknown as never,
+        meals: mealsWithoutPhotos(getMeals()) as unknown as never,
         last_seen_at: new Date().toISOString(),
       })
       .eq("client_id", client_id);

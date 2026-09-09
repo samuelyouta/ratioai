@@ -20,6 +20,7 @@ import {
   type LevelUpReward,
 } from "@/lib/streak";
 import { toast } from "sonner";
+import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 
 const Today = () => {
   const navigate = useNavigate();
@@ -198,6 +199,7 @@ const Today = () => {
         )}
       </div>
 
+      <div className="px-6 mb-4"><MedicalDisclaimer compact /></div>
       <BottomNav />
     </div>
   );

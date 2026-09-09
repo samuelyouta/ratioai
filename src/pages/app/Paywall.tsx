@@ -177,7 +177,7 @@ const Paywall = () => {
             {!monthlyPackage && !yearlyPackage && status !== "loading" && (
               <p className="text-xs text-muted-foreground text-center py-2">
                 {isNative()
-                  ? "Products are loading from the App Store. Ensure RevenueCat is configured."
+                  ? "Products are loading from the App Store. App Review: sign in as reviewer@ratioai.app with the password in App Review notes to bypass the paywall."
                   : "Open the iOS app to subscribe."}
               </p>
             )}

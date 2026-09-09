@@ -23,7 +23,8 @@ const SignIn = () => {
   const from = (location.state as { from?: string; error?: string } | null)?.from || "/app/today";
 
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<"apple" | "google" | "email" | null>(null);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState<"apple" | "google" | "email" | "password" | null>(null);
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(
@@ -72,6 +73,34 @@ const SignIn = () => {
     } finally {
       setBusy(null);
     }
+  };
+
+  
+  const handlePasswordSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    const trimmed = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setErr("Enter a valid email.");
+      return;
+    }
+    if (password.length < 6) {
+      setErr("Enter your password.");
+      return;
+    }
+    setBusy("password");
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: trimmed,
+      password,
+    });
+    setBusy(null);
+    if (error || !data.user) {
+      setErr(error?.message || "Could not sign in with password.");
+      return;
+    }
+    await syncUserData(data.user.id);
+    const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
+    navigate(next, { replace: true });
   };
 
   const handleEmail = async (e: React.FormEvent) => {
@@ -187,6 +216,18 @@ const SignIn = () => {
                   className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-colors"
                   maxLength={255}
                 />
+                <input
+                  type="password"
+                  placeholder="Password (optional — for demo / email+password accounts)"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (err) setErr(null);
+                  }}
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-colors"
+                  autoComplete="current-password"
+                />
+
                 <button
                   type="submit"
                   disabled={busy !== null}
@@ -199,6 +240,22 @@ const SignIn = () => {
                   )}
                   Send sign-in link
                 </button>
+                {password ? (
+                  <button
+                    type="button"
+                    onClick={(e) => void handlePasswordSignIn(e)}
+                    disabled={busy !== null}
+                    className="w-full flex items-center justify-center gap-2 bg-card border border-border text-foreground rounded-xl px-4 py-3.5 text-sm font-semibold hover:border-primary/60 transition-colors disabled:opacity-60"
+                  >
+                    {busy === "password" ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Mail className="w-4 h-4" />
+                    )}
+                    Sign in with password
+                  </button>
+                ) : null}
+
               </form>
             )}
 

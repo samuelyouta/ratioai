@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { PushNotifications } from "@capacitor/push-notifications";
-import { Health } from "capacitor-health";
 import { isNative, getPlatform } from "@/lib/native";
 import { captureCameraPhoto, pickGalleryPhoto } from "@/lib/nativePhoto";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,21 +79,6 @@ export function useNativeFeatures(email?: string) {
     return pickGalleryPhoto();
   }, []);
 
-  const requestHealth = useCallback(async () => {
-    if (!isNative()) return "unsupported" as const;
-    try {
-      const available = await Health.isHealthAvailable();
-      if (!available?.available) return "unsupported" as const;
-      await Health.requestHealthPermissions({
-        permissions: ["READ_STEPS", "READ_ACTIVE_CALORIES", "READ_HEART_RATE"],
-      });
-      return "granted" as const;
-    } catch (e) {
-      console.error("Health permission error", e);
-      return "denied" as const;
-    }
-  }, []);
-
   return {
     isNative: isNative(),
     platform: getPlatform(),
@@ -104,6 +88,5 @@ export function useNativeFeatures(email?: string) {
     tapHaptic,
     takePhoto,
     pickFromGallery,
-    requestHealth,
   };
 }

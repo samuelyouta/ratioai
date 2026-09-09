@@ -12,7 +12,7 @@ npx cap open ios
 
 1. **Signing** — select your Team under Signing & Capabilities for the `App` target.
 2. **Bundle ID** — must match App Store Connect (`app.lovable.c9c7af010da54a22a51eb40ca37bcbd2` or your custom ID).
-3. **Capabilities** — enable Push Notifications and HealthKit if using those features.
+3. **Capabilities** — enable Push Notifications if using those features.
 4. **In-App Purchases** — add the StoreKit capability for RevenueCat subscriptions.
 
 ## RevenueCat (native iOS)
@@ -34,7 +34,6 @@ Configured in `ios/App/App/Info.plist`:
 | `NSCameraUsageDescription` | Meal photo analysis |
 | `NSMicrophoneUsageDescription` | Voice meal descriptions |
 | `NSPhotoLibraryUsageDescription` | Pick photos from library |
-| `NSHealthShareUsageDescription` | Read steps / activity |
 | `UIBackgroundModes` | Push notifications |
 
 ## Icons & splash

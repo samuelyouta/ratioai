@@ -42,6 +42,17 @@ serve(async (req) => {
     await admin.from("meals").delete().eq("user_id", user.id);
     await admin.from("profiles").delete().eq("id", user.id);
 
+    // Best-effort: clear anonymous device sessions if client_id provided.
+    try {
+      const body = await req.clone().json().catch(() => ({}));
+      const clientId = typeof body?.client_id === "string" ? body.client_id : null;
+      if (clientId) {
+        await admin.from("app_sessions").delete().eq("client_id", clientId);
+      }
+    } catch (sessionErr) {
+      console.warn("app_sessions cleanup skipped", sessionErr);
+    }
+
     if (user.email) {
       await admin.from("push_tokens").delete().eq("email", user.email);
     }

@@ -24,6 +24,7 @@ import {
   restorePurchases,
   type SubscriptionStatus,
 } from "@/lib/subscriptions";
+import { isReviewerEmail } from "@/lib/reviewerAccess";
 
 interface SubscriptionContextValue {
   status: SubscriptionStatus;
@@ -44,6 +45,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     subscriptionRequired ? "loading" : "active",
   );
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [reviewerBypass, setReviewerBypass] = useState(false);
   const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(null);
   const [yearlyPackage, setYearlyPackage] = useState<PurchasesPackage | null>(null);
 
@@ -159,10 +161,25 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }, [applyCustomerInfo]);
 
+
+  useEffect(() => {
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled) setReviewerBypass(isReviewerEmail(data.session?.user?.email));
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled) setReviewerBypass(isReviewerEmail(session?.user?.email));
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
   const value = useMemo<SubscriptionContextValue>(
     () => ({
       status,
-      isPro: !subscriptionRequired || hasActiveEntitlement(customerInfo),
+      isPro: !subscriptionRequired || reviewerBypass || hasActiveEntitlement(customerInfo),
       subscriptionRequired,
       monthlyPackage,
       yearlyPackage,

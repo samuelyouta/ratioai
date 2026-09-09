@@ -23,7 +23,7 @@ const FoodItem = ({ name, portion, calories, protein, carbs, fat, confidence }: 
             <h4 className="font-semibold text-foreground truncate">{name}</h4>
             {confidence >= 90 && (
               <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                USDA
+                High confidence
               </span>
             )}
           </div>

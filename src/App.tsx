@@ -9,7 +9,6 @@ import { useHardwareBack } from "@/hooks/useHardwareBack";
 import { useViewportFix } from "@/hooks/useViewportFix";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
 import { recordVisit, startSessionAutoSync } from "@/lib/session";
-import Waitlist from "./pages/Waitlist";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -55,7 +54,7 @@ const AppRoutes = () => {
     <Routes>
       {/* Preserve OAuth ?code= if Supabase returns to Site URL (/) — still used on web */}
       <Route path="/" element={<AuthEntry fallbackTo="/app/welcome" />} />
-      <Route path="/waitlist" element={<Waitlist />} />
+      <Route path="/waitlist" element={<Navigate to="/app/welcome" replace />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/support" element={<Support />} />

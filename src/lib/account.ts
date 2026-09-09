@@ -26,7 +26,10 @@ export function clearLocalAccountData() {
  * Requires an active Supabase session.
  */
 export async function deleteAccount() {
-  await invokeEdgeFunction<{ success: boolean }>("delete-account", {});
+  const clientId = localStorage.getItem("ratioai.client_id");
+  await invokeEdgeFunction<{ success: boolean }>("delete-account", {
+    client_id: clientId,
+  });
   await logoutRevenueCat();
   await supabase.auth.signOut();
   clearLocalAccountData();

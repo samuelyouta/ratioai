@@ -1,3 +1,4 @@
+import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { motion } from "framer-motion";
 
 interface OnboardingLayoutProps {
@@ -37,6 +38,10 @@ const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps)
       >
         {children}
       </motion.div>
+
+      <div className="px-6 pb-3">
+        <MedicalDisclaimer compact className="text-center" />
+      </div>
 
       <div className="px-6 pb-4 flex items-center justify-center gap-2">
         <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">

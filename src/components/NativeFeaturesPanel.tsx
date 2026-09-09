@@ -9,7 +9,7 @@ interface Props {
 }
 
 const NativeFeaturesPanel = ({ email }: Props) => {
-  const { isNative, platform, pushPermission, enablePush, requestHealth, tapHaptic } =
+  const { isNative, platform, pushPermission, enablePush, tapHaptic } =
     useNativeFeatures(email);
 
   if (!isNative) return null;
@@ -19,14 +19,6 @@ const NativeFeaturesPanel = ({ email }: Props) => {
     const result = await enablePush();
     if (result === "granted") toast.success("Notifications enabled");
     else if (result === "denied") toast.error("Notifications blocked in Settings");
-  };
-
-  const handleHealth = async () => {
-    await tapHaptic();
-    const result = await requestHealth();
-    if (result === "granted") toast.success(`${platform === "ios" ? "Apple Health" : "Google Fit"} connected`);
-    else if (result === "denied") toast.error("Health access denied");
-    else toast.error("Health not available on this device");
   };
 
   return (
@@ -55,18 +47,10 @@ const NativeFeaturesPanel = ({ email }: Props) => {
             </span>
             {pushPermission === "granted" && <Check className="w-4 h-4 text-primary" />}
           </Button>
-
-          <Button
-            onClick={handleHealth}
-            variant="secondary"
-            className="w-full justify-between"
-          >
-            <span>Connect {platform === "ios" ? "Apple Health" : "Google Fit"}</span>
-          </Button>
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          We'll let you know the moment your spot opens up.
+          Optional device notifications for meal reminders.
         </p>
       </motion.section>
     </AnimatePresence>

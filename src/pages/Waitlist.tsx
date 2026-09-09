@@ -21,7 +21,7 @@ const features = [
   {
     icon: Brain,
     title: "AI Analysis",
-    description: "Instant macro breakdown with USDA-verified data",
+    description: "Instant macro breakdown powered by AI estimates",
   },
   {
     icon: TrendingUp,
@@ -110,7 +110,7 @@ const Waitlist = () => {
           RatioAi
         </h1>
         <p className="text-muted-foreground text-sm max-w-xs leading-relaxed mb-6">
-          AI-powered nutrition tracking is almost here. Join the waitlist to get early access.
+          AI-powered nutrition tracking for clearer meal macros. Create an account to get started.
         </p>
 
         {/* Email form */}

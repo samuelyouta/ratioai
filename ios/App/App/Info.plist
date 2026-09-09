@@ -51,10 +51,6 @@
 	<string>RatioAi can save meal photos to your library when you choose to export them.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>RatioAi accesses your photo library so you can pick meal photos to analyze.</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>RatioAi reads steps and activity from Apple Health to improve your calorie targets.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>RatioAi may write activity summaries to Apple Health when you enable integrations.</string>
 	<key>GIDClientID</key>
 	<string>115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com</string>
 	<key>RevenueCatAPIKey</key>

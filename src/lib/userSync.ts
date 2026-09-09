@@ -37,19 +37,26 @@ function rowToProfile(row: Record<string, unknown> | null): Profile | null {
   return null;
 }
 
+/** Cloud meal payload without photo binaries (kept on-device only). */
+function mealForCloud(m: Meal): Meal {
+  const { imageDataUrl: _photo, ...rest } = m;
+  return { ...rest, imageDataUrl: null };
+}
+
 function mealToRow(m: Meal, userId: string) {
+  const cloudMeal = mealForCloud(m);
   return {
     user_id: userId,
-    client_id: m.id,
-    logged_at: m.loggedAt,
-    name: m.title,
-    icon: m.icon,
-    calories: Math.round(m.totalCalories || 0),
-    protein: m.totalProtein || 0,
-    carbs: m.totalCarbs || 0,
-    fat: m.totalFat || 0,
-    source: m.source ?? null,
-    data: m as unknown as Record<string, unknown>,
+    client_id: cloudMeal.id,
+    logged_at: cloudMeal.loggedAt,
+    name: cloudMeal.title,
+    icon: cloudMeal.icon,
+    calories: Math.round(cloudMeal.totalCalories || 0),
+    protein: cloudMeal.totalProtein || 0,
+    carbs: cloudMeal.totalCarbs || 0,
+    fat: cloudMeal.totalFat || 0,
+    source: cloudMeal.source ?? null,
+    data: cloudMeal as unknown as Record<string, unknown>,
   };
 }
 
