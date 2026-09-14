@@ -84,3 +84,12 @@ Privacy Policy URL (must be public, no login):
 3. Confirm `OPENAI_API_KEY` on Vercel (meal scan works during review).
 4. Redeploy `delete-account` edge function; `npm run cap:sync` and ship a new iOS build.
 5. Paste Review Notes + demo credentials in App Store Connect.
+
+## HealthKit / CareKit (Guideline 2.5.1 — transparency)
+
+Apple flagged that the binary linked HealthKit APIs without clear in-app HealthKit UI.
+
+**Resolution in this codebase:** RatioAi does **not** use Apple Health / HealthKit / CareKit for any product feature. We removed the leftover `capacitor-health` native link from `ios/App/CapApp-SPM/Package.swift` so the App Store binary no longer includes HealthKit. There is no Health connect control in Profile or elsewhere because the feature does not exist.
+
+Do **not** enable the HealthKit capability in Xcode for RatioAi unless you later ship a real Apple Health integration with clear UI labeling (e.g. “Connect Apple Health (HealthKit) to import steps”).
+
