@@ -7,9 +7,11 @@ import { useSubscription } from "@/hooks/useSubscription";
  */
 const RequireSubscription = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const { status, isPro, subscriptionRequired } = useSubscription();
+  const { status, isPro, subscriptionRequired, productsUnavailable } = useSubscription();
 
-  if (!subscriptionRequired || isPro) {
+  // Nothing is purchasable (store outage, or In-App Purchases still awaiting
+  // review), so a paywall here would be an unescapable dead end.
+  if (!subscriptionRequired || isPro || productsUnavailable) {
     return <>{children}</>;
   }
 

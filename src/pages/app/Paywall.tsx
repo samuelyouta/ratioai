@@ -175,11 +175,22 @@ const Paywall = () => {
             )}
 
             {!monthlyPackage && !yearlyPackage && status !== "loading" && (
-              <p className="text-xs text-muted-foreground text-center py-2">
-                {isNative()
-                  ? "Products are loading from the App Store. App Review: sign in as reviewer@ratioai.app with the password in App Review notes to bypass the paywall."
-                  : "Open the iOS app to subscribe."}
-              </p>
+              <div className="py-2 space-y-3">
+                <p className="text-xs text-muted-foreground text-center leading-relaxed">
+                  {isNative()
+                    ? "Subscriptions are not available from the App Store right now. You can keep using RatioAi and subscribe later."
+                    : "Open the iOS app to subscribe."}
+                </p>
+                {isNative() && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(from, { replace: true })}
+                    className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-sm font-semibold text-foreground hover:border-primary/60 transition-colors"
+                  >
+                    Continue to RatioAi
+                  </button>
+                )}
+              </div>
             )}
           </div>
 

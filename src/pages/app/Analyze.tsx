@@ -78,7 +78,7 @@ const Analyze = () => {
           lower.includes("function_invocation_failed")
         ) {
           setError(
-            "Could not reach meal AI. Check your connection. If this keeps happening, redeploy Vercel with OPENAI_API_KEY set.",
+            "Could not reach meal AI. Check your connection and try again in a moment.",
           );
         } else {
           setError(raw);

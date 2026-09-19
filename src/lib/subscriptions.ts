@@ -96,9 +96,16 @@ export async function configureRevenueCat(appUserId?: string): Promise<boolean> 
 
 export async function loginRevenueCat(appUserId: string) {
   if (!isNative()) return null;
-  await configureRevenueCat(appUserId);
-  const { customerInfo } = await Purchases.logIn({ appUserID: appUserId });
-  return customerInfo;
+  // Without a configured SDK every later call throws and leaves the paywall
+  // gate spinning forever, so bail out instead of calling logIn().
+  if (!(await configureRevenueCat(appUserId))) return null;
+  try {
+    const { customerInfo } = await Purchases.logIn({ appUserID: appUserId });
+    return customerInfo;
+  } catch (e) {
+    console.warn("RevenueCat login failed", e);
+    return null;
+  }
 }
 
 export async function logoutRevenueCat() {
@@ -112,16 +119,26 @@ export async function logoutRevenueCat() {
 
 export async function getCustomerInfo(): Promise<CustomerInfo | null> {
   if (!isNative()) return null;
-  if (!(await configureRevenueCat())) return null;
-  const { customerInfo } = await Purchases.getCustomerInfo();
-  return customerInfo;
+  try {
+    if (!(await configureRevenueCat())) return null;
+    const { customerInfo } = await Purchases.getCustomerInfo();
+    return customerInfo;
+  } catch (e) {
+    console.warn("RevenueCat customer info failed", e);
+    return null;
+  }
 }
 
 export async function getOfferings(): Promise<PurchasesOfferings | null> {
   if (!isNative()) return null;
-  if (!(await configureRevenueCat())) return null;
-  const offerings = await Purchases.getOfferings();
-  return offerings;
+  try {
+    if (!(await configureRevenueCat())) return null;
+    const offerings = await Purchases.getOfferings();
+    return offerings;
+  } catch (e) {
+    console.warn("RevenueCat offerings failed", e);
+    return null;
+  }
 }
 
 export async function purchasePackage(pkg: PurchasesPackage): Promise<CustomerInfo> {
