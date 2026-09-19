@@ -37,6 +37,15 @@ export type SignInResult = {
   browserPending?: boolean;
 };
 
+/**
+ * ASAuthorization reports a plain "canceled" (code 1001) both when the user
+ * dismisses the sheet and when the sheet never managed to present — which is
+ * what iPad hit during App Review. A cancel this fast cannot be a human, so we
+ * treat it as a failure and fall back to the browser flow instead of silently
+ * leaving the user on the sign-in screen.
+ */
+const MIN_HUMAN_CANCEL_MS = 1_200;
+
 export function getAppUrl(path: string): string {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -363,6 +372,7 @@ export async function signInWithOAuth(
     return { error: error ? new Error(error.message) : null };
   }
 
+  const startedAt = Date.now();
   try {
     await ensureSocialLoginInitialized();
     // App Store Guideline 4.8: Sign in with Apple must be a native equivalent to Google.
@@ -379,7 +389,12 @@ export async function signInWithOAuth(
     }
     return { error: new Error("Unknown provider") };
   } catch (e) {
-    if (isCancelledError(e)) return { error: null, cancelled: true };
+    if (isCancelledError(e)) {
+      if (Date.now() - startedAt < MIN_HUMAN_CANCEL_MS) {
+        return signInWithBrowserOAuth(provider, redirectPath);
+      }
+      return { error: null, cancelled: true };
+    }
     return signInWithBrowserOAuth(provider, redirectPath);
   }
 }
