@@ -71,6 +71,16 @@ export function extractGrams(portion: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/**
+ * Pluralise the head noun rather than the whole phrase, so "Deck of cards"
+ * reads as "decks of cards" instead of "deck of cardss".
+ */
+function pluralizeReference(object: string): string {
+  const [head, ...rest] = object.toLowerCase().split(" of ");
+  const plural = head.endsWith("s") ? head : `${head}s`;
+  return [plural, ...rest].join(" of ");
+}
+
 /** Return a human-friendly comparison of AI grams vs reference grams. */
 export function compareToReference(
   estimateGrams: number | null,
@@ -82,8 +92,8 @@ export function compareToReference(
   if (rounded < 0.4) return { ratio, label: `Smaller than 1 ${ref.object.toLowerCase()}` };
   if (rounded < 0.85) return { ratio, label: `About ½ ${ref.object.toLowerCase()}` };
   if (rounded < 1.2) return { ratio, label: `≈ 1 ${ref.object.toLowerCase()}` };
-  if (rounded < 1.7) return { ratio, label: `About 1½ ${ref.object.toLowerCase()}s` };
-  return { ratio, label: `≈ ${rounded} ${ref.object.toLowerCase()}s` };
+  if (rounded < 1.7) return { ratio, label: `About 1½ ${pluralizeReference(ref.object)}` };
+  return { ratio, label: `≈ ${rounded} ${pluralizeReference(ref.object)}` };
 }
 
 /**
