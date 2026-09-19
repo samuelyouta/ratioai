@@ -8,6 +8,12 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DEMO_EMAIL,
+  DEMO_USER_ID,
+  isDemoMode,
+  onDemoModeChange,
+} from "@/lib/demoMode";
 
 type AuthStatus = "loading" | "in" | "out";
 
@@ -15,7 +21,19 @@ interface AuthContextValue {
   status: AuthStatus;
   session: Session | null;
   user: User | null;
+  isDemo: boolean;
 }
+
+/** Local stand-in user for App Review demo mode — never hits Supabase. */
+const DEMO_USER = {
+  id: DEMO_USER_ID,
+  email: DEMO_EMAIL,
+  aud: "authenticated",
+  role: "authenticated",
+  app_metadata: { provider: "demo" },
+  user_metadata: { full_name: "App Review" },
+  created_at: new Date(0).toISOString(),
+} as unknown as User;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -26,6 +44,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [session, setSession] = useState<Session | null>(null);
+  const [demo, setDemo] = useState(() => isDemoMode());
+
+  useEffect(() => onDemoModeChange(() => setDemo(isDemoMode())), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,11 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      status,
+      status: demo ? "in" : status,
       session,
-      user: session?.user ?? null,
+      user: session?.user ?? (demo ? DEMO_USER : null),
+      isDemo: demo,
     }),
-    [status, session],
+    [status, session, demo],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

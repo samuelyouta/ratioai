@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoMode } from "@/lib/demoMode";
 
 const PUBLIC_WEB_ORIGIN = (
   import.meta.env.VITE_PUBLIC_APP_URL || "https://ratioai.vercel.app"
@@ -47,7 +48,63 @@ function userFacingAiError(raw: string, status?: number): string {
   return raw || "Meal analysis failed. Please try again.";
 }
 
+/**
+ * Sample analysis used only in App Review demo mode when the AI service cannot
+ * be reached, so the reviewer can still walk the whole logging flow.
+ */
+function demoAnalysis(description?: string) {
+  const isDescribed = Boolean(description?.trim());
+  return {
+    title: isDescribed ? description!.trim().slice(0, 40) : "Chicken, rice & avocado bowl",
+    icon: "🍗",
+    items: [
+      {
+        name: "Grilled chicken breast",
+        portion: "180 g",
+        calories: 297,
+        protein: 56,
+        carbs: 0,
+        fat: 7,
+        confidence: 0.92,
+      },
+      {
+        name: "Jasmine rice",
+        portion: "150 g",
+        calories: 195,
+        protein: 4,
+        carbs: 43,
+        fat: 0,
+        confidence: 0.88,
+      },
+      {
+        name: "Avocado",
+        portion: "50 g",
+        calories: 80,
+        protein: 1,
+        carbs: 4,
+        fat: 7,
+        confidence: 0.81,
+      },
+    ],
+    hiddenIngredient: "Cooking oil adds roughly 40 calories that are easy to miss.",
+    hiddenIngredientCalories: 40,
+    notes: "Demo mode: sample analysis shown because the AI service is unreachable.",
+  };
+}
+
 async function postMealAi<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  try {
+    return await requestMealAi<T>(path, body);
+  } catch (e) {
+    if (isDemoMode()) {
+      const description = typeof body.description === "string" ? body.description : undefined;
+      return demoAnalysis(description) as T;
+    }
+    throw e;
+  }
+}
+
+async function requestMealAi<T>(path: string, body: Record<string, unknown>): Promise<T> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     throw new Error("You appear to be offline. Check your network and try again.");
   }

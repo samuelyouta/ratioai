@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
+import { startDemoMode } from "@/lib/demoMode";
 
 
 const AppWelcome = () => {
@@ -54,6 +55,17 @@ const AppWelcome = () => {
           className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           I already have an account
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            startDemoMode();
+            navigate("/app/today", { replace: true });
+          }}
+          className="mt-3 text-sm text-primary hover:opacity-80 transition-opacity underline underline-offset-4"
+        >
+          Explore demo — no account needed
         </button>
 
 

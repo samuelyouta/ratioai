@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Mail, CheckCircle } from "lucide-react";
+import { Loader2, Mail, CheckCircle, PlayCircle } from "lucide-react";
+import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
+import { matchesDemoCredentials, startDemoMode } from "@/lib/demoMode";
 import {
   signInWithOAuth,
   getEmailRedirectUrl,
@@ -37,6 +39,36 @@ const SignIn = () => {
     }
   }, [from, location.pathname, location.state, navigate]);
 
+  /**
+   * If the in-app browser closes without handing a session back (the iPad
+   * failure App Review hit), say so and offer a way forward instead of just
+   * dropping the user back on this screen with no explanation.
+   */
+  useEffect(() => {
+    if (!pending) return;
+    let cancelled = false;
+    let handle: { remove: () => Promise<void> } | undefined;
+
+    void Browser.addListener("browserFinished", () => {
+      window.setTimeout(async () => {
+        if (cancelled) return;
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user || cancelled) return;
+        setPending(null);
+        setErr(
+          "Sign-in did not complete. Try again, or use the demo below to explore the app.",
+        );
+      }, 1_500);
+    }).then((h) => {
+      handle = h;
+    });
+
+    return () => {
+      cancelled = true;
+      void handle?.remove();
+    };
+  }, [pending]);
+
   const finishNativeSession = async () => {
     const { data: userResult } = await supabase.auth.getUser();
     const user = userResult.user ?? (await supabase.auth.getSession()).data.session?.user;
@@ -49,13 +81,27 @@ const SignIn = () => {
     navigate(next, { replace: true });
   };
 
+  /**
+   * App Review demo mode. Runs entirely on-device so it cannot fail because of
+   * a missing Supabase user, an expired password or a network problem.
+   */
+  const enterDemoMode = () => {
+    startDemoMode();
+    navigate("/app/today", { replace: true });
+  };
+
   const handleOAuth = async (provider: "google" | "apple") => {
     setErr(null);
     setPending(null);
     setBusy(provider);
     try {
       const { error, cancelled, nativeSession, browserPending } = await signInWithOAuth(provider, from);
-      if (cancelled) return;
+      if (cancelled) {
+        setErr(
+          `${provider === "apple" ? "Apple" : "Google"} sign-in was cancelled. Try again, or use the demo below.`,
+        );
+        return;
+      }
       if (error) {
         setErr(formatOAuthError(provider, error));
         return;
@@ -80,6 +126,12 @@ const SignIn = () => {
     e.preventDefault();
     setErr(null);
     const trimmed = email.trim().toLowerCase();
+    // Checked before any validation: the published demo password is shorter
+    // than the minimum we enforce for real accounts.
+    if (matchesDemoCredentials(trimmed, password)) {
+      enterDemoMode();
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setErr("Enter a valid email.");
       return;
@@ -107,6 +159,10 @@ const SignIn = () => {
     e.preventDefault();
     setErr(null);
     const trimmed = email.trim().toLowerCase();
+    if (matchesDemoCredentials(trimmed, password)) {
+      enterDemoMode();
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setErr("Enter a valid email.");
       return;
@@ -218,7 +274,7 @@ const SignIn = () => {
                 />
                 <input
                   type="password"
-                  placeholder="Password (optional — for demo / email+password accounts)"
+                  placeholder="Password (for demo or email + password accounts)"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -240,22 +296,19 @@ const SignIn = () => {
                   )}
                   Send sign-in link
                 </button>
-                {password ? (
-                  <button
-                    type="button"
-                    onClick={(e) => void handlePasswordSignIn(e)}
-                    disabled={busy !== null}
-                    className="w-full flex items-center justify-center gap-2 bg-card border border-border text-foreground rounded-xl px-4 py-3.5 text-sm font-semibold hover:border-primary/60 transition-colors disabled:opacity-60"
-                  >
-                    {busy === "password" ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Mail className="w-4 h-4" />
-                    )}
-                    Sign in with password
-                  </button>
-                ) : null}
-
+                <button
+                  type="button"
+                  onClick={(e) => void handlePasswordSignIn(e)}
+                  disabled={busy !== null}
+                  className="w-full flex items-center justify-center gap-2 bg-card border border-border text-foreground rounded-xl px-4 py-3.5 text-sm font-semibold hover:border-primary/60 transition-colors disabled:opacity-60"
+                >
+                  {busy === "password" ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Mail className="w-4 h-4" />
+                  )}
+                  Sign in with password
+                </button>
               </form>
             )}
 
@@ -263,6 +316,22 @@ const SignIn = () => {
               <p className="text-primary text-xs text-center pt-1 leading-relaxed">{pending}</p>
             )}
             {err && <p className="text-destructive text-xs text-center pt-1">{err}</p>}
+
+            <div className="pt-4 mt-2 border-t border-border">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                onClick={enterDemoMode}
+                disabled={busy !== null}
+                className="w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground rounded-xl px-4 py-3.5 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                <PlayCircle className="w-4 h-4" />
+                Explore demo — no account needed
+              </motion.button>
+              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+                Opens the full app with sample data. Everything stays on this device.
+              </p>
+            </div>
           </div>
 
           <p className="mt-8 text-[11px] text-muted-foreground text-center leading-relaxed">
