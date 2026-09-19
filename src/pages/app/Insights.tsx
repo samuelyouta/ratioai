@@ -65,13 +65,16 @@ const Insights = () => {
               const h = Math.max(4, (d.calories / maxCal) * 100);
               const onTarget = Math.abs(d.calories - profile.calorieTarget) / profile.calorieTarget < 0.1;
               return (
-                <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5">
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${h}%` }}
-                    transition={{ delay: i * 0.05, duration: 0.6, ease: "easeOut" }}
-                    className={`w-full rounded-md ${onTarget ? "gradient-glow" : "bg-secondary"}`}
-                  />
+                <div key={d.date} className="flex-1 h-full flex flex-col items-center gap-1.5">
+                  {/* Percentage heights need an ancestor with a resolved height. */}
+                  <div className="w-full flex-1 flex items-end">
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${h}%` }}
+                      transition={{ delay: i * 0.05, duration: 0.6, ease: "easeOut" }}
+                      className={`w-full rounded-md ${onTarget ? "gradient-glow" : "bg-secondary"}`}
+                    />
+                  </div>
                   <span className="text-[10px] text-muted-foreground">{dayLabel(d.date)}</span>
                 </div>
               );
@@ -88,7 +91,13 @@ const Insights = () => {
             <span className="text-[10px] text-primary">7-day trend</span>
           </div>
           <div className="relative h-32">
-            <svg viewBox="0 0 280 120" className="w-full h-full">
+            {/* Without preserveAspectRatio="none" the chart is letterboxed into
+                the middle of a wide card instead of spanning the week. */}
+            <svg
+              viewBox="0 0 280 120"
+              preserveAspectRatio="none"
+              className="w-full h-full"
+            >
               <defs>
                 <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="hsl(82 78% 55%)" stopOpacity="0.4" />
@@ -100,19 +109,37 @@ const Insights = () => {
                 <line key={y} x1="0" y1={120 - y * 1.2} x2="280" y2={120 - y * 1.2} stroke="hsl(240 6% 18%)" strokeDasharray="2 4" />
               ))}
               {(() => {
+                // Inset the end points so the stroke is not clipped at the edges.
                 const points = consistency.map((d, i) => {
-                  const x = (i / 6) * 280;
+                  const x = 3 + (i / 6) * 274;
                   const y = 120 - d.score * 1.2;
                   return { x, y };
                 });
                 const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-                const fill = `${path} L280,120 L0,120 Z`;
+                const fill = `${path} L277,120 L3,120 Z`;
                 return (
                   <>
                     <path d={fill} fill="url(#lineGrad)" />
-                    <path d={path} stroke="hsl(82 78% 55%)" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d={path}
+                      stroke="hsl(82 78% 55%)"
+                      strokeWidth="2.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      vectorEffect="non-scaling-stroke"
+                    />
                     {points.map((p, i) => (
-                      <circle key={i} cx={p.x} cy={p.y} r="3" fill="hsl(82 78% 55%)" />
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r="2"
+                        fill="hsl(82 78% 55%)"
+                        stroke="hsl(82 78% 55%)"
+                        strokeWidth="3"
+                        vectorEffect="non-scaling-stroke"
+                      />
                     ))}
                   </>
                 );
