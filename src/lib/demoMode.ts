@@ -100,68 +100,235 @@ function buildMeal(
   };
 }
 
-/**
- * A week of realistic meals so Today, History and Insights all have content the
- * reviewer can explore without having to log anything first.
- */
-function demoMeals(): Meal[] {
-  return [
-    buildMeal("today-breakfast", isoAt(0, 8, 15), "Greek yogurt bowl", "🥣", "photo", [
+type MealTemplate = {
+  key: string;
+  title: string;
+  icon: string;
+  source: Meal["source"];
+  hour: number;
+  minute: number;
+  items: Meal["items"];
+  hiddenIngredient?: string;
+};
+
+const BREAKFASTS: MealTemplate[] = [
+  {
+    key: "yogurt-bowl",
+    title: "Greek yogurt bowl",
+    icon: "🥣",
+    source: "photo",
+    hour: 8,
+    minute: 15,
+    items: [
       { name: "Greek yogurt", portion: "200 g", calories: 130, protein: 20, carbs: 8, fat: 1 },
       { name: "Blueberries", portion: "80 g", calories: 46, protein: 1, carbs: 11, fat: 0 },
-      { name: "Granola", portion: "30 g", calories: 138, protein: 3, carbs: 19, fat: 5 },
-    ]),
-    buildMeal(
-      "today-lunch",
-      isoAt(0, 13, 5),
-      "Chicken & rice bowl",
-      "🍗",
-      "photo",
-      [
-        { name: "Grilled chicken breast", portion: "180 g", calories: 297, protein: 56, carbs: 0, fat: 7 },
-        { name: "Jasmine rice", portion: "150 g", calories: 195, protein: 4, carbs: 43, fat: 0 },
-        { name: "Avocado", portion: "50 g", calories: 80, protein: 1, carbs: 4, fat: 7 },
-      ],
-      "Rice was cooked with about 1 tsp of oil — roughly 40 hidden calories.",
-    ),
-    buildMeal("today-snack", isoAt(0, 16, 40), "Protein shake", "🥤", "voice", [
-      { name: "Whey protein", portion: "1 scoop", calories: 120, protein: 24, carbs: 3, fat: 1 },
-      { name: "Banana", portion: "1 medium", calories: 105, protein: 1, carbs: 27, fat: 0 },
-    ]),
-    buildMeal("d1-dinner", isoAt(1, 19, 30), "Salmon & greens", "🐟", "photo", [
-      { name: "Baked salmon", portion: "160 g", calories: 330, protein: 34, carbs: 0, fat: 21 },
-      { name: "Roasted potatoes", portion: "150 g", calories: 175, protein: 4, carbs: 33, fat: 3 },
-      { name: "Green salad", portion: "1 bowl", calories: 45, protein: 2, carbs: 6, fat: 1 },
-    ]),
-    buildMeal("d1-lunch", isoAt(1, 12, 45), "Turkey sandwich", "🥪", "manual", [
-      { name: "Wholegrain bread", portion: "2 slices", calories: 180, protein: 8, carbs: 32, fat: 2 },
-      { name: "Turkey breast", portion: "90 g", calories: 104, protein: 22, carbs: 0, fat: 2 },
-      { name: "Cheddar", portion: "20 g", calories: 80, protein: 5, carbs: 0, fat: 7 },
-    ]),
-    buildMeal("d2-dinner", isoAt(2, 20, 0), "Beef stir fry", "🥘", "photo", [
-      { name: "Lean beef strips", portion: "150 g", calories: 250, protein: 39, carbs: 0, fat: 10 },
-      { name: "Mixed vegetables", portion: "200 g", calories: 90, protein: 5, carbs: 16, fat: 1 },
-      { name: "Egg noodles", portion: "120 g", calories: 210, protein: 7, carbs: 40, fat: 2 },
-    ]),
-    buildMeal("d3-breakfast", isoAt(3, 8, 30), "Veggie omelette", "🍳", "photo", [
+      { name: "Granola", portion: "60 g", calories: 276, protein: 6, carbs: 38, fat: 10 },
+      { name: "Honey", portion: "1 tbsp", calories: 64, protein: 0, carbs: 17, fat: 0 },
+    ],
+  },
+  {
+    key: "omelette",
+    title: "Veggie omelette & toast",
+    icon: "🍳",
+    source: "photo",
+    hour: 8,
+    minute: 30,
+    items: [
       { name: "Eggs", portion: "3 large", calories: 215, protein: 19, carbs: 1, fat: 15 },
       { name: "Spinach & peppers", portion: "100 g", calories: 35, protein: 3, carbs: 5, fat: 0 },
-      { name: "Sourdough toast", portion: "1 slice", calories: 120, protein: 4, carbs: 23, fat: 1 },
-    ]),
-    buildMeal("d4-lunch", isoAt(4, 13, 20), "Poke bowl", "🍥", "photo", [
-      { name: "Raw tuna", portion: "120 g", calories: 158, protein: 34, carbs: 0, fat: 2 },
-      { name: "Sushi rice", portion: "180 g", calories: 234, protein: 4, carbs: 52, fat: 0 },
-      { name: "Edamame & seaweed", portion: "80 g", calories: 95, protein: 8, carbs: 8, fat: 3 },
-    ]),
-    buildMeal("d5-dinner", isoAt(5, 19, 10), "Margherita pizza", "🍕", "photo", [
-      { name: "Margherita pizza", portion: "2 slices", calories: 520, protein: 22, carbs: 62, fat: 20 },
+      { name: "Sourdough toast", portion: "2 slices", calories: 240, protein: 8, carbs: 46, fat: 2 },
+      { name: "Butter", portion: "10 g", calories: 72, protein: 0, carbs: 0, fat: 8 },
+    ],
+  },
+  {
+    key: "oats",
+    title: "Peanut butter oats",
+    icon: "🥜",
+    source: "manual",
+    hour: 7,
+    minute: 45,
+    items: [
+      { name: "Rolled oats", portion: "80 g", calories: 303, protein: 11, carbs: 54, fat: 5 },
+      { name: "Whole milk", portion: "200 ml", calories: 124, protein: 7, carbs: 10, fat: 7 },
+      { name: "Peanut butter", portion: "20 g", calories: 118, protein: 5, carbs: 4, fat: 10 },
+    ],
+  },
+];
+
+const LUNCHES: MealTemplate[] = [
+  {
+    key: "chicken-rice",
+    title: "Chicken & rice bowl",
+    icon: "🍗",
+    source: "photo",
+    hour: 13,
+    minute: 5,
+    items: [
+      { name: "Grilled chicken breast", portion: "180 g", calories: 297, protein: 56, carbs: 0, fat: 7 },
+      { name: "Jasmine rice", portion: "220 g", calories: 286, protein: 6, carbs: 63, fat: 0 },
+      { name: "Avocado", portion: "70 g", calories: 112, protein: 1, carbs: 6, fat: 10 },
+    ],
+    hiddenIngredient: "Rice was cooked with about 1 tsp of oil — roughly 40 hidden calories.",
+  },
+  {
+    key: "poke",
+    title: "Tuna poke bowl",
+    icon: "🍥",
+    source: "photo",
+    hour: 13,
+    minute: 20,
+    items: [
+      { name: "Raw tuna", portion: "150 g", calories: 198, protein: 42, carbs: 0, fat: 2 },
+      { name: "Sushi rice", portion: "220 g", calories: 286, protein: 5, carbs: 63, fat: 0 },
+      { name: "Edamame & seaweed", portion: "100 g", calories: 119, protein: 10, carbs: 10, fat: 4 },
+      { name: "Spicy mayo", portion: "1 tbsp", calories: 94, protein: 0, carbs: 1, fat: 10 },
+    ],
+    hiddenIngredient: "Spicy mayo adds around 90 calories that are easy to overlook.",
+  },
+  {
+    key: "turkey-sandwich",
+    title: "Turkey club sandwich",
+    icon: "🥪",
+    source: "manual",
+    hour: 12,
+    minute: 45,
+    items: [
+      { name: "Wholegrain bread", portion: "2 slices", calories: 180, protein: 8, carbs: 32, fat: 2 },
+      { name: "Turkey breast", portion: "120 g", calories: 139, protein: 29, carbs: 0, fat: 2 },
+      { name: "Cheddar", portion: "30 g", calories: 120, protein: 7, carbs: 0, fat: 10 },
+      { name: "Sweet potato fries", portion: "120 g", calories: 194, protein: 2, carbs: 30, fat: 7 },
+    ],
+  },
+  {
+    key: "lentil-soup",
+    title: "Lentil soup & bread",
+    icon: "🍲",
+    source: "voice",
+    hour: 12,
+    minute: 30,
+    items: [
+      { name: "Lentil soup", portion: "500 ml", calories: 350, protein: 22, carbs: 53, fat: 5 },
+      { name: "Rye bread", portion: "2 slices", calories: 190, protein: 6, carbs: 36, fat: 2 },
+      { name: "Feta", portion: "40 g", calories: 106, protein: 6, carbs: 2, fat: 9 },
+    ],
+  },
+];
+
+const DINNERS: MealTemplate[] = [
+  {
+    key: "salmon",
+    title: "Salmon & roast potatoes",
+    icon: "🐟",
+    source: "photo",
+    hour: 19,
+    minute: 30,
+    items: [
+      { name: "Baked salmon", portion: "180 g", calories: 371, protein: 38, carbs: 0, fat: 24 },
+      { name: "Roasted potatoes", portion: "220 g", calories: 257, protein: 5, carbs: 48, fat: 5 },
+      { name: "Green salad", portion: "1 bowl", calories: 45, protein: 2, carbs: 6, fat: 1 },
+    ],
+  },
+  {
+    key: "beef-stirfry",
+    title: "Beef stir fry",
+    icon: "🥘",
+    source: "photo",
+    hour: 20,
+    minute: 0,
+    items: [
+      { name: "Lean beef strips", portion: "170 g", calories: 283, protein: 44, carbs: 0, fat: 11 },
+      { name: "Mixed vegetables", portion: "200 g", calories: 90, protein: 5, carbs: 16, fat: 1 },
+      { name: "Egg noodles", portion: "180 g", calories: 315, protein: 11, carbs: 60, fat: 3 },
+    ],
+    hiddenIngredient: "Stir-fry sauce carries about 60 calories of added sugar.",
+  },
+  {
+    key: "pizza",
+    title: "Margherita pizza",
+    icon: "🍕",
+    source: "photo",
+    hour: 19,
+    minute: 10,
+    items: [
+      { name: "Margherita pizza", portion: "3 slices", calories: 780, protein: 33, carbs: 93, fat: 30 },
       { name: "Side salad", portion: "1 bowl", calories: 60, protein: 2, carbs: 7, fat: 3 },
-    ]),
-    buildMeal("d6-lunch", isoAt(6, 12, 30), "Lentil soup & bread", "🍲", "voice", [
-      { name: "Lentil soup", portion: "400 ml", calories: 280, protein: 18, carbs: 42, fat: 4 },
-      { name: "Rye bread", portion: "1 slice", calories: 95, protein: 3, carbs: 18, fat: 1 },
-    ]),
-  ];
+    ],
+  },
+  {
+    key: "chilli",
+    title: "Turkey chilli & rice",
+    icon: "🌶️",
+    source: "voice",
+    hour: 19,
+    minute: 45,
+    items: [
+      { name: "Turkey chilli", portion: "350 g", calories: 420, protein: 38, carbs: 28, fat: 16 },
+      { name: "Brown rice", portion: "180 g", calories: 200, protein: 5, carbs: 42, fat: 2 },
+      { name: "Soured cream", portion: "30 g", calories: 60, protein: 1, carbs: 1, fat: 6 },
+    ],
+  },
+];
+
+const SNACKS: MealTemplate[] = [
+  {
+    key: "shake",
+    title: "Protein shake",
+    icon: "🥤",
+    source: "voice",
+    hour: 16,
+    minute: 40,
+    items: [
+      { name: "Whey protein", portion: "1 scoop", calories: 120, protein: 24, carbs: 3, fat: 1 },
+      { name: "Banana", portion: "1 medium", calories: 105, protein: 1, carbs: 27, fat: 0 },
+    ],
+  },
+  {
+    key: "almonds",
+    title: "Almonds & apple",
+    icon: "🍎",
+    source: "manual",
+    hour: 16,
+    minute: 15,
+    items: [
+      { name: "Almonds", portion: "30 g", calories: 174, protein: 6, carbs: 6, fat: 15 },
+      { name: "Apple", portion: "1 medium", calories: 95, protein: 0, carbs: 25, fat: 0 },
+    ],
+  },
+];
+
+function pick<T>(list: T[], day: number): T {
+  return list[day % list.length];
+}
+
+/**
+ * A week of realistic meals so Today, History and Insights all have content the
+ * reviewer can explore without having to log anything first. Daily totals sit
+ * near the seeded calorie target so the charts and streaks look plausible.
+ */
+function demoMeals(): Meal[] {
+  const meals: Meal[] = [];
+
+  for (let day = 0; day <= 6; day++) {
+    const plan = [pick(BREAKFASTS, day), pick(LUNCHES, day), pick(SNACKS, day)];
+    // Today is still in progress, so it has no dinner logged yet.
+    if (day > 0) plan.splice(2, 0, pick(DINNERS, day));
+
+    for (const t of plan) {
+      meals.push(
+        buildMeal(
+          `d${day}-${t.key}`,
+          isoAt(day, t.hour, t.minute),
+          t.title,
+          t.icon,
+          t.source,
+          t.items,
+          t.hiddenIngredient,
+        ),
+      );
+    }
+  }
+
+  return meals;
 }
 
 function writeMeals(meals: Meal[]) {
