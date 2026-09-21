@@ -7,7 +7,6 @@ import { getProfile } from "@/lib/profile";
 import { deleteAccount } from "@/lib/account";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
-import { stopDemoMode } from "@/lib/demoMode";
 import { toast } from "sonner";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 
@@ -27,19 +26,13 @@ const activityLabels: Record<string, string> = {
 const Profile = () => {
   const navigate = useNavigate();
   const { restore } = useSubscription();
-  const { user, isDemo } = useAuth();
+  const { user } = useAuth();
   const profile = getProfile()!;
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
   const handleRedo = () => navigate("/app/onboarding/goal");
-
-  const handleExitDemo = () => {
-    navigate("/app/signin", { replace: true });
-    // Clear after the route change so this screen never renders without a profile.
-    setTimeout(stopDemoMode, 0);
-  };
 
   const handleConfirmDelete = async () => {
     setDeleting(true);
@@ -88,11 +81,6 @@ const Profile = () => {
             <p className="text-xs text-primary mt-1">{user.email}</p>
           ) : (
             <p className="text-xs text-muted-foreground mt-1">Signed in</p>
-          )}
-          {isDemo && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Demo mode — sample data, stored only on this device
-            </p>
           )}
           <p className="text-xs text-muted-foreground mt-1">
             {profile.gender} · {profile.age} yrs · {profile.heightCm}cm · {profile.weightKg}kg
@@ -163,22 +151,13 @@ const Profile = () => {
           Terms & conditions
         </a>
 
-        {isDemo ? (
-          <button
-            onClick={handleExitDemo}
-            className="w-full bg-card border border-border rounded-xl py-3 text-sm font-semibold text-foreground"
-          >
-            Exit demo mode
-          </button>
-        ) : (
-          <button
-            onClick={() => setDeleteOpen(true)}
-            className="w-full bg-card border border-destructive/40 rounded-xl py-3 text-sm font-semibold text-destructive flex items-center justify-center gap-2"
-          >
-            <AlertTriangle className="w-4 h-4" />
-            Delete Account
-          </button>
-        )}
+        <button
+          onClick={() => setDeleteOpen(true)}
+          className="w-full bg-card border border-destructive/40 rounded-xl py-3 text-sm font-semibold text-destructive flex items-center justify-center gap-2"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Delete Account
+        </button>
 
         {/* App Store compliance: restore purchases footer link */}
         <div className="pt-3 text-center">

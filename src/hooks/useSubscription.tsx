@@ -25,7 +25,6 @@ import {
   type SubscriptionStatus,
 } from "@/lib/subscriptions";
 import { isReviewerEmail } from "@/lib/reviewerAccess";
-import { isDemoMode, onDemoModeChange } from "@/lib/demoMode";
 
 interface SubscriptionContextValue {
   status: SubscriptionStatus;
@@ -49,12 +48,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   );
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [reviewerBypass, setReviewerBypass] = useState(false);
-  const [demo, setDemo] = useState(() => isDemoMode());
   const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(null);
   const [yearlyPackage, setYearlyPackage] = useState<PurchasesPackage | null>(null);
   const [productsUnavailable, setProductsUnavailable] = useState(false);
-
-  useEffect(() => onDemoModeChange(() => setDemo(isDemoMode())), []);
 
   const applyCustomerInfo = useCallback(
     (info: CustomerInfo | null) => {
@@ -92,7 +88,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     (async () => {
-      if (!subscriptionRequired || isDemoMode()) {
+      if (!subscriptionRequired) {
         applyCustomerInfo(null);
         return;
       }
@@ -186,12 +182,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<SubscriptionContextValue>(
     () => ({
-      status: demo ? "active" : status,
-      isPro:
-        !subscriptionRequired ||
-        demo ||
-        reviewerBypass ||
-        hasActiveEntitlement(customerInfo),
+      status,
+      isPro: !subscriptionRequired || reviewerBypass || hasActiveEntitlement(customerInfo),
       subscriptionRequired,
       productsUnavailable,
       monthlyPackage,
@@ -202,7 +194,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }),
     [
       status,
-      demo,
       subscriptionRequired,
       reviewerBypass,
       productsUnavailable,
