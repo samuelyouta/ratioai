@@ -443,14 +443,18 @@ export function getEmailRedirectUrl(redirectPath = "/app/today"): string {
 
 export function formatOAuthError(provider: OAuthProvider, err: Error): string {
   const msg = err.message || "";
+  const name = provider === "google" ? "Google" : "Apple";
   if (msg.toLowerCase().includes("timed out")) return msg;
   if (msg.toLowerCase().includes("audience")) {
-    return (
-      "Apple is not allowed in Supabase yet. In Authentication → Providers → Apple, " +
-      "add Client ID com.ratioai.ios, then try again."
+    // Backend misconfiguration. Keep the fix in the log, not on a user's screen.
+    console.error(
+      `${name} provider rejected the ID token audience. Add com.ratioai.ios to the ` +
+        "Supabase Apple provider's authorized client IDs.",
+      msg,
     );
+    return `${name} sign-in is unavailable right now. Please sign in with your email and password.`;
   }
-  return `${provider === "google" ? "Google" : "Apple"} sign-in failed. Try again.`;
+  return `${name} sign-in failed. Try again, or sign in with your email and password.`;
 }
 
 export function browserPendingMessage(provider: OAuthProvider): string {

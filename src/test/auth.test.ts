@@ -55,10 +55,11 @@ describe("formatOAuthError", () => {
     expect(formatOAuthError("google", new Error("network"))).toContain("Google");
   });
 
-  it("explains Apple audience errors", () => {
-    expect(
-      formatOAuthError("apple", new Error("Unacceptable audience in id_token")),
-    ).toContain("com.ratioai.ios");
+  it("keeps backend configuration details off the user's screen", () => {
+    const shown = formatOAuthError("apple", new Error("Unacceptable audience in id_token"));
+    expect(shown).not.toContain("com.ratioai.ios");
+    expect(shown).not.toMatch(/supabase/i);
+    expect(shown).toMatch(/email and password/i);
   });
 });
 
