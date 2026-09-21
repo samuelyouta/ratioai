@@ -25,13 +25,11 @@ const Analyzing = () => {
     const tLeave = setTimeout(() => setLeaving(true), TOTAL_MS - 350);
     const tNav = setTimeout(() => {
       void (async () => {
-        // Force a fresh sign-in after onboarding (App Store / leftover sessions).
-        try {
-          await supabase.auth.signOut();
-        } catch {
-          /* ignore */
-        }
-        navigate("/app/signin", { replace: true });
+        // Users who signed in before onboarding must not be signed out here.
+        // Doing so dropped them back on the login screen after every attempt,
+        // which is the loop App Review hit on iPad.
+        const { data } = await supabase.auth.getSession();
+        navigate(data.session?.user ? "/app/today" : "/app/signin", { replace: true });
       })();
     }, TOTAL_MS);
     return () => {
