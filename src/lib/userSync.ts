@@ -145,6 +145,18 @@ export async function syncUserData(userId: string) {
   }
 }
 
+/**
+ * Sync before routing, but never hold the user on the sign-in screen waiting
+ * for the network. Whatever has not arrived by the deadline is picked up by the
+ * background sync in AuthSync.
+ */
+export async function syncUserDataBeforeRouting(userId: string, timeoutMs = 8_000) {
+  await Promise.race([
+    syncUserData(userId),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
 export async function getAuthenticatedUserId(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
   return data.session?.user?.id ?? null;

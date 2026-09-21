@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Mail, CheckCircle, PlayCircle } from "lucide-react";
+import { Loader2, Mail, CheckCircle, LogIn } from "lucide-react";
 import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
-import { matchesDemoCredentials, startDemoMode } from "@/lib/demoMode";
 import {
   signInWithOAuth,
   getEmailRedirectUrl,
   formatOAuthError,
   browserPendingMessage,
   consumeAuthRedirect,
+  getPostSignInPath,
+  passwordSignInError,
 } from "@/lib/auth";
-import { syncUserData } from "@/lib/userSync";
+import { syncUserDataBeforeRouting } from "@/lib/userSync";
 import { getProfile } from "@/lib/profile";
 
 /**
@@ -32,6 +33,7 @@ const SignIn = () => {
   const [err, setErr] = useState<string | null>(
     (location.state as { error?: string } | null)?.error ?? null,
   );
+  const hasPassword = password.length > 0;
 
   useEffect(() => {
     if ((location.state as { error?: string } | null)?.error) {
@@ -56,7 +58,7 @@ const SignIn = () => {
         if (data.session?.user || cancelled) return;
         setPending(null);
         setErr(
-          "Sign-in did not complete. Try again, or use the demo below to explore the app.",
+          "Sign-in did not complete. Tap Continue with Apple again, or sign in with your email and password.",
         );
       }, 1_500);
     }).then((h) => {
@@ -76,18 +78,10 @@ const SignIn = () => {
       setErr("Signed in, but no account was created. Try again.");
       return;
     }
-    await syncUserData(user.id);
-    const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
-    navigate(next, { replace: true });
-  };
-
-  /**
-   * App Review demo mode. Runs entirely on-device so it cannot fail because of
-   * a missing Supabase user, an expired password or a network problem.
-   */
-  const enterDemoMode = () => {
-    startDemoMode();
-    navigate("/app/today", { replace: true });
+    await syncUserDataBeforeRouting(user.id);
+    navigate(getPostSignInPath(Boolean(getProfile()), consumeAuthRedirect(from)), {
+      replace: true,
+    });
   };
 
   const handleOAuth = async (provider: "google" | "apple") => {
@@ -98,7 +92,7 @@ const SignIn = () => {
       const { error, cancelled, nativeSession, browserPending } = await signInWithOAuth(provider, from);
       if (cancelled) {
         setErr(
-          `${provider === "apple" ? "Apple" : "Google"} sign-in was cancelled. Try again, or use the demo below.`,
+          `${provider === "apple" ? "Apple" : "Google"} sign-in was cancelled. Try again, or sign in with your email and password.`,
         );
         return;
       }
@@ -126,17 +120,11 @@ const SignIn = () => {
     e.preventDefault();
     setErr(null);
     const trimmed = email.trim().toLowerCase();
-    // Checked before any validation: the published demo password is shorter
-    // than the minimum we enforce for real accounts.
-    if (matchesDemoCredentials(trimmed, password)) {
-      enterDemoMode();
-      return;
-    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setErr("Enter a valid email.");
       return;
     }
-    if (password.length < 6) {
+    if (!password) {
       setErr("Enter your password.");
       return;
     }
@@ -147,22 +135,25 @@ const SignIn = () => {
     });
     setBusy(null);
     if (error || !data.user) {
-      setErr(error?.message || "Could not sign in with password.");
+      setErr(passwordSignInError(error?.message));
       return;
     }
-    await syncUserData(data.user.id);
-    const next = getProfile() ? consumeAuthRedirect(from) : "/app/welcome";
-    navigate(next, { replace: true });
+    await syncUserDataBeforeRouting(data.user.id);
+    navigate(getPostSignInPath(Boolean(getProfile()), consumeAuthRedirect(from)), {
+      replace: true,
+    });
+  };
+
+  /** A typed password means "sign me in", not "email me a link". */
+  const handleEmailFormSubmit = (e: React.FormEvent) => {
+    if (hasPassword) return void handlePasswordSignIn(e);
+    return void handleEmail(e);
   };
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
     const trimmed = email.trim().toLowerCase();
-    if (matchesDemoCredentials(trimmed, password)) {
-      enterDemoMode();
-      return;
-    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setErr("Enter a valid email.");
       return;
@@ -260,7 +251,7 @@ const SignIn = () => {
                 Check your inbox for the sign-in link.
               </div>
             ) : (
-              <form onSubmit={handleEmail} className="space-y-2">
+              <form onSubmit={handleEmailFormSubmit} className="space-y-2">
                 <input
                   type="email"
                   placeholder="you@email.com"
@@ -274,7 +265,7 @@ const SignIn = () => {
                 />
                 <input
                   type="password"
-                  placeholder="Password (for demo or email + password accounts)"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -284,31 +275,27 @@ const SignIn = () => {
                   autoComplete="current-password"
                 />
 
+                {/* Whichever action matches what was typed is the primary one,
+                    so entering a password never sends an unwanted email link. */}
                 <button
                   type="submit"
                   disabled={busy !== null}
                   className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-xl px-4 py-3.5 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
                 >
-                  {busy === "email" ? (
+                  {busy === "email" || busy === "password" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : hasPassword ? (
+                    <LogIn className="w-4 h-4" />
                   ) : (
                     <Mail className="w-4 h-4" />
                   )}
-                  Send sign-in link
+                  {hasPassword ? "Sign in" : "Send sign-in link"}
                 </button>
-                <button
-                  type="button"
-                  onClick={(e) => void handlePasswordSignIn(e)}
-                  disabled={busy !== null}
-                  className="w-full flex items-center justify-center gap-2 bg-card border border-border text-foreground rounded-xl px-4 py-3.5 text-sm font-semibold hover:border-primary/60 transition-colors disabled:opacity-60"
-                >
-                  {busy === "password" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Mail className="w-4 h-4" />
-                  )}
-                  Sign in with password
-                </button>
+                {!hasPassword && (
+                  <p className="text-[11px] text-muted-foreground text-center leading-relaxed pt-1">
+                    Have a password? Enter it above to sign in directly.
+                  </p>
+                )}
               </form>
             )}
 
@@ -316,22 +303,6 @@ const SignIn = () => {
               <p className="text-primary text-xs text-center pt-1 leading-relaxed">{pending}</p>
             )}
             {err && <p className="text-destructive text-xs text-center pt-1">{err}</p>}
-
-            <div className="pt-4 mt-2 border-t border-border">
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                type="button"
-                onClick={enterDemoMode}
-                disabled={busy !== null}
-                className="w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground rounded-xl px-4 py-3.5 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                <PlayCircle className="w-4 h-4" />
-                Explore demo — no account needed
-              </motion.button>
-              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
-                Opens the full app with sample data. Everything stays on this device.
-              </p>
-            </div>
           </div>
 
           <p className="mt-8 text-[11px] text-muted-foreground text-center leading-relaxed">

@@ -6,6 +6,7 @@ import { Browser } from "@capacitor/browser";
 import {
   completeNativeAuthFromUrl,
   consumeAuthRedirect,
+  getPostSignInPath,
   isAuthFlowPath,
   parseAuthParamsFromUrl,
 } from "@/lib/auth";
@@ -37,7 +38,7 @@ const AuthDeepLink = () => {
         navigate("/app/signin", { replace: true, state: { error: "Sign-in did not complete. Try again." } });
         return;
       }
-      const next = getProfile() ? consumeAuthRedirect() : "/app/welcome";
+      const next = getPostSignInPath(Boolean(getProfile()), consumeAuthRedirect());
       navigate(next, { replace: true });
       void syncUserData(userId);
     };

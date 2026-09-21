@@ -74,6 +74,32 @@ export function getLaunchPath(hasProfile: boolean, hasSession: boolean): string 
   return "/app/today";
 }
 
+/**
+ * Where to send a user who has just authenticated.
+ *
+ * Never the welcome screen: someone who just signed in on a fresh install has
+ * no profile yet, and bouncing them back to "Get Started" reads as a failed
+ * sign-in. Send them into onboarding to finish setting up instead.
+ */
+export function getPostSignInPath(hasProfile: boolean, redirect: string): string {
+  return hasProfile ? redirect : "/app/onboarding/goal";
+}
+
+/** Turn a Supabase password error into something a user can act on. */
+export function passwordSignInError(message?: string): string {
+  const lower = (message || "").toLowerCase();
+  if (lower.includes("invalid login credentials")) {
+    return "That email and password combination was not recognised.";
+  }
+  if (lower.includes("email not confirmed")) {
+    return "This account still needs its email confirmed before it can sign in.";
+  }
+  if (lower.includes("failed to fetch") || lower === "load failed" || lower.includes("network")) {
+    return "Could not reach the server. Check your connection and try again.";
+  }
+  return message || "Could not sign in with password.";
+}
+
 /** True when the current path is an auth/onboarding screen that may consume a launch URL. */
 export function isAuthFlowPath(pathname: string): boolean {
   const path = pathname.replace(/\/$/, "") || "/";

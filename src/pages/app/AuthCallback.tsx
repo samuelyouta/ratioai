@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { consumeAuthRedirect } from "@/lib/auth";
+import { consumeAuthRedirect, getPostSignInPath } from "@/lib/auth";
 import { syncUserData } from "@/lib/userSync";
 import { getProfile } from "@/lib/profile";
 
@@ -23,7 +23,7 @@ const AuthCallback = () => {
     const finish = (userId: string) => {
       if (doneRef.current) return;
       doneRef.current = true;
-      const next = getProfile() ? consumeAuthRedirect() : "/app/welcome";
+      const next = getPostSignInPath(Boolean(getProfile()), consumeAuthRedirect());
       navigate(next, { replace: true });
       void syncUserData(userId);
     };

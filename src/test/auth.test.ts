@@ -8,6 +8,8 @@ import {
   NATIVE_OAUTH_BRIDGE,
   getLaunchPath,
   isAuthFlowPath,
+  getPostSignInPath,
+  passwordSignInError,
 } from "@/lib/auth";
 
 describe("hasAuthCallbackParams", () => {
@@ -91,5 +93,36 @@ describe("isAuthFlowPath", () => {
     expect(isAuthFlowPath("/app/auth/callback")).toBe(true);
     expect(isAuthFlowPath("/app/today")).toBe(false);
     expect(isAuthFlowPath("/app/insights")).toBe(false);
+  });
+});
+
+describe("getPostSignInPath", () => {
+  it("honours the stored redirect when the user is already onboarded", () => {
+    expect(getPostSignInPath(true, "/app/history")).toBe("/app/history");
+  });
+
+  it("continues into onboarding rather than bouncing back to the welcome screen", () => {
+    // Returning a signed-in user to /app/welcome reads as a failed sign-in and
+    // was half of the loop App Review reported on iPad.
+    expect(getPostSignInPath(false, "/app/today")).toBe("/app/onboarding/goal");
+    expect(getPostSignInPath(false, "/app/today")).not.toBe("/app/welcome");
+  });
+});
+
+describe("passwordSignInError", () => {
+  it("explains a rejected email or password", () => {
+    expect(passwordSignInError("Invalid login credentials")).toMatch(/not recognised/i);
+  });
+
+  it("calls out an unconfirmed account", () => {
+    expect(passwordSignInError("Email not confirmed")).toMatch(/confirmed/i);
+  });
+
+  it("turns a WebKit network failure into something actionable", () => {
+    expect(passwordSignInError("Load failed")).toMatch(/connection/i);
+  });
+
+  it("falls back to a usable default", () => {
+    expect(passwordSignInError(undefined)).toMatch(/could not sign in/i);
   });
 });
