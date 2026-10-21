@@ -35,6 +35,10 @@ workflows:
           echo "Setting build number to $NEW"
           sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9.]*;/CURRENT_PROJECT_VERSION = $NEW;/g" ios/App/App.xcodeproj/project.pbxproj
           grep CURRENT_PROJECT_VERSION ios/App/App.xcodeproj/project.pbxproj | head -3
+      - name: Set marketing version
+        script: |
+          sed -i '' "s/MARKETING_VERSION = [0-9.]*;/MARKETING_VERSION = 1.0.1;/g" ios/App/App.xcodeproj/project.pbxproj
+          grep MARKETING_VERSION ios/App/App.xcodeproj/project.pbxproj
       - name: Set up keychain
         script: keychain initialize
       - name: Fetch signing files
