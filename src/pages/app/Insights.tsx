@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import BottomNav from "@/components/BottomNav";
 import { getLast7DaysTotals, getProfile } from "@/lib/profile";
+import { dayKeyToDate } from "@/lib/dayKey";
 
 const Insights = () => {
   const profile = getProfile()!;
@@ -22,7 +23,10 @@ const Insights = () => {
   });
   const avgConsistency = Math.round(consistency.reduce((s, d) => s + d.score, 0) / 7);
 
-  const dayLabel = (iso: string) => new Date(iso).toLocaleDateString([], { weekday: "short" });
+  // dayKeyToDate anchors at local midday; new Date("YYYY-MM-DD") would parse as
+  // UTC midnight and render the previous weekday for anyone west of UTC.
+  const dayLabel = (key: string) =>
+    dayKeyToDate(key).toLocaleDateString([], { weekday: "short" });
 
   return (
     <div className="min-h-screen bg-background pb-28">
