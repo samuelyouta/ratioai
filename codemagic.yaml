@@ -30,9 +30,11 @@ workflows:
         script: npx cap sync ios
       - name: Increment build number
         script: |
-          cd ios/App
-          agvtool new-version -all $(date +%s)
-          cd ../..
+          LATEST=$(app-store-connect get-latest-testflight-build-number "6787262904" 2>/dev/null || echo 0)
+          NEW=$((LATEST + 1))
+          echo "Setting build number to $NEW"
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9.]*;/CURRENT_PROJECT_VERSION = $NEW;/g" ios/App/App.xcodeproj/project.pbxproj
+          grep CURRENT_PROJECT_VERSION ios/App/App.xcodeproj/project.pbxproj | head -3
       - name: Set up keychain
         script: keychain initialize
       - name: Fetch signing files
