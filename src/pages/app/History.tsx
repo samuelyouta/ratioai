@@ -1,11 +1,23 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, Trash2, Pencil, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Minus, Plus, Search, Trash2, Pencil, X } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { getMeals, deleteMeal, updateMeal, type Meal, type MealSource } from "@/lib/profile";
+import {
+  getMeals,
+  deleteMeal,
+  formatServings,
+  itemServings,
+  updateMeal,
+  withItemServings,
+  type Meal,
+  type MealItem,
+  type MealSource,
+} from "@/lib/profile";
+import { dayKey, formatDayLabel, formatTimeOfDay } from "@/lib/dayKey";
+import { withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 
 type Filter = "all" | MealSource | "verified";
@@ -16,27 +28,23 @@ const sourceLabel: Record<MealSource, string> = {
   manual: "Manual",
 };
 
-const formatDay = (iso: string) => {
-  const d = new Date(iso);
-  const today = new Date();
-  const y = new Date();
-  y.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === y.toDateString()) return "Yesterday";
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-};
-
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-
 const History = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [meals, setMeals] = useState<Meal[]>(() =>
     [...getMeals()].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)),
   );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<Meal | null>(null);
+
+  // MealDetails links here with ?edit=<id> to open the sheet directly.
+  const editId = searchParams.get("edit");
+  useEffect(() => {
+    if (!editId) return;
+    const target = getMeals().find((m) => m.id === editId);
+    if (target) setEditing(target);
+  }, [editId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -54,8 +62,7 @@ const History = () => {
   const grouped = useMemo(() => {
     const groups: Record<string, Meal[]> = {};
     for (const m of filtered) {
-      const key = formatDay(m.loggedAt);
-      (groups[key] ??= []).push(m);
+      (groups[dayKey(m.loggedAt)] ??= []).push(m);
     }
     return Object.entries(groups);
   }, [filtered]);
@@ -68,12 +75,18 @@ const History = () => {
 
   const handleSaveEdit = () => {
     if (!editing) return;
-    updateMeal(editing.id, {
+    const ok = updateMeal(editing.id, {
       title: editing.title,
       items: editing.items,
       verified: true,
       notes: editing.notes,
     });
+    if (!ok) {
+      toast.error("Couldn't save those changes", {
+        description: "Your device is out of storage space.",
+      });
+      return;
+    }
     setMeals(
       [...getMeals()].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)),
     );
@@ -142,9 +155,17 @@ const History = () => {
 
         {grouped.map(([day, items]) => (
           <div key={day}>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              {day}
-            </h2>
+            <div className="flex items-baseline justify-between mb-2">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {formatDayLabel(day)}
+              </h2>
+              <button
+                onClick={() => navigate(withDay("/app/today", day))}
+                className="text-[11px] font-semibold text-primary"
+              >
+                Open day
+              </button>
+            </div>
             <div className="space-y-2">
               {items.map((m) => {
                 const src = (m.source ?? "photo") as MealSource;
@@ -169,7 +190,7 @@ const History = () => {
                             {m.title}
                           </h3>
                           <p className="text-[11px] text-muted-foreground">
-                            {formatTime(m.loggedAt)} · {m.items.length} item
+                            {formatTimeOfDay(m.loggedAt)} · {m.items.length} item
                             {m.items.length !== 1 ? "s" : ""}
                           </p>
                         </div>
@@ -251,48 +272,104 @@ const History = () => {
                 className="mt-1 mb-4 bg-background border-border"
               />
 
-              <p className="text-xs text-muted-foreground mb-2">Items</p>
+              <p className="text-xs text-muted-foreground mb-2">Items & portions</p>
               <div className="space-y-2 mb-4">
-                {editing.items.map((it, idx) => (
-                  <div key={idx} className="bg-background border border-border rounded-xl p-3">
-                    <Input
-                      value={it.name}
-                      onChange={(e) => {
-                        const items = [...editing.items];
-                        items[idx] = { ...it, name: e.target.value };
-                        setEditing({ ...editing, items });
-                      }}
-                      placeholder="Name"
-                      className="bg-card border-border mb-2"
-                    />
-                    <div className="grid grid-cols-4 gap-2">
-                      {(["calories", "protein", "carbs", "fat"] as const).map((k) => (
-                        <div key={k}>
-                          <label className="text-[10px] text-muted-foreground uppercase">{k}</label>
-                          <Input
-                            type="number"
-                            value={it[k]}
-                            onChange={(e) => {
-                              const items = [...editing.items];
-                              items[idx] = { ...it, [k]: Number(e.target.value) || 0 };
-                              setEditing({ ...editing, items });
-                            }}
-                            className="bg-card border-border h-8 text-sm"
-                          />
+                {editing.items.map((it, idx) => {
+                  const servings = itemServings(it);
+                  const patchItem = (next: MealItem) => {
+                    const items = [...editing.items];
+                    items[idx] = next;
+                    setEditing({ ...editing, items });
+                  };
+                  return (
+                    <div key={idx} className="bg-background border border-border rounded-xl p-3">
+                      <Input
+                        value={it.name}
+                        onChange={(e) => patchItem({ ...it, name: e.target.value })}
+                        placeholder="Name"
+                        className="bg-card border-border mb-2"
+                      />
+
+                      <label className="text-[10px] text-muted-foreground uppercase">
+                        Portion
+                      </label>
+                      <div className="flex items-center gap-2 mt-1 mb-2">
+                        <Input
+                          value={it.basePortion ?? it.portion}
+                          onChange={(e) =>
+                            patchItem(
+                              withItemServings(
+                                { ...it, basePortion: e.target.value },
+                                servings,
+                              ),
+                            )
+                          }
+                          placeholder="e.g. 150g, 1 cup"
+                          className="bg-card border-border h-9 text-sm"
+                        />
+                        <div className="flex items-center gap-1 bg-secondary rounded-lg px-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => patchItem(withItemServings(it, servings - 0.5))}
+                            disabled={servings <= 0.5}
+                            aria-label="Fewer portions"
+                            className="w-7 h-7 flex items-center justify-center text-muted-foreground disabled:opacity-30"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="text-xs font-semibold text-foreground w-7 text-center">
+                            {formatServings(servings)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => patchItem(withItemServings(it, servings + 0.5))}
+                            aria-label="More portions"
+                            className="w-7 h-7 flex items-center justify-center text-muted-foreground"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-2">
+                        {(["calories", "protein", "carbs", "fat"] as const).map((k) => (
+                          <div key={k}>
+                            <label className="text-[10px] text-muted-foreground uppercase">{k}</label>
+                            <Input
+                              type="number"
+                              value={it[k]}
+                              onChange={(e) => {
+                                const value = Number(e.target.value) || 0;
+                                // Typed macros become the new per-serving truth.
+                                patchItem({
+                                  ...it,
+                                  [k]: value,
+                                  baseMacros: {
+                                    calories: it.baseMacros?.calories ?? it.calories,
+                                    protein: it.baseMacros?.protein ?? it.protein,
+                                    carbs: it.baseMacros?.carbs ?? it.carbs,
+                                    fat: it.baseMacros?.fat ?? it.fat,
+                                    [k]: value / servings,
+                                  },
+                                });
+                              }}
+                              className="bg-card border-border h-8 text-sm"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => {
+                          const items = editing.items.filter((_, i) => i !== idx);
+                          setEditing({ ...editing, items });
+                        }}
+                        className="text-[11px] text-destructive mt-2"
+                      >
+                        Remove
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        const items = editing.items.filter((_, i) => i !== idx);
-                        setEditing({ ...editing, items });
-                      }}
-                      className="text-[11px] text-destructive mt-2"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 {editing.items.length === 0 && (
                   <p className="text-xs text-muted-foreground">No items yet.</p>
                 )}
@@ -306,7 +383,17 @@ const History = () => {
                     ...editing,
                     items: [
                       ...editing.items,
-                      { name: "New item", portion: "1 serving", calories: 0, protein: 0, carbs: 0, fat: 0 },
+                      {
+                        name: "New item",
+                        portion: "1 serving",
+                        basePortion: "1 serving",
+                        servings: 1,
+                        baseMacros: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                        calories: 0,
+                        protein: 0,
+                        carbs: 0,
+                        fat: 0,
+                      },
                     ],
                   })
                 }

@@ -1,34 +1,30 @@
 import { useMemo } from "react";
-import { getMeals } from "@/lib/profile";
+import { getLoggedDayKeys } from "@/lib/profile";
 import { getStreakState } from "@/lib/streak";
+import { dayKeyToDate, recentDayKeys, todayKey } from "@/lib/dayKey";
 
 interface Props {
   days?: number;
+  /** When provided, each cell becomes a shortcut to that day's log. */
+  onSelectDay?: (day: string) => void;
 }
 
 /**
  * Metabolic Streak Tracker — a clean calendar grid of the last N days.
  * Days with a logged meal (or auto-protected by a freeze day) glow neon green.
  */
-const MetabolicStreakTracker = ({ days = 28 }: Props) => {
+const MetabolicStreakTracker = ({ days = 28, onSelectDay }: Props) => {
   const cells = useMemo(() => {
-    const meals = getMeals();
+    const logged = getLoggedDayKeys();
     const frozen = new Set(getStreakState().consumedFreezeDates);
-    const out: { key: string; date: Date; logged: boolean; frozen: boolean; isToday: boolean }[] = [];
-    const todayKey = new Date().toISOString().slice(0, 10);
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      out.push({
-        key,
-        date: d,
-        logged: meals.some((m) => m.loggedAt.startsWith(key)),
-        frozen: frozen.has(key),
-        isToday: key === todayKey,
-      });
-    }
-    return out;
+    const today = todayKey();
+    return recentDayKeys(days).map((key) => ({
+      key,
+      date: dayKeyToDate(key),
+      logged: logged.has(key),
+      frozen: frozen.has(key),
+      isToday: key === today,
+    }));
   }, [days]);
 
   const loggedCount = cells.filter((c) => c.logged || c.frozen).length;
@@ -58,22 +54,36 @@ const MetabolicStreakTracker = ({ days = 28 }: Props) => {
       <div className="grid grid-cols-7 gap-1.5">
         {cells.map((c) => {
           const active = c.logged || c.frozen;
+          const className = `aspect-square rounded-md transition-colors ${
+            active ? "bg-primary" : "bg-secondary"
+          } ${c.isToday ? "ring-1 ring-primary/70 ring-offset-1 ring-offset-card" : ""}`;
+          const glow = active
+            ? { boxShadow: "0 0 8px hsl(var(--primary) / 0.55)" }
+            : undefined;
+          const label = `${c.key}${active ? " — logged" : ""}`;
+
+          if (!onSelectDay) {
+            return <div key={c.key} title={label} className={className} style={glow} />;
+          }
           return (
-            <div
+            <button
               key={c.key}
-              title={`${c.key}${active ? " — logged" : ""}`}
-              className={`aspect-square rounded-md transition-colors ${
-                active ? "bg-primary" : "bg-secondary"
-              } ${c.isToday ? "ring-1 ring-primary/70 ring-offset-1 ring-offset-card" : ""}`}
-              style={
-                active
-                  ? { boxShadow: "0 0 8px hsl(var(--primary) / 0.55)" }
-                  : undefined
-              }
+              type="button"
+              title={label}
+              aria-label={`View ${c.key}`}
+              onClick={() => onSelectDay(c.key)}
+              className={`${className} active:scale-95`}
+              style={glow}
             />
           );
         })}
       </div>
+
+      {onSelectDay && (
+        <p className="mt-2 text-[10px] text-muted-foreground text-center">
+          Tap any day to review or edit what you logged.
+        </p>
+      )}
     </div>
   );
 };

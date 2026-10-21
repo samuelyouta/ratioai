@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Mic, MicOff } from "lucide-react";
 import { describeMealText } from "@/lib/mealAiClient";
-import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
+import { createMealId, saveMeal, type Meal, type MealItem } from "@/lib/profile";
+import { formatDayLabel, isToday, timestampForDay } from "@/lib/dayKey";
+import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
 import PortionHelper from "@/components/app/PortionHelper";
@@ -34,6 +36,8 @@ const EXAMPLES = [
 
 const Describe = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetDay = readDayParam(searchParams);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIResult | null>(null);
@@ -266,14 +270,22 @@ const Describe = () => {
     const items: MealItem[] = result.items.map((i) => ({
       name: i.name,
       portion: i.portion,
+      basePortion: i.portion,
+      servings: 1,
+      baseMacros: {
+        calories: Math.round(i.calories),
+        protein: +i.protein.toFixed(1),
+        carbs: +i.carbs.toFixed(1),
+        fat: +i.fat.toFixed(1),
+      },
       calories: Math.round(i.calories),
       protein: +i.protein.toFixed(1),
       carbs: +i.carbs.toFixed(1),
       fat: +i.fat.toFixed(1),
     }));
     const meal: Meal = {
-      id: `meal_${Date.now()}`,
-      loggedAt: new Date().toISOString(),
+      id: createMealId(),
+      loggedAt: timestampForDay(targetDay),
       title: result.title || "Estimated meal",
       icon: "",
       items,
@@ -286,13 +298,21 @@ const Describe = () => {
       verified: false,
       notes: `Estimated from: "${text.trim()}"`,
     };
-    saveMeal(meal);
+    const outcome = saveMeal(meal);
+    if (!outcome.ok) {
+      toast({
+        title: "Couldn't save this meal",
+        description: "Your device is out of storage space. Free some up and try again.",
+      });
+      return;
+    }
+    const where = isToday(targetDay) ? "" : ` to ${formatDayLabel(targetDay).toLowerCase()}`;
     toast({
       title: "Estimated entry saved",
-      description: `${meal.totalCalories} cal logged. Refine anytime.`,
+      description: `${meal.totalCalories} cal logged${where}. Refine anytime.`,
     });
     if (refineAfter) navigate(`/app/history/${meal.id}`);
-    else navigate("/app/today");
+    else navigate(withDay("/app/today", targetDay));
   };
 
   return (
@@ -309,7 +329,11 @@ const Describe = () => {
           </button>
           <div className="flex-1">
             <h1 className="text-base font-semibold text-foreground leading-tight">Describe meal</h1>
-            <p className="text-[11px] text-muted-foreground">AI estimates · refine later</p>
+            <p className="text-[11px] text-muted-foreground">
+              {isToday(targetDay)
+                ? "AI estimates · refine later"
+                : `Adding to ${formatDayLabel(targetDay)}`}
+            </p>
           </div>
           <div className="glass border border-border rounded-full px-2.5 py-1">
             <span className="text-[10px] font-medium text-foreground">Estimated</span>

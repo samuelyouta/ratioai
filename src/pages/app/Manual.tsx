@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Minus } from "lucide-react";
-import { saveMeal, type Meal, type MealItem } from "@/lib/profile";
+import { createMealId, saveMeal, type Meal, type MealItem } from "@/lib/profile";
+import { formatDayLabel, isToday, timestampForDay } from "@/lib/dayKey";
+import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
 
@@ -44,6 +46,8 @@ type Selected = { food: FoodDef; servings: number };
 
 const Manual = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetDay = readDayParam(searchParams);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Selected[]>([]);
   const [title, setTitle] = useState("");
@@ -93,15 +97,23 @@ const Manual = () => {
     }
     const items: MealItem[] = selected.map((s) => ({
       name: s.food.name,
-      portion: `${s.servings} × ${s.food.unit}`,
+      portion: s.servings === 1 ? s.food.unit : `${s.servings} × ${s.food.unit}`,
+      basePortion: s.food.unit,
+      servings: s.servings,
+      baseMacros: {
+        calories: s.food.cal,
+        protein: s.food.p,
+        carbs: s.food.c,
+        fat: s.food.f,
+      },
       calories: Math.round(s.food.cal * s.servings),
       protein: +(s.food.p * s.servings).toFixed(1),
       carbs: +(s.food.c * s.servings).toFixed(1),
       fat: +(s.food.f * s.servings).toFixed(1),
     }));
     const meal: Meal = {
-      id: `meal_${Date.now()}`,
-      loggedAt: new Date().toISOString(),
+      id: createMealId(),
+      loggedAt: timestampForDay(targetDay),
       title: title.trim() || (items.length === 1 ? items[0].name : "Manual entry"),
       icon: "",
       items,
@@ -113,9 +125,17 @@ const Manual = () => {
       source: "manual",
       verified: true,
     };
-    saveMeal(meal);
-    toast({ title: "Logged", description: `${meal.totalCalories} cal added to today.` });
-    navigate("/app/today");
+    const outcome = saveMeal(meal);
+    if (!outcome.ok) {
+      toast({
+        title: "Couldn't save this meal",
+        description: "Your device is out of storage space. Free some up and try again.",
+      });
+      return;
+    }
+    const where = isToday(targetDay) ? "today" : formatDayLabel(targetDay).toLowerCase();
+    toast({ title: "Logged", description: `${meal.totalCalories} cal added to ${where}.` });
+    navigate(withDay("/app/today", targetDay));
   };
 
   return (
@@ -132,7 +152,11 @@ const Manual = () => {
           </button>
           <div className="flex-1">
             <h1 className="text-base font-semibold text-foreground leading-tight">Search & Edit</h1>
-            <p className="text-[11px] text-muted-foreground">Manual log — no AI</p>
+            <p className="text-[11px] text-muted-foreground">
+              {isToday(targetDay)
+                ? "Manual log — no AI"
+                : `Adding to ${formatDayLabel(targetDay)}`}
+            </p>
           </div>
         </div>
 

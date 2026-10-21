@@ -1,10 +1,21 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { getMeals, deleteMeal, type MealSource } from "@/lib/profile";
+import {
+  addMealItem,
+  deleteMeal,
+  formatServings,
+  getMeals,
+  itemServings,
+  setMealItemServings,
+  type Meal,
+  type MealSource,
+} from "@/lib/profile";
+import { dayKey, formatDayLabel, formatTimeOfDay, getTimeZone } from "@/lib/dayKey";
+import { withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 
 const sourceLabel: Record<MealSource, string> = {
@@ -15,19 +26,27 @@ const sourceLabel: Record<MealSource, string> = {
 
 const formatWhen = (iso: string) => {
   const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+  return `${d.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+    timeZone: getTimeZone(),
+  })} · ${formatTimeOfDay(iso)}`;
 };
 
 const MealDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const meal = useMemo(() => getMeals().find((m) => m.id === id), [id]);
+  const [meal, setMeal] = useState<Meal | undefined>(undefined);
+
+  // Re-read from storage after each portion edit.
+  const reload = useCallback(() => {
+    setMeal(getMeals().find((m) => m.id === id));
+  }, [id]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   if (!meal) {
     return (
@@ -54,6 +73,60 @@ const MealDetails = () => {
     deleteMeal(meal.id);
     toast.success("Meal deleted");
     navigate("/app/history");
+  };
+
+  const changeServings = (index: number, next: number) => {
+    if (next < 0.5) return;
+    if (!setMealItemServings(meal.id, index, next)) {
+      toast.error("Couldn't update this portion", {
+        description: "Your device is out of storage space.",
+      });
+      return;
+    }
+    reload();
+  };
+
+  const handleAddPortion = () => {
+    const last = meal.items[meal.items.length - 1];
+    const template = last
+      ? {
+          name: last.name,
+          portion: last.basePortion ?? last.portion,
+          basePortion: last.basePortion ?? last.portion,
+          servings: 1,
+          baseMacros: last.baseMacros ?? {
+            calories: last.calories / itemServings(last),
+            protein: last.protein / itemServings(last),
+            carbs: last.carbs / itemServings(last),
+            fat: last.fat / itemServings(last),
+          },
+          calories: Math.round(last.calories / itemServings(last)),
+          protein: Math.round((last.protein / itemServings(last)) * 10) / 10,
+          carbs: Math.round((last.carbs / itemServings(last)) * 10) / 10,
+          fat: Math.round((last.fat / itemServings(last)) * 10) / 10,
+        }
+      : {
+          name: "Extra portion",
+          portion: "1 serving",
+          basePortion: "1 serving",
+          servings: 1,
+          baseMacros: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+        };
+
+    if (!addMealItem(meal.id, template)) {
+      toast.error("Couldn't add a portion", {
+        description: "Your device is out of storage space.",
+      });
+      return;
+    }
+    reload();
+    toast.success("Portion added", {
+      description: "Adjust the amount below, or edit the macros in history.",
+    });
   };
 
   return (
@@ -147,47 +220,91 @@ const MealDetails = () => {
         </div>
 
         <div className="mb-5">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Item breakdown
-          </h2>
+          <div className="flex items-baseline justify-between mb-2">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Item breakdown
+            </h2>
+            <span className="text-[10px] text-muted-foreground">tap − / + to change portions</span>
+          </div>
           <div className="space-y-2">
             {meal.items.length === 0 && (
               <p className="text-xs text-muted-foreground">No items recorded.</p>
             )}
-            {meal.items.map((it, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04 }}
-                className="gradient-card border border-border rounded-2xl p-3"
-              >
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground truncate">{it.name}</h4>
-                    <p className="text-[11px] text-muted-foreground">{it.portion}</p>
-                  </div>
-                  <span className="text-sm font-bold text-primary whitespace-nowrap">
-                    {it.calories}{" "}
-                    <span className="text-[10px] text-muted-foreground">cal</span>
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {(["protein", "carbs", "fat"] as const).map((k) => (
-                    <div
-                      key={k}
-                      className="bg-secondary/60 rounded-lg px-2 py-1 text-center"
-                    >
-                      <p className="text-[10px] text-muted-foreground capitalize">{k}</p>
-                      <p className="text-xs font-semibold text-foreground">
-                        {Math.round(it[k])}g
-                      </p>
+            {meal.items.map((it, idx) => {
+              const servings = itemServings(it);
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.04 }}
+                  className="gradient-card border border-border rounded-2xl p-3"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground truncate">{it.name}</h4>
+                      <p className="text-[11px] text-muted-foreground">{it.portion}</p>
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+                    <span className="text-sm font-bold text-primary whitespace-nowrap">
+                      {it.calories}{" "}
+                      <span className="text-[10px] text-muted-foreground">cal</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Portions
+                    </span>
+                    <div className="flex items-center gap-1 bg-secondary rounded-lg px-1 ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => changeServings(idx, servings - 0.5)}
+                        disabled={servings <= 0.5}
+                        aria-label={`Fewer portions of ${it.name}`}
+                        className="w-7 h-7 flex items-center justify-center text-muted-foreground disabled:opacity-30"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-xs font-semibold text-foreground w-7 text-center">
+                        {formatServings(servings)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => changeServings(idx, servings + 0.5)}
+                        aria-label={`More portions of ${it.name}`}
+                        className="w-7 h-7 flex items-center justify-center text-muted-foreground"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {(["protein", "carbs", "fat"] as const).map((k) => (
+                      <div
+                        key={k}
+                        className="bg-secondary/60 rounded-lg px-2 py-1 text-center"
+                      >
+                        <p className="text-[10px] text-muted-foreground capitalize">{k}</p>
+                        <p className="text-xs font-semibold text-foreground">
+                          {Math.round(it[k])}g
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
+
+          <Button
+            variant="outline"
+            onClick={handleAddPortion}
+            className="w-full mt-2 text-sm"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add a portion
+          </Button>
         </div>
 
         {meal.notes && (
@@ -207,6 +324,13 @@ const MealDetails = () => {
         >
           Edit meal
         </Button>
+
+        <button
+          onClick={() => navigate(withDay("/app/today", dayKey(meal.loggedAt)))}
+          className="w-full mt-2 text-xs font-semibold text-primary py-2"
+        >
+          View {formatDayLabel(dayKey(meal.loggedAt)).toLowerCase()}
+        </button>
       </motion.div>
 
       <BottomNav />

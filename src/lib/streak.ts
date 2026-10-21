@@ -1,7 +1,13 @@
 // Streak rewards: freeze days, theme unlocks, and protein streak tracking.
 // All on-device; no backend.
 
-import { getMeals, getProfile, getLast7DaysTotals, getStreak } from "./profile";
+import {
+  getLoggedDayKeys,
+  getProfile,
+  getLast7DaysTotals,
+  getTodayMeals,
+} from "./profile";
+import { shiftDayKey, todayKey } from "./dayKey";
 
 const STREAK_STATE_KEY = "ratioai.streakState";
 const THEME_KEY = "ratioai.theme";
@@ -56,16 +62,12 @@ export function applyTheme(t: ThemeName) {
   if (t === "midnight") root.classList.add("theme-midnight");
 }
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
-
 /**
  * Check if this is the FIRST meal logged today (call BEFORE adding the meal,
  * or check after by counting today's meals === 1).
  */
 export function isFirstMealOfToday(): boolean {
-  const today = todayKey();
-  const todays = getMeals().filter((m) => m.loggedAt.startsWith(today));
-  return todays.length === 1; // call right after saveMeal
+  return getTodayMeals().length === 1; // call right after saveMeal
 }
 
 export function shouldShowFlameToday(): boolean {
@@ -112,15 +114,13 @@ export function evaluateProteinStreakReward(): boolean {
 export function autoConsumeFreezesForMisses() {
   const s = getStreakState();
   if (s.freezeDays <= 0) return;
-  const meals = getMeals();
+  const logged = getLoggedDayKeys();
+  const today = todayKey();
   for (let i = 1; i <= 6; i++) {
     if (s.freezeDays <= 0) break;
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+    const key = shiftDayKey(today, -i);
     if (s.consumedFreezeDates.includes(key)) continue;
-    const has = meals.some((m) => m.loggedAt.startsWith(key));
-    if (!has) {
+    if (!logged.has(key)) {
       s.freezeDays -= 1;
       s.consumedFreezeDates.push(key);
     }
@@ -133,18 +133,15 @@ export function autoConsumeFreezesForMisses() {
  */
 export function getProtectedStreak(): number {
   autoConsumeFreezesForMisses();
-  const meals = getMeals();
+  const logged = getLoggedDayKeys();
   const s = getStreakState();
   let streak = 0;
+  let key = todayKey();
   for (let i = 0; i < 365; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const has = meals.some((m) => m.loggedAt.startsWith(key));
     const frozen = s.consumedFreezeDates.includes(key);
-    if (has || frozen) streak++;
-    else if (i === 0) continue;
-    else break;
+    if (logged.has(key) || frozen) streak++;
+    else if (i > 0) break;
+    key = shiftDayKey(key, -1);
   }
   return streak;
 }

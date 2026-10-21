@@ -1,13 +1,16 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Minus, Plus, Share2 } from "lucide-react";
-import { saveMeal, type Meal } from "@/lib/profile";
+import { createMealId, saveMeal, type Meal } from "@/lib/profile";
 import { analyzeMealPhoto } from "@/lib/mealAiClient";
 import { consumePendingMealImage } from "@/lib/mealImageStore";
 import { sanitizeMealIcon } from "@/lib/mealIcon";
 import PortionGuideOverlay from "@/components/app/PortionGuideOverlay";
 import ShareRecipeCard from "@/components/app/ShareRecipeCard";
+import { formatDayLabel, isToday, timestampForDay } from "@/lib/dayKey";
+import { readDayParam, withDay } from "@/lib/loggingDay";
+import { toast } from "sonner";
 
 interface AnalyzedItem {
   name: string;
@@ -40,12 +43,18 @@ function parseHiddenCalories(result: AnalysisResult): number {
 
 const Analyze = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetDay = readDayParam(searchParams);
+  const logPath = withDay("/app/log", targetDay);
+  const todayPath = withDay("/app/today", targetDay);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [counts, setCounts] = useState<number[]>([]);
   const [acceptHidden, setAcceptHidden] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [autoNavTimer, setAutoNavTimer] = useState<number | null>(null);
@@ -53,7 +62,7 @@ const Analyze = () => {
   useEffect(() => {
     const dataUrl = consumePendingMealImage();
     if (!dataUrl) {
-      navigate("/app/log", { replace: true });
+      navigate(logPath, { replace: true });
       return;
     }
     setImageUrl(dataUrl);
@@ -87,7 +96,7 @@ const Analyze = () => {
         setLoading(false);
       }
     })();
-  }, [navigate]);
+  }, [navigate, logPath]);
 
   const hiddenCalories =
     result?.hiddenIngredient && acceptHidden ? parseHiddenCalories(result) : 0;
@@ -111,34 +120,71 @@ const Analyze = () => {
   const totalFat = Math.round(totals.fat + hiddenCalories / 9);
 
   const handleSave = () => {
-    if (!result) return;
-    const meal: Meal = {
-      id: crypto.randomUUID(),
-      loggedAt: new Date().toISOString(),
-      title: result.title,
-      icon: sanitizeMealIcon(result.icon),
-      items: result.items.map((it, i) => ({
-        name: it.name,
-        portion: it.portion,
-        calories: Math.round(it.calories * (counts[i] ?? 1)),
-        protein: Math.round(it.protein * (counts[i] ?? 1)),
-        carbs: Math.round(it.carbs * (counts[i] ?? 1)),
-        fat: Math.round(it.fat * (counts[i] ?? 1)),
-      })),
-      totalCalories,
-      totalProtein: Math.round(totals.protein),
-      totalCarbs: Math.round(totals.carbs),
-      totalFat,
-      hiddenIngredient: acceptHidden ? result.hiddenIngredient : null,
-      source: "photo",
-      imageDataUrl: imageUrl,
-      verified: true,
-      notes: result.notes || undefined,
-    };
-    saveMeal(meal);
-    setSaved(true);
-    const t = window.setTimeout(() => navigate("/app/today", { replace: true }), 3200);
-    setAutoNavTimer(t);
+    if (!result || saving || saved) return;
+    setSaving(true);
+
+    try {
+      const meal: Meal = {
+        id: createMealId(),
+        loggedAt: timestampForDay(targetDay),
+        title: result.title,
+        icon: sanitizeMealIcon(result.icon),
+        items: result.items.map((it, i) => {
+          const servings = counts[i] ?? 1;
+          return {
+            name: it.name,
+            portion: servings === 1 ? it.portion : `${servings} × ${it.portion}`,
+            basePortion: it.portion,
+            servings,
+            baseMacros: {
+              calories: it.calories,
+              protein: it.protein,
+              carbs: it.carbs,
+              fat: it.fat,
+            },
+            calories: Math.round(it.calories * servings),
+            protein: Math.round(it.protein * servings),
+            carbs: Math.round(it.carbs * servings),
+            fat: Math.round(it.fat * servings),
+          };
+        }),
+        totalCalories,
+        totalProtein: Math.round(totals.protein),
+        totalCarbs: Math.round(totals.carbs),
+        totalFat,
+        hiddenIngredient: acceptHidden ? result.hiddenIngredient : null,
+        source: "photo",
+        imageDataUrl: imageUrl,
+        verified: true,
+        notes: result.notes || undefined,
+      };
+
+      const outcome = saveMeal(meal);
+      if (!outcome.ok) {
+        setSaving(false);
+        toast.error("Couldn't save this meal", {
+          description:
+            "Your device is out of storage space. Free some up, then tap Confirm again.",
+        });
+        return;
+      }
+
+      if (outcome.photoDropped) {
+        toast.message("Meal logged without the photo", {
+          description: "There wasn't room on this device to keep the picture.",
+        });
+      }
+
+      setSaved(true);
+      const t = window.setTimeout(() => navigate(todayPath, { replace: true }), 3200);
+      setAutoNavTimer(t);
+    } catch (e) {
+      console.error("confirm & log failed", e);
+      setSaving(false);
+      toast.error("Couldn't save this meal", {
+        description: e instanceof Error ? e.message : "Please tap Confirm again.",
+      });
+    }
   };
 
   if (loading) {
@@ -169,7 +215,7 @@ const Analyze = () => {
           {error ?? "No result"}
         </p>
         <button
-          onClick={() => navigate("/app/log")}
+          onClick={() => navigate(logPath)}
           className="gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
         >
           Try again
@@ -194,7 +240,10 @@ const Analyze = () => {
             className="w-20 h-20 gradient-glow rounded-full mx-auto shadow-glow mb-6"
           />
           <h2 className="text-2xl font-bold text-foreground mb-2">Meal logged</h2>
-          <p className="text-muted-foreground text-sm">{totalCalories} calories added to your day</p>
+          <p className="text-muted-foreground text-sm">
+            {totalCalories} calories added to{" "}
+            {isToday(targetDay) ? "your day" : formatDayLabel(targetDay).toLowerCase()}
+          </p>
 
           <div className="mt-7 flex flex-col gap-2">
             <button
@@ -208,7 +257,7 @@ const Analyze = () => {
               Share recipe card
             </button>
             <button
-              onClick={() => navigate("/app/today", { replace: true })}
+              onClick={() => navigate(todayPath, { replace: true })}
               className="text-xs text-muted-foreground py-2"
             >
               Continue to home
@@ -235,7 +284,7 @@ const Analyze = () => {
     <div className="min-h-screen bg-background pb-8">
       <div className="px-6 safe-top pb-4 flex items-center justify-between">
         <button
-          onClick={() => navigate("/app/log")}
+          onClick={() => navigate(logPath)}
           className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -243,6 +292,14 @@ const Analyze = () => {
         <h2 className="font-semibold text-foreground">{result.title}</h2>
         <span className="text-2xl">{sanitizeMealIcon(result.icon)}</span>
       </div>
+
+      {!isToday(targetDay) && (
+        <div className="px-6 mb-3">
+          <p className="text-xs text-primary bg-primary/10 border border-primary/20 rounded-xl px-3 py-2">
+            Logging to {formatDayLabel(targetDay)}
+          </p>
+        </div>
+      )}
 
       {imageUrl && <PortionGuideOverlay imageUrl={imageUrl} items={result.items} />}
 
@@ -381,9 +438,11 @@ const Analyze = () => {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleSave}
-          className="gradient-glow text-primary-foreground font-semibold text-base py-4 rounded-2xl shadow-glow w-full"
+          disabled={saving}
+          className="gradient-glow text-primary-foreground font-semibold text-base py-4 rounded-2xl shadow-glow w-full flex items-center justify-center gap-2 disabled:opacity-70"
         >
-          Confirm & log meal
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saving ? "Logging…" : "Confirm & log meal"}
         </motion.button>
       </div>
     </div>

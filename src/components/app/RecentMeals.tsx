@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { getRecentUniqueMeals, relogMeal, type Meal } from "@/lib/profile";
+import { formatDayLabel, isToday, todayKey, type DayKey } from "@/lib/dayKey";
 import { toast } from "sonner";
 
 interface Props {
@@ -10,11 +11,13 @@ interface Props {
   variant?: "row" | "stack";
   /** Optional title override */
   title?: string;
+  /** Day the re-log lands on; defaults to today */
+  day?: DayKey;
   /** Where to navigate after a re-log; defaults to no navigation */
   onLogged?: (meal: Meal) => void;
 }
 
-const RecentMeals = ({ limit = 6, variant = "row", title, onLogged }: Props) => {
+const RecentMeals = ({ limit = 6, variant = "row", title, day, onLogged }: Props) => {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -24,11 +27,14 @@ const RecentMeals = ({ limit = 6, variant = "row", title, onLogged }: Props) => 
 
   if (meals.length === 0) return null;
 
+  const targetDay = day ?? todayKey();
+
   const handleRelog = (m: Meal) => {
     setBusyId(m.id);
-    const copy = relogMeal(m);
+    const copy = relogMeal(m, targetDay);
+    const where = isToday(targetDay) ? "today" : formatDayLabel(targetDay).toLowerCase();
     toast.success("Logged again", {
-      description: `${copy.title} · ${copy.totalCalories} cal added to today.`,
+      description: `${copy.title} · ${copy.totalCalories} cal added to ${where}.`,
     });
     setMeals(getRecentUniqueMeals(limit));
     onLogged?.(copy);

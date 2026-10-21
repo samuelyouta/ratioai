@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import TimeZonePicker from "@/components/app/TimeZonePicker";
+import { confirmTimeZone, formatDayLong, todayKey } from "@/lib/dayKey";
 import { getProfile } from "@/lib/profile";
 import { deleteAccount } from "@/lib/account";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -31,6 +33,7 @@ const Profile = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [today, setToday] = useState(() => todayKey());
 
   const handleRedo = () => navigate("/app/onboarding/goal");
 
@@ -119,6 +122,25 @@ const Profile = () => {
             <span className="text-sm text-foreground">Fat target</span>
             <span className="text-sm text-muted-foreground">{profile.fatTarget}g</span>
           </div>
+        </div>
+      </div>
+
+      <div className="px-6 mb-5">
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-sm font-semibold text-foreground">Day & time zone</p>
+          <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+            Meals are grouped into days using this zone. Today is{" "}
+            <span className="text-foreground">{formatDayLong(today)}</span>.
+          </p>
+          <TimeZonePicker
+            onChange={() => {
+              confirmTimeZone();
+              setToday(todayKey());
+              toast.success("Time zone updated", {
+                description: "Your daily totals have been regrouped.",
+              });
+            }}
+          />
         </div>
       </div>
 

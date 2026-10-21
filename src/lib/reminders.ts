@@ -9,6 +9,7 @@
 
 import { toast } from "sonner";
 import { getProfile, getTodayMeals, getTodayTotals } from "./profile";
+import { hourOfDay, todayKey } from "./dayKey";
 
 const LAST_FIRED_KEY = "ratioai.reminder.lastFired"; // YYYY-MM-DD
 const REMINDER_HOUR = 14; // 2 PM local
@@ -28,7 +29,7 @@ export function evaluateLunchReminder(now: Date = new Date()): ReminderPayload |
 
   // Did they log lunch already? Treat any meal between 11:00–14:00 local as lunch.
   const lunchLogged = getTodayMeals().some((m) => {
-    const h = new Date(m.loggedAt).getHours();
+    const h = hourOfDay(m.loggedAt);
     return h >= 11 && h < 14;
   });
   if (lunchLogged) return null;
@@ -49,10 +50,6 @@ export function evaluateLunchReminder(now: Date = new Date()): ReminderPayload |
     title: "Lunch check-in",
     body: "Haven't seen a meal yet today — snap your plate to stay on track.",
   };
-}
-
-function todayKey(d: Date) {
-  return d.toISOString().slice(0, 10);
 }
 
 function deliver(payload: ReminderPayload) {
@@ -97,8 +94,8 @@ export async function ensureNotificationPermission() {
 export function startReminderScheduler(): () => void {
   const tick = () => {
     const now = new Date();
-    if (now.getHours() < REMINDER_HOUR) return;
-    const key = todayKey(now);
+    if (hourOfDay(now) < REMINDER_HOUR) return;
+    const key = todayKey();
     if (localStorage.getItem(LAST_FIRED_KEY) === key) return;
     const payload = evaluateLunchReminder(now);
     if (!payload) return;

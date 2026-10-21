@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
 import RecentMeals from "@/components/app/RecentMeals";
@@ -7,12 +7,16 @@ import { compressImageForAnalysis, isLikelyImageFile } from "@/lib/image";
 import { setPendingMealImage } from "@/lib/mealImageStore";
 import { isNative } from "@/lib/native";
 import { useNativeFeatures } from "@/hooks/useNativeFeatures";
+import { formatDayLabel, isToday } from "@/lib/dayKey";
+import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 
 type CameraStatus = "starting" | "live" | "denied" | "unavailable";
 
 const Log = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetDay = readDayParam(searchParams);
   const galleryRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -73,7 +77,7 @@ const Log = () => {
       const compressed = await compressImageForAnalysis(dataUrl);
       setPreviewUrl(compressed);
       setPendingMealImage(compressed);
-      navigate("/app/analyze");
+      navigate(withDay("/app/analyze", targetDay));
     } catch (e) {
       console.error(e);
       toast.error("Couldn't load that photo", {
@@ -291,7 +295,7 @@ const Log = () => {
           <button
             onClick={() => {
               stopCamera();
-              navigate("/app/today");
+              navigate(withDay("/app/today", targetDay));
             }}
             className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center"
             aria-label="Close"
@@ -329,8 +333,25 @@ const Log = () => {
       </div>
 
       <motion.div className="bg-background px-6 py-6 safe-bottom">
+        {!isToday(targetDay) && (
+          <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
+            <p className="text-xs font-semibold text-primary">
+              Adding to {formatDayLabel(targetDay)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Anything you log here is stamped on that day, not today.
+            </p>
+          </div>
+        )}
+
         <div className="mb-5">
-          <RecentMeals limit={4} variant="stack" title="Quick re-log" onLogged={() => navigate("/app/today")} />
+          <RecentMeals
+            limit={4}
+            variant="stack"
+            title="Quick re-log"
+            day={targetDay}
+            onLogged={() => navigate(withDay("/app/today", targetDay))}
+          />
         </div>
 
         <div className="flex items-center justify-around">
@@ -365,7 +386,7 @@ const Log = () => {
             disabled={scanning}
             onClick={() => {
               stopCamera();
-              navigate("/app/manual");
+              navigate(withDay("/app/manual", targetDay));
             }}
             className="flex flex-col items-center gap-1"
           >
@@ -381,7 +402,7 @@ const Log = () => {
             disabled={scanning}
             onClick={() => {
               stopCamera();
-              navigate("/app/manual");
+              navigate(withDay("/app/manual", targetDay));
             }}
             className="h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors text-sm font-medium text-foreground/90"
           >
@@ -391,7 +412,7 @@ const Log = () => {
             disabled={scanning}
             onClick={() => {
               stopCamera();
-              navigate("/app/describe");
+              navigate(withDay("/app/describe", targetDay));
             }}
             className="h-11 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-colors text-sm font-medium text-foreground"
           >
