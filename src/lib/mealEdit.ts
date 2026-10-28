@@ -101,6 +101,36 @@ export function foodToItem(food: FoodDef, grams = food.unitGrams): EditableItem 
   return grams === food.unitGrams ? base : withGrams(base, grams);
 }
 
+/** An item estimated by the describe-a-meal AI, shaped like a manually added one. */
+export function aiEstimateToItem(ai: {
+  name: string;
+  portion?: string;
+  grams?: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  confidence?: number;
+}): EditableItem {
+  const portionText = (ai.portion ?? "").trim();
+  const hasGramsInText = extractGrams(portionText) !== null;
+  const grams = typeof ai.grams === "number" && ai.grams > 0 ? round1(ai.grams) : null;
+  let portion = portionText || "1 serving";
+  if (!hasGramsInText && grams) portion = portionText ? `${grams}g (${portionText})` : `${grams}g`;
+  const num = (n: unknown) => (typeof n === "number" && Number.isFinite(n) && n > 0 ? n : 0);
+  return {
+    name: ai.name.trim() || "Food item",
+    portion,
+    calories: Math.round(num(ai.calories)),
+    protein: round1(num(ai.protein)),
+    carbs: round1(num(ai.carbs)),
+    fat: round1(num(ai.fat)),
+    confidence: Math.round(ai.confidence ?? 70),
+    servings: 1,
+    manual: true,
+  };
+}
+
 export function customItem(input: {
   name: string;
   grams: number | null;

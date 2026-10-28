@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Search, Trash2, X } from "lucide-react";
+import { Loader2, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
+import { describeMealText } from "@/lib/mealAiClient";
 import { FOODS, type FoodDef } from "@/lib/foodDb";
 import {
   MAX_CALORIES,
   MAX_GRAMS,
+  aiEstimateToItem,
   customItem,
   gramsOf,
   parseAmount,
@@ -299,19 +301,57 @@ interface AddProps {
   open: boolean;
   onPick: (food: FoodDef) => void;
   onCustom: () => void;
+  /** Called with the items the AI estimated from a free-text description. */
+  onDescribed: (items: EditableItem[]) => void;
   onClose: () => void;
 }
 
-export function AddItemSheet({ open, onPick, onCustom, onClose }: AddProps) {
+interface DescribeResponse {
+  items?: Parameters<typeof aiEstimateToItem>[0][];
+  notes?: string;
+}
+
+export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: AddProps) {
   const [query, setQuery] = useState("");
+  const [description, setDescription] = useState("");
+  const [estimating, setEstimating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) setQuery("");
+    if (open) {
+      setQuery("");
+      setDescription("");
+      setAiError(null);
+      setEstimating(false);
+    }
   }, [open]);
+
+  const estimate = async () => {
+    const text = description.trim();
+    if (text.length < 3) {
+      setAiError("Add a few words about what you ate.");
+      return;
+    }
+    setEstimating(true);
+    setAiError(null);
+    try {
+      const r = await describeMealText<DescribeResponse>(text);
+      const items = (r.items ?? []).map(aiEstimateToItem);
+      if (items.length === 0) {
+        setAiError(r.notes || "No food detected. Try rephrasing, e.g. \"a tablespoon of butter\".");
+        return;
+      }
+      onDescribed(items);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Couldn't estimate that. Please try again.");
+    } finally {
+      setEstimating(false);
+    }
+  };
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return FOODS.slice(0, 8);
+    if (!q) return FOODS.slice(0, 4);
     return FOODS.filter((f) => f.name.toLowerCase().includes(q)).slice(0, 12);
   }, [query]);
 
@@ -347,9 +387,36 @@ export function AddItemSheet({ open, onPick, onCustom, onClose }: AddProps) {
         ))}
         {results.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No match for "{query}". Enter it yourself instead.
+            No match for "{query}". Describe it to the AI below or enter it yourself.
           </p>
         )}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-card p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <p className="text-sm font-semibold text-foreground">Describe it to the AI</p>
+        </div>
+        <textarea
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            setAiError(null);
+          }}
+          rows={2}
+          disabled={estimating}
+          placeholder="e.g. a tablespoon of butter and a glass of orange juice"
+          className="w-full px-3 py-2 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+        />
+        {aiError && <p className="text-xs text-destructive mt-1.5">{aiError}</p>}
+        <button
+          onClick={estimate}
+          disabled={estimating}
+          className="mt-2 w-full h-11 rounded-xl gradient-glow text-sm font-semibold text-primary-foreground flex items-center justify-center gap-2 disabled:opacity-70"
+        >
+          {estimating && <Loader2 className="w-4 h-4 animate-spin" />}
+          {estimating ? "Estimating…" : "Estimate and add"}
+        </button>
       </div>
 
       <button

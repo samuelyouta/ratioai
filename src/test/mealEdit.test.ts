@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activeItems,
+  aiEstimateToItem,
   customItem,
   foodToItem,
   gramsOf,
@@ -110,5 +111,47 @@ describe("totals and saving", () => {
       calories: 390,
       baseMacros: { calories: 195, protein: 4, carbs: 42, fat: 0.5 },
     });
+  });
+});
+
+describe("aiEstimateToItem", () => {
+  it("keeps a portion that already states grams so it stays editable", () => {
+    const item = aiEstimateToItem({
+      name: "Butter",
+      portion: "~14g (1 tbsp)",
+      grams: 14,
+      calories: 102.4,
+      protein: 0.1,
+      carbs: 0,
+      fat: 11.5,
+      confidence: 80,
+    });
+    expect(item).toMatchObject({ portion: "~14g (1 tbsp)", calories: 102, manual: true, servings: 1 });
+    expect(gramsOf(item)).toBe(14);
+  });
+
+  it("prepends grams when only the description has a unit", () => {
+    const item = aiEstimateToItem({
+      name: "Orange juice",
+      portion: "1 glass",
+      grams: 250,
+      calories: 112,
+      protein: 1.7,
+      carbs: 26,
+      fat: 0.5,
+    });
+    expect(item.portion).toBe("250g (1 glass)");
+    expect(withGrams(item, 125).calories).toBe(56);
+  });
+
+  it("is safe with missing or junk numbers", () => {
+    const item = aiEstimateToItem({
+      name: " ",
+      calories: Number.NaN,
+      protein: -4,
+      carbs: 3,
+      fat: 1,
+    });
+    expect(item).toMatchObject({ name: "Food item", portion: "1 serving", calories: 0, protein: 0 });
   });
 });

@@ -508,6 +508,13 @@ const Analyze = () => {
           setAddOpen(false);
           setCustomOpen(true);
         }}
+        onDescribed={(added) => {
+          setAddOpen(false);
+          setItems((prev) => [...prev, ...added]);
+          toast.success(added.length === 1 ? `Added ${added[0].name}` : `Added ${added.length} items`, {
+            description: "Estimated by AI. Tap the pencil on any item to adjust it.",
+          });
+        }}
       />
     </div>
   );
