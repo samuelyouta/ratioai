@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Minus, Pencil, Plus, Share2 } from "lucide-react";
 import { createMealId, saveMeal, type Meal } from "@/lib/profile";
 import {
@@ -71,44 +71,77 @@ const Analyze = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const [autoNavTimer, setAutoNavTimer] = useState<number | null>(null);
 
+  const imageRef = useRef<string | null>(null);
+  const runIdRef = useRef(0);
+  const [slow, setSlow] = useState(false);
+
+  const runAnalysis = useCallback(async (dataUrl: string) => {
+    const runId = ++runIdRef.current;
+    const current = () => runId === runIdRef.current;
+    setLoading(true);
+    setError(null);
+    setSlow(false);
+    try {
+      const r = await analyzeMealPhoto<AnalysisResult>(dataUrl);
+      if (!current()) return;
+      if (!r.items?.length) {
+        setError(r.notes || "No food detected in this photo. Try a clearer shot of your meal.");
+        return;
+      }
+      setResult(r);
+      setItems(r.items.map((it) => ({ ...it, servings: 1 })));
+    } catch (e) {
+      if (!current()) return;
+      const raw = e instanceof Error ? e.message : "Analysis failed";
+      const lower = raw.toLowerCase();
+      // WebKit often surfaces failed fetch as exactly "Load failed".
+      if (
+        lower === "load failed" ||
+        lower.includes("failed to fetch") ||
+        lower.includes("networkerror") ||
+        lower.includes("function_invocation_failed")
+      ) {
+        setError("Could not reach meal AI. Check your connection and try again in a moment.");
+      } else {
+        setError(raw);
+      }
+    } finally {
+      if (current()) setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
+    // The photo is handed over exactly once. Re-running this effect (a route
+    // change re-creating `navigate`, say) must not look for it again and bounce
+    // the user back to the camera mid-analysis.
+    if (imageRef.current) return;
     const dataUrl = consumePendingMealImage();
     if (!dataUrl) {
       navigate(logPath, { replace: true });
       return;
     }
+    imageRef.current = dataUrl;
     setImageUrl(dataUrl);
+    void runAnalysis(dataUrl);
+  }, [navigate, logPath, runAnalysis]);
 
-    (async () => {
-      try {
-        const r = await analyzeMealPhoto<AnalysisResult>(dataUrl);
-        if (!r.items?.length) {
-          setError(r.notes || "No food detected in this photo. Try a clearer shot of your meal.");
-          return;
-        }
-        setResult(r);
-        setItems(r.items.map((it) => ({ ...it, servings: 1 })));
-      } catch (e) {
-        const raw = e instanceof Error ? e.message : "Analysis failed";
-        const lower = raw.toLowerCase();
-        // WebKit often surfaces failed fetch as exactly "Load failed".
-        if (
-          lower === "load failed" ||
-          lower.includes("failed to fetch") ||
-          lower.includes("networkerror") ||
-          lower.includes("function_invocation_failed")
-        ) {
-          setError(
-            "Could not reach meal AI. Check your connection and try again in a moment.",
-          );
-        } else {
-          setError(raw);
-        }
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [navigate, logPath]);
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!loading) return;
+    const t = window.setTimeout(() => setSlow(true), 12_000);
+    return () => window.clearTimeout(t);
+  }, [loading]);
+
+  const cancelAnalysis = () => {
+    runIdRef.current += 1;
+    navigate(logPath, { replace: true });
+  };
 
   const hiddenCalories =
     result?.hiddenIngredient && acceptHidden ? parseHiddenCalories(result) : 0;
@@ -180,7 +213,17 @@ const Analyze = () => {
           <Loader2 className="w-10 h-10 text-primary" />
         </motion.div>
         <p className="text-sm text-foreground font-semibold mt-4">Analyzing your meal…</p>
-        <p className="text-xs text-muted-foreground mt-1">Identifying items, portions, and hidden ingredients</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {slow
+            ? "Still working. This can take up to a minute on a slow connection."
+            : "Identifying items, portions, and hidden ingredients"}
+        </p>
+        <button
+          onClick={cancelAnalysis}
+          className="mt-6 text-xs font-medium text-muted-foreground underline underline-offset-4"
+        >
+          Cancel
+        </button>
       </motion.div>
     );
   }
@@ -196,11 +239,23 @@ const Analyze = () => {
         <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm">
           {error ?? "No result"}
         </p>
+        {imageRef.current && (
+          <button
+            onClick={() => imageRef.current && void runAnalysis(imageRef.current)}
+            className="gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
+          >
+            Try again
+          </button>
+        )}
         <button
-          onClick={() => navigate(logPath)}
-          className="gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
+          onClick={() => navigate(logPath, { replace: true })}
+          className={
+            imageRef.current
+              ? "mt-3 text-sm font-medium text-muted-foreground underline underline-offset-4"
+              : "gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
+          }
         >
-          Try again
+          Retake photo
         </button>
       </motion.div>
     );

@@ -3,10 +3,16 @@
 // in `app_sessions` so a returning user can restore their profile + meals.
 
 import { supabase } from "@/integrations/supabase/client";
-import { getProfile, saveProfile, getMeals, type Profile, type Meal } from "@/lib/profile";
+import {
+  getProfile,
+  saveProfile,
+  getMeals,
+  mergeMealsIntoLocal,
+  type Profile,
+  type Meal,
+} from "@/lib/profile";
 
 const CLIENT_ID_KEY = "ratioai.client_id";
-const MEALS_KEY = "ratioai.meals";
 
 function mealsWithoutPhotos(meals: Meal[]): Meal[] {
   return meals.map(({ imageDataUrl: _photo, ...rest }) => ({ ...rest, imageDataUrl: null }));
@@ -54,8 +60,8 @@ export async function recordVisit() {
       if (!getProfile() && existing.profile) {
         saveProfile(existing.profile as unknown as Profile);
       }
-      if (getMeals().length === 0 && Array.isArray(existing.meals)) {
-        localStorage.setItem(MEALS_KEY, JSON.stringify(existing.meals));
+      if (Array.isArray(existing.meals)) {
+        mergeMealsIntoLocal(existing.meals as unknown as Meal[], { onlyIfEmpty: true });
       }
     } else {
       await supabase.from("app_sessions").insert([
