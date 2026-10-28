@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Mic, MicOff } from "lucide-react";
 import { describeMealText } from "@/lib/mealAiClient";
 import { createMealId, saveMeal, type Meal, type MealItem } from "@/lib/profile";
+import { maybeRequestReview } from "@/lib/reviewPrompt";
 import { formatDayLabel, isToday, timestampForDay } from "@/lib/dayKey";
 import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "@/hooks/use-toast";
@@ -306,6 +307,7 @@ const Describe = () => {
       });
       return;
     }
+    maybeRequestReview(meal.source);
     const where = isToday(targetDay) ? "" : ` to ${formatDayLabel(targetDay).toLowerCase()}`;
     toast({
       title: "Estimated entry saved",
