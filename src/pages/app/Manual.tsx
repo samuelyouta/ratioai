@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Minus } from "lucide-react";
 import { createMealId, saveMeal, type Meal, type MealItem } from "@/lib/profile";
+import { maybeRequestReview } from "@/lib/reviewPrompt";
 import { formatDayLabel, isToday, timestampForDay } from "@/lib/dayKey";
 import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "@/hooks/use-toast";
@@ -100,6 +101,7 @@ const Manual = () => {
       });
       return;
     }
+    maybeRequestReview(meal.source);
     const where = isToday(targetDay) ? "today" : formatDayLabel(targetDay).toLowerCase();
     toast({ title: "Logged", description: `${meal.totalCalories} cal added to ${where}.` });
     navigate(withDay("/app/today", targetDay));
