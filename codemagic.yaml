@@ -17,6 +17,8 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.ratioai.ios"
+        # Must be higher than the last version App Store Connect closed or approved.
+        APP_VERSION: "1.0.2"
       xcode: latest
       node: latest
     integrations:
@@ -37,7 +39,7 @@ workflows:
           grep CURRENT_PROJECT_VERSION ios/App/App.xcodeproj/project.pbxproj | head -3
       - name: Set marketing version
         script: |
-          sed -i '' "s/MARKETING_VERSION = [0-9.]*;/MARKETING_VERSION = 1.0.1;/g" ios/App/App.xcodeproj/project.pbxproj
+          sed -i '' "s/MARKETING_VERSION = [0-9.]*;/MARKETING_VERSION = $APP_VERSION;/g" ios/App/App.xcodeproj/project.pbxproj
           grep MARKETING_VERSION ios/App/App.xcodeproj/project.pbxproj
       - name: Set up keychain
         script: keychain initialize
