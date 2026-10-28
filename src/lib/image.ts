@@ -1,4 +1,7 @@
+import { withTimeout } from "@/lib/camera";
+
 /** Resize / compress meal photos. Never throws away an already-usable JPEG. */
+const DECODE_TIMEOUT_MS = 10_000;
 
 const MAX_EDGE = 1280;
 const JPEG_QUALITY = 0.82;
@@ -16,7 +19,11 @@ export async function compressImageForAnalysis(
   }
 
   try {
-    const bitmap = await decodeToBitmap(dataUrl);
+    const bitmap = await withTimeout(
+      decodeToBitmap(dataUrl),
+      DECODE_TIMEOUT_MS,
+      () => new Error("Image decode timed out"),
+    );
     const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     const width = Math.max(1, Math.round(bitmap.width * scale));
     const height = Math.max(1, Math.round(bitmap.height * scale));

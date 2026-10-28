@@ -1,10 +1,13 @@
 import { motion } from "framer-motion";
 import BottomNav from "@/components/BottomNav";
 import { getLast7DaysTotals, getProfile } from "@/lib/profile";
+import { useMealLogVersion, useTodayKey } from "@/hooks/useMealLog";
 import { dayKeyToDate } from "@/lib/dayKey";
 
 const Insights = () => {
   const profile = getProfile()!;
+  useMealLogVersion();
+  useTodayKey();
   const days = getLast7DaysTotals();
   const maxCal = Math.max(...days.map((d) => d.calories), profile.calorieTarget);
 

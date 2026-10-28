@@ -6,6 +6,7 @@ const PUBLIC_WEB_ORIGIN = (
 ).replace(/\/$/, "");
 
 const MEAL_AI_TIMEOUT_MS = 55_000;
+const SESSION_LOOKUP_TIMEOUT_MS = 4_000;
 
 /**
  * Meal AI calls go to Vercel serverless routes that use OPENAI_API_KEY.
@@ -52,14 +53,17 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
     throw new Error("You appear to be offline. Check your network and try again.");
   }
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // A stalled token refresh must not hang the request before its own timeout starts.
+  const session = await Promise.race([
+    supabase.auth.getSession().then(({ data }) => data.session),
+    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), SESSION_LOOKUP_TIMEOUT_MS)),
+  ]).catch(() => null);
 
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), MEAL_AI_TIMEOUT_MS);
 
   let res: Response;
+  let text: string;
   try {
     res = await fetch(`${mealAiBaseUrl()}${path}`, {
       method: "POST",
@@ -70,6 +74,8 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+    // Keep the timeout armed while the body downloads too, not just until headers arrive.
+    text = await res.text();
   } catch (e) {
     const raw = e instanceof Error ? e.message : String(e);
     throw new Error(userFacingAiError(raw));
@@ -77,7 +83,6 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
     window.clearTimeout(timer);
   }
 
-  const text = await res.text();
   let payload: unknown = null;
   try {
     payload = text ? JSON.parse(text) : null;

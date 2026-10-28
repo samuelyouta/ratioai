@@ -15,8 +15,10 @@ import {
   type Meal,
   type MealItem,
   type MealSource,
+  mealDay,
 } from "@/lib/profile";
-import { dayKey, formatDayLabel, formatTimeOfDay } from "@/lib/dayKey";
+import { formatDayLabel, formatTimeOfDay } from "@/lib/dayKey";
+import { useMealLogVersion } from "@/hooks/useMealLog";
 import { withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 
@@ -34,6 +36,10 @@ const History = () => {
   const [meals, setMeals] = useState<Meal[]>(() =>
     [...getMeals()].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)),
   );
+  const mealLogVersion = useMealLogVersion();
+  useEffect(() => {
+    setMeals([...getMeals()].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)));
+  }, [mealLogVersion]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<Meal | null>(null);
@@ -62,7 +68,7 @@ const History = () => {
   const grouped = useMemo(() => {
     const groups: Record<string, Meal[]> = {};
     for (const m of filtered) {
-      (groups[dayKey(m.loggedAt)] ??= []).push(m);
+      (groups[mealDay(m)] ??= []).push(m);
     }
     return Object.entries(groups);
   }, [filtered]);

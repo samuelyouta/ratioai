@@ -1,18 +1,27 @@
 // Bridges the on-device profile + meal cache with the per-user cloud tables.
-// Runs on sign-in: if the user has local data and no cloud data yet, push it.
-// If the user has cloud data and the local cache is empty (new device), pull.
+//
+// Meals are merged, never replaced: the local log is the source of truth for
+// anything created on this device, and the cloud only ever adds to it. Syncs
+// also re-read the local log right before writing, so a meal logged while a
+// request was in flight can't be overwritten by an older copy.
 
 import { supabase } from "@/integrations/supabase/client";
 import { getClientId } from "@/lib/session";
 import {
-  getProfile,
-  saveProfile,
+  clearPendingMeals,
+  forgetDeletedMeals,
+  getDeletedMealIds,
   getMeals,
-  type Profile,
+  getPendingMealIds,
+  getProfile,
+  mergeMealsIntoLocal,
+  saveProfile,
   type Meal,
+  type Profile,
 } from "@/lib/profile";
 
-const MEALS_KEY = "ratioai.meals";
+const PAGE_SIZE = 500;
+const UPSERT_CHUNK = 100;
 
 function profileToRow(p: Profile) {
   return {
@@ -80,69 +89,139 @@ async function hydrateFromAnonymousSession() {
     if (!getProfile() && session.profile) {
       saveProfile(session.profile as unknown as Profile);
     }
-    if (getMeals().length === 0 && Array.isArray(session.meals)) {
-      localStorage.setItem(MEALS_KEY, JSON.stringify(session.meals));
+    if (Array.isArray(session.meals)) {
+      // Only fills an empty log, and decides at write time rather than before the request.
+      mergeMealsIntoLocal(session.meals as unknown as Meal[], { onlyIfEmpty: true });
     }
   } catch (e) {
     console.warn("hydrateFromAnonymousSession failed", e);
   }
 }
 
+async function syncProfile(userId: string) {
+  const localProfile = getProfile();
+  const { data: cloudProfileRow } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const cloudProfile = rowToProfile(cloudProfileRow as Record<string, unknown> | null);
+
+  if (localProfile) {
+    const { error } = await supabase
+      .from("profiles")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .upsert({ id: userId, ...profileToRow(localProfile) } as any, { onConflict: "id" });
+    if (error) console.warn("profile upsert failed", error);
+  } else if (cloudProfile) {
+    saveProfile(cloudProfile);
+  }
+}
+
+/** Every meal the cloud has for this user, or null if it couldn't be read in full. */
+async function fetchCloudMeals(userId: string): Promise<Meal[] | null> {
+  const out: Meal[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("meals")
+      .select("data")
+      .eq("user_id", userId)
+      .order("logged_at", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error || !data) {
+      console.warn("meals fetch failed", error);
+      return null;
+    }
+    for (const row of data) {
+      const meal = rowToMeal(row as Record<string, unknown>);
+      if (meal) out.push(meal);
+    }
+    if (data.length < PAGE_SIZE) return out;
+  }
+}
+
+/** Upload the given meals; returns the ids that were stored. */
+async function uploadMeals(userId: string, meals: Meal[]): Promise<string[]> {
+  const stored: string[] = [];
+  for (let i = 0; i < meals.length; i += UPSERT_CHUNK) {
+    const chunk = meals.slice(i, i + UPSERT_CHUNK);
+    const { error } = await supabase
+      .from("meals")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .upsert(chunk.map((m) => mealToRow(m, userId)) as any, { onConflict: "user_id,client_id" });
+    if (error) console.warn("meals upsert failed", error);
+    else stored.push(...chunk.map((m) => m.id));
+  }
+  return stored;
+}
+
+async function flushDeletes(userId: string) {
+  const ids = [...getDeletedMealIds()];
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from("meals")
+    .delete()
+    .eq("user_id", userId)
+    .in("client_id", ids);
+  if (error) console.warn("meal deletes failed", error);
+  else forgetDeletedMeals(ids);
+}
+
+/** Upload only what changed on this device. Cheap enough to run often. */
+async function pushPendingMeals(userId: string, alsoMissingFrom?: Set<string>) {
+  const pending = getPendingMealIds();
+  const deleted = getDeletedMealIds();
+  const toPush = getMeals().filter(
+    (m) => !deleted.has(m.id) && (pending.has(m.id) || (alsoMissingFrom && !alsoMissingFrom.has(m.id))),
+  );
+  if (toPush.length > 0) {
+    const stored = await uploadMeals(userId, toPush);
+    clearPendingMeals(stored);
+  }
+  await flushDeletes(userId);
+}
+
+let running: Promise<void> | null = null;
+let rerunRequested = false;
+
+async function runFullSync(userId: string) {
+  await hydrateFromAnonymousSession();
+  await syncProfile(userId);
+
+  const cloud = await fetchCloudMeals(userId);
+  if (cloud) {
+    mergeMealsIntoLocal(cloud);
+    await pushPendingMeals(userId, new Set(cloud.map((m) => m.id)));
+  } else {
+    await pushPendingMeals(userId);
+  }
+}
+
 /**
  * Two-way merge between local cache and cloud tables for the signed-in user.
- * Safe to call multiple times; upserts by (user_id, client_id) for meals
- * and by primary key for profile.
+ * Safe to call repeatedly; overlapping calls are coalesced into one follow-up run.
  */
 export async function syncUserData(userId: string) {
-  try {
-    await hydrateFromAnonymousSession();
-
-    const localProfile = getProfile();
-    const { data: cloudProfileRow } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
-
-    const cloudProfile = rowToProfile(cloudProfileRow as Record<string, unknown> | null);
-
-    if (localProfile) {
-      const { error } = await supabase
-        .from("profiles")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .upsert({ id: userId, ...profileToRow(localProfile) } as any, { onConflict: "id" });
-      if (error) console.warn("profile upsert failed", error);
-    } else if (cloudProfile) {
-      saveProfile(cloudProfile);
-    }
-
-    const localMeals = getMeals();
-    if (localMeals.length > 0) {
-      const rows = localMeals.map((m) => mealToRow(m, userId));
-      const chunkSize = 100;
-      for (let i = 0; i < rows.length; i += chunkSize) {
-        const { error } = await supabase
-          .from("meals")
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .upsert(rows.slice(i, i + chunkSize) as any, { onConflict: "user_id,client_id" });
-        if (error) console.warn("meals upsert failed", error);
-      }
-    } else {
-      const { data: cloudMeals } = await supabase
-        .from("meals")
-        .select("data")
-        .eq("user_id", userId)
-        .order("logged_at", { ascending: true });
-      if (cloudMeals && cloudMeals.length) {
-        const restored = cloudMeals
-          .map((r) => rowToMeal(r as Record<string, unknown>))
-          .filter(Boolean) as Meal[];
-        if (restored.length) localStorage.setItem(MEALS_KEY, JSON.stringify(restored));
-      }
-    }
-  } catch (e) {
-    console.warn("syncUserData failed", e);
+  if (running) {
+    rerunRequested = true;
+    return running;
   }
+  running = (async () => {
+    try {
+      do {
+        rerunRequested = false;
+        try {
+          await runFullSync(userId);
+        } catch (e) {
+          console.warn("syncUserData failed", e);
+        }
+      } while (rerunRequested);
+    } finally {
+      running = null;
+    }
+  })();
+  return running;
 }
 
 /**
@@ -183,6 +262,7 @@ export async function deleteMealFromCloud(clientId: string) {
     .eq("user_id", userId)
     .eq("client_id", clientId);
   if (error) console.warn("deleteMealFromCloud failed", error);
+  else forgetDeletedMeals([clientId]);
 }
 
 /** Push profile to cloud for the signed-in user. */
@@ -210,5 +290,10 @@ export function scheduleCloudPush() {
 export async function pushLocalChangesIfAuthenticated() {
   const userId = await getAuthenticatedUserId();
   if (!userId) return;
-  await syncUserData(userId);
+  try {
+    await pushProfileToCloud();
+    await pushPendingMeals(userId);
+  } catch (e) {
+    console.warn("pushLocalChanges failed", e);
+  }
 }
