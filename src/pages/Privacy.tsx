@@ -110,9 +110,10 @@ const Privacy = () => {
               purchases and subscription status (purchase history).
             </li>
             <li>
-              <span className="text-foreground font-medium">Meta (Facebook)</span> — advertising
-              measurement. Our app uses the Meta SDK to learn which Meta ads led to an install,
-              sign-up, or subscription. See “Tracking” below.
+              <span className="text-foreground font-medium">Meta (Facebook &amp; Instagram)</span> —
+              third-party advertising and attribution. Our app uses the Meta SDK so Meta can tell which
+              of our ads led to an install, sign-up, or subscription, and can show our ads to people
+              likely to be interested. See “Tracking” below.
             </li>
           </ul>
         </section>
@@ -120,14 +121,17 @@ const Privacy = () => {
         <section className="space-y-3">
           <h3 className="text-sm font-bold text-foreground">5. Tracking</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            We advertise RatioAi on Meta (Facebook and Instagram). To measure those campaigns, the app
+            We use third-party advertising and attribution services, currently Meta (Facebook and
+            Instagram), to promote RatioAi and measure how well our ads work. For this, the app
             includes the Meta SDK, which sends Meta basic app events: that the app was opened, that an
             account was created, that onboarding was completed, that checkout was started, and
             that a subscription was purchased (with its price). These events are linked to a device
             identifier. If you allow tracking when iOS asks, Meta can match them to your
             Meta account using your device’s advertising identifier (IDFA); if you decline, only
             aggregated, privacy-preserving attribution is used and your advertising identifier is not
-            collected.
+            collected. Meta processes this data under its own privacy policy
+            (<span className="text-primary">facebook.com/privacy/policy</span>). Declining tracking does
+            not limit any app feature.
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed">
             We never send Meta your meals, photos, body metrics, goals, name, or email. You can change

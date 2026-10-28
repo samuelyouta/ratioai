@@ -10,7 +10,7 @@ App Tracking Transparency (ATT) prompt is not shown, until you finish the steps 
 |-------|-------|
 | Meta App Events plugin (`@capgo/capacitor-facebook-analytics`, wraps the official Facebook iOS SDK 18.x) | `package.json`, `ios/App/CapApp-SPM/Package.swift` |
 | ATT prompt plugin (`@capgo/capacitor-app-tracking-transparency`) | same |
-| Meta keys, `NSUserTrackingUsageDescription`, `SKAdNetworkItems` (Meta's two IDs), `fb<APP_ID>` URL scheme | `ios/App/App/Info.plist` |
+| Meta keys, `NSUserTrackingUsageDescription` ("We use this to measure our ads and improve your experience. …"), `SKAdNetworkItems` (Meta's two IDs), `fb<APP_ID>` URL scheme | `ios/App/App/Info.plist` |
 | SDK auto-start **disabled** so nothing runs before the ATT prompt | `FacebookAutoInitEnabled` / `FacebookAutoLogAppEventsEnabled` = `false` |
 | Startup + event helpers (feature flag, ATT, init, events) | `src/lib/metaAds.ts` |
 | Unit tests | `src/test/metaAds.test.ts` |
