@@ -32,21 +32,23 @@ import {
   formatDayLabel,
   formatTimeOfDay,
   hourOfDay,
-  isToday,
   todayKey,
   type DayKey,
 } from "@/lib/dayKey";
 import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
+import { useMealLogVersion, useTodayKey } from "@/hooks/useMealLog";
 
 const Today = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const profile = getProfile()!;
 
+  const mealLogVersion = useMealLogVersion();
+  const currentDay = useTodayKey();
   const selectedDay = readDayParam(searchParams);
-  const viewingToday = isToday(selectedDay);
+  const viewingToday = selectedDay === currentDay;
 
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loggedDays, setLoggedDays] = useState<Set<DayKey>>(() => new Set());
@@ -62,7 +64,7 @@ const Today = () => {
 
   useEffect(() => {
     reload();
-  }, [reload]);
+  }, [reload, mealLogVersion]);
 
   const totals = useMemo(() => sumMeals(meals), [meals]);
   const streak = getProtectedStreak();

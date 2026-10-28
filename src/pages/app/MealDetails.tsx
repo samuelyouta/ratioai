@@ -10,11 +10,12 @@ import {
   formatServings,
   getMeals,
   itemServings,
+  mealDay,
   setMealItemServings,
   type Meal,
   type MealSource,
 } from "@/lib/profile";
-import { dayKey, formatDayLabel, formatTimeOfDay, getTimeZone } from "@/lib/dayKey";
+import { formatDayLabel, formatTimeOfDay, getTimeZone } from "@/lib/dayKey";
 import { withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 
@@ -326,10 +327,10 @@ const MealDetails = () => {
         </Button>
 
         <button
-          onClick={() => navigate(withDay("/app/today", dayKey(meal.loggedAt)))}
+          onClick={() => navigate(withDay("/app/today", mealDay(meal)))}
           className="w-full mt-2 text-xs font-semibold text-primary py-2"
         >
-          View {formatDayLabel(dayKey(meal.loggedAt)).toLowerCase()}
+          View {formatDayLabel(mealDay(meal)).toLowerCase()}
         </button>
       </motion.div>
 

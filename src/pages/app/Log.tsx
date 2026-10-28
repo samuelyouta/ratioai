@@ -7,11 +7,20 @@ import { compressImageForAnalysis, isLikelyImageFile } from "@/lib/image";
 import { setPendingMealImage } from "@/lib/mealImageStore";
 import { isNative } from "@/lib/native";
 import { useNativeFeatures } from "@/hooks/useNativeFeatures";
+import { App as CapApp } from "@capacitor/app";
+import {
+  CameraTimeoutError,
+  isCameraPermissionError,
+  openCameraStream,
+  attachStream,
+  stopStream,
+  withTimeout,
+} from "@/lib/camera";
 import { formatDayLabel, isToday } from "@/lib/dayKey";
 import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 
-type CameraStatus = "starting" | "live" | "denied" | "unavailable";
+type CameraStatus = "starting" | "live" | "denied" | "unavailable" | "timeout";
 
 const Log = () => {
   const navigate = useNavigate();
@@ -23,58 +32,139 @@ const Log = () => {
 
   const [scanning, setScanning] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const scanningRef = useRef(false);
+  const previewRef = useRef<string | null>(null);
+  scanningRef.current = scanning;
+  previewRef.current = previewUrl;
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("starting");
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const { takePhoto, pickFromGallery, tapHaptic } = useNativeFeatures();
 
+  const startToken = useRef(0);
+  const restartsLeft = useRef(2);
+
   const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    stopStream(streamRef.current);
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
-  const startCamera = useCallback(async (facing: "environment" | "user" = facingMode) => {
-    setCameraStatus("starting");
-    stopCamera();
+  /** Invalidates any start that is still in flight, so a late stream can't resurrect the camera. */
+  const cancelPendingStart = useCallback(() => {
+    startToken.current += 1;
+  }, []);
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraStatus("unavailable");
-      return;
-    }
+  const startCamera = useCallback(
+    async (facing: "environment" | "user" = facingMode) => {
+      const token = ++startToken.current;
+      const stale = () => token !== startToken.current;
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: { ideal: facing },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-      });
-      streamRef.current = stream;
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play().catch(() => undefined);
+      setCameraStatus("starting");
+      stopCamera();
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraStatus("unavailable");
+        return;
       }
-      setCameraStatus("live");
-    } catch (e) {
-      console.warn("getUserMedia failed", e);
-      const name = e instanceof DOMException ? e.name : "";
-      setCameraStatus(name === "NotAllowedError" || name === "PermissionDeniedError" ? "denied" : "unavailable");
-    }
-  }, [facingMode, stopCamera]);
+
+      let stream: MediaStream | null = null;
+      try {
+        stream = await openCameraStream(facing);
+        if (stale()) {
+          stopStream(stream);
+          return;
+        }
+        streamRef.current = stream;
+        const video = videoRef.current;
+        if (!video) throw new Error("Camera view not ready");
+        await attachStream(video, stream);
+        if (stale()) return;
+
+        stream.getVideoTracks().forEach((track) =>
+          track.addEventListener("ended", () => {
+            if (stale() || scanningRef.current) return;
+            if (restartsLeft.current > 0) {
+              restartsLeft.current -= 1;
+              void startCamera(facing);
+            } else {
+              setCameraStatus("unavailable");
+            }
+          }),
+        );
+        setCameraStatus("live");
+      } catch (e) {
+        if (stale()) {
+          stopStream(stream);
+          return;
+        }
+        console.warn("camera start failed", e);
+        stopCamera();
+        if (isCameraPermissionError(e)) setCameraStatus("denied");
+        else if (e instanceof CameraTimeoutError) setCameraStatus("timeout");
+        else setCameraStatus("unavailable");
+      }
+    },
+    [facingMode, stopCamera],
+  );
+
+  const retryCamera = useCallback(() => {
+    restartsLeft.current = 2;
+    void startCamera();
+  }, [startCamera]);
 
   useEffect(() => {
     void startCamera(facingMode);
-    return () => stopCamera();
-  }, [facingMode, startCamera, stopCamera]);
+    return () => {
+      cancelPendingStart();
+      stopCamera();
+    };
+  }, [facingMode, startCamera, stopCamera, cancelPendingStart]);
+
+  // A backgrounded app loses its camera; release it and bring it back on return.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        cancelPendingStart();
+        stopCamera();
+      } else if (!scanningRef.current && !previewRef.current) {
+        retryCamera();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    let appListener: { remove: () => Promise<void> } | null = null;
+    let disposed = false;
+    if (isNative()) {
+      void CapApp.addListener("appStateChange", ({ isActive }) => {
+        if (!isActive) {
+          cancelPendingStart();
+          stopCamera();
+        } else if (!scanningRef.current && !previewRef.current) {
+          retryCamera();
+        }
+      }).then((handle) => {
+        if (disposed) void handle.remove();
+        else appListener = handle;
+      });
+    }
+
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      void appListener?.remove();
+    };
+  }, [cancelPendingStart, retryCamera, stopCamera]);
 
   const storeAndAnalyze = async (dataUrl: string) => {
     setScanning(true);
+    cancelPendingStart();
     stopCamera();
     try {
-      const compressed = await compressImageForAnalysis(dataUrl);
+      const compressed = await withTimeout(
+        compressImageForAnalysis(dataUrl),
+        20_000,
+        () => new Error("Preparing the photo took too long. Please try again."),
+      );
       setPreviewUrl(compressed);
       setPendingMealImage(compressed);
       navigate(withDay("/app/analyze", targetDay));
@@ -147,6 +237,7 @@ const Log = () => {
     // Native: use Capacitor Photos picker (converts HEIC → JPEG).
     if (isNative()) {
       setScanning(true);
+      cancelPendingStart();
       stopCamera();
       try {
         const dataUrl = await pickFromGallery();
@@ -178,6 +269,8 @@ const Log = () => {
       return;
     }
     setScanning(true);
+    cancelPendingStart();
+    stopCamera();
     try {
       const dataUrl = await takePhoto();
       if (!dataUrl) {
@@ -238,26 +331,40 @@ const Log = () => {
                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
                 <p className="text-sm text-primary font-medium tracking-wide">Starting camera…</p>
               </>
-            ) : cameraStatus === "denied" ? (
-              <>
-                <p className="text-sm text-foreground font-medium text-center">Camera permission needed</p>
-                <p className="text-xs text-muted-foreground text-center">
-                  Allow camera access to frame your meal, or pick a photo from Gallery.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void startCamera()}
-                  className="mt-1 text-xs font-semibold text-primary underline-offset-4 hover:underline"
-                >
-                  Try again
-                </button>
-              </>
             ) : (
               <>
-                <p className="text-sm text-foreground font-medium text-center">Camera unavailable</p>
-                <p className="text-xs text-muted-foreground text-center">
-                  Use Gallery, or tap the shutter to open the system camera.
+                <p className="text-sm text-foreground font-medium text-center">
+                  {cameraStatus === "denied"
+                    ? "Camera permission needed"
+                    : cameraStatus === "timeout"
+                      ? "The camera is taking too long"
+                      : "Camera unavailable"}
                 </p>
+                <p className="text-xs text-muted-foreground text-center">
+                  {cameraStatus === "denied"
+                    ? "Allow camera access in Settings to frame your meal, or pick a photo from Gallery."
+                    : isNative()
+                      ? "Open the system camera, pick from Gallery, or try the live preview again."
+                      : "Pick a photo from Gallery, or try the camera again."}
+                </p>
+                <div className="mt-1 flex flex-col items-center gap-2">
+                  {isNative() && cameraStatus !== "denied" && (
+                    <button
+                      type="button"
+                      onClick={() => void handleNativeFallbackCapture()}
+                      className="px-4 h-10 rounded-xl gradient-glow text-xs font-semibold text-primary-foreground"
+                    >
+                      Open system camera
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={retryCamera}
+                    className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                  >
+                    Try again
+                  </button>
+                </div>
               </>
             )}
           </div>

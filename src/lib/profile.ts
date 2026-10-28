@@ -4,6 +4,7 @@
 import { notifyLocalDataChanged } from "@/lib/cloudSyncTrigger";
 import {
   dayKey,
+  isValidDayKey,
   recentDayKeys,
   shiftDayKey,
   timestampForDay,
@@ -69,10 +70,39 @@ export interface Meal {
   imageDataUrl?: string | null;
   verified?: boolean;
   notes?: string;
+  /**
+   * The calendar day this meal belongs to, fixed when it was logged. Days are
+   * stored rather than recomputed from `loggedAt` so that changing time zone
+   * (travel, a device setting, the in-app override) can never move a meal onto
+   * a different day and make a day's calorie count look like it reset.
+   */
+  day?: DayKey;
+  /** Last local edit, used to pick the newer copy when merging with the cloud. */
+  updatedAt?: string;
 }
 
 const PROFILE_KEY = "ratioai.profile";
 const MEALS_KEY = "ratioai.meals";
+const MEALS_BACKUP_KEY = "ratioai.meals.backup";
+const MEALS_CORRUPT_KEY = "ratioai.meals.corrupt";
+const MEALS_PENDING_KEY = "ratioai.meals.pending";
+const MEALS_DELETED_KEY = "ratioai.meals.deleted";
+
+/** Fired on `window` whenever the meal log changes, so open screens can refresh. */
+export const DATA_CHANGED_EVENT = "ratioai:data-changed";
+
+function announceDataChanged() {
+  try {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(DATA_CHANGED_EVENT));
+  } catch {
+    /* non-browser environment */
+  }
+}
+
+/** The day a meal counts toward. Legacy meals saved before `day` existed fall back to `loggedAt`. */
+export function mealDay(meal: Pick<Meal, "day" | "loggedAt">): DayKey {
+  return meal.day && isValidDayKey(meal.day) ? meal.day : dayKey(meal.loggedAt);
+}
 
 export function getProfile(): Profile | null {
   try {
@@ -90,7 +120,15 @@ export function saveProfile(p: Profile) {
 
 export function clearProfile() {
   localStorage.removeItem(PROFILE_KEY);
-  localStorage.removeItem(MEALS_KEY);
+  for (const key of [
+    MEALS_KEY,
+    MEALS_BACKUP_KEY,
+    MEALS_CORRUPT_KEY,
+    MEALS_PENDING_KEY,
+    MEALS_DELETED_KEY,
+  ]) {
+    localStorage.removeItem(key);
+  }
 }
 
 // Mifflin–St Jeor BMR
@@ -137,13 +175,52 @@ export function calculateTargets(input: {
 }
 
 // Meals
-export function getMeals(): Meal[] {
+function parseMeals(raw: string | null): Meal[] | null {
+  if (raw === null) return null;
   try {
-    const raw = localStorage.getItem(MEALS_KEY);
-    return raw ? (JSON.parse(raw) as Meal[]) : [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter(
+      (m): m is Meal => !!m && typeof m === "object" && typeof (m as Meal).id === "string",
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read the meal log. A missing or unreadable list is never silently treated as
+ * "no meals": the damaged copy is set aside and the last good snapshot is
+ * restored, so the next save cannot overwrite a recoverable history with a
+ * single new entry.
+ */
+export function getMeals(): Meal[] {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(MEALS_KEY);
   } catch {
     return [];
   }
+
+  const meals = parseMeals(raw);
+  if (meals) return meals;
+
+  let backup: Meal[] | null = null;
+  try {
+    backup = parseMeals(localStorage.getItem(MEALS_BACKUP_KEY));
+    if (raw !== null) localStorage.setItem(MEALS_CORRUPT_KEY, raw);
+  } catch {
+    /* storage unavailable */
+  }
+  if (backup && backup.length > 0) {
+    try {
+      localStorage.setItem(MEALS_KEY, JSON.stringify(backup));
+    } catch {
+      /* still return the recovered list */
+    }
+    return backup;
+  }
+  return [];
 }
 
 /** Stable id that works in WebViews where crypto.randomUUID is unavailable. */
@@ -159,12 +236,112 @@ export function createMealId(): string {
 }
 
 function writeMeals(meals: Meal[]): boolean {
+  for (const m of meals) {
+    if (!m.day) m.day = dayKey(m.loggedAt);
+  }
   try {
     localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
-    return true;
   } catch {
     return false;
   }
+  try {
+    // Photo-free snapshot: cheap enough to keep alongside the log, and enough to
+    // rebuild every day's totals if the main entry is ever damaged.
+    const slim = meals.map(({ imageDataUrl: _photo, ...rest }) => ({ ...rest, imageDataUrl: null }));
+    localStorage.setItem(MEALS_BACKUP_KEY, JSON.stringify(slim));
+  } catch {
+    /* the backup is best-effort */
+  }
+  return true;
+}
+
+function readIdSet(key: string): Set<string> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
+    return new Set(Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeIdSet(key: string, ids: Set<string>) {
+  try {
+    localStorage.setItem(key, JSON.stringify([...ids]));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Meals created or edited on this device that the cloud may not have yet. */
+export function getPendingMealIds(): Set<string> {
+  return readIdSet(MEALS_PENDING_KEY);
+}
+
+export function markMealsPending(ids: string[]) {
+  const set = readIdSet(MEALS_PENDING_KEY);
+  ids.forEach((id) => set.add(id));
+  writeIdSet(MEALS_PENDING_KEY, set);
+}
+
+export function clearPendingMeals(ids: Iterable<string>) {
+  const set = readIdSet(MEALS_PENDING_KEY);
+  for (const id of ids) set.delete(id);
+  writeIdSet(MEALS_PENDING_KEY, set);
+}
+
+/** Meals deleted on this device whose cloud copy may still exist. */
+export function getDeletedMealIds(): Set<string> {
+  return readIdSet(MEALS_DELETED_KEY);
+}
+
+export function forgetDeletedMeals(ids: Iterable<string>) {
+  const set = readIdSet(MEALS_DELETED_KEY);
+  for (const id of ids) set.delete(id);
+  writeIdSet(MEALS_DELETED_KEY, set);
+}
+
+/**
+ * Fold meals from another source (cloud, anonymous snapshot) into the local log.
+ *
+ * Runs synchronously against the *current* log, so a meal logged while a network
+ * request was in flight is kept instead of being overwritten by a stale copy.
+ * Never removes a local meal. For meals present on both sides the more recently
+ * edited copy wins, and edits still waiting to be uploaded always win.
+ */
+export function mergeMealsIntoLocal(
+  incoming: Meal[],
+  options: { onlyIfEmpty?: boolean } = {},
+): { added: number; updated: number } {
+  const local = getMeals();
+  if (options.onlyIfEmpty && local.length > 0) return { added: 0, updated: 0 };
+
+  const deleted = getDeletedMealIds();
+  const pending = getPendingMealIds();
+  const byId = new Map(local.map((m) => [m.id, m]));
+  let added = 0;
+  let updated = 0;
+
+  for (const remote of incoming) {
+    if (!remote?.id || deleted.has(remote.id)) continue;
+    const mine = byId.get(remote.id);
+    if (!mine) {
+      byId.set(remote.id, remote);
+      added++;
+      continue;
+    }
+    if (pending.has(remote.id)) continue;
+    const remoteNewer = (remote.updatedAt ?? "") > (mine.updatedAt ?? "");
+    if (remoteNewer) {
+      byId.set(remote.id, { ...remote, imageDataUrl: mine.imageDataUrl ?? remote.imageDataUrl ?? null });
+      updated++;
+    }
+  }
+
+  if (added === 0 && updated === 0) return { added, updated };
+  const merged = [...byId.values()].sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
+  if (!persistMeals(merged)) return { added: 0, updated: 0 };
+  announceDataChanged();
+  return { added, updated };
 }
 
 /**
@@ -219,15 +396,22 @@ export interface MealSaveResult {
  */
 export function saveMeal(meal: Meal): MealSaveResult {
   const meals = getMeals();
-  const existing = meals.findIndex((m) => m.id === meal.id);
-  if (existing >= 0) meals[existing] = meal;
-  else meals.push(meal);
+  const stamped: Meal = {
+    ...meal,
+    day: meal.day && isValidDayKey(meal.day) ? meal.day : dayKey(meal.loggedAt),
+    updatedAt: new Date().toISOString(),
+  };
+  const existing = meals.findIndex((m) => m.id === stamped.id);
+  if (existing >= 0) meals[existing] = stamped;
+  else meals.push(stamped);
 
-  const outcome = persistMeals(meals, meal.id);
+  const outcome = persistMeals(meals, stamped.id);
   if (!outcome) {
     return { ok: false, photoDropped: false, olderPhotosDropped: false };
   }
 
+  markMealsPending([stamped.id]);
+  announceDataChanged();
   notifyLocalDataChanged();
   return {
     ok: true,
@@ -249,17 +433,24 @@ function recomputeTotals(meal: Meal): Meal {
 export function updateMeal(id: string, patch: Partial<Meal>): boolean {
   const meals = getMeals().map((m) => {
     if (m.id !== id) return m;
-    const merged = { ...m, ...patch };
+    const merged = { ...m, ...patch, updatedAt: new Date().toISOString() };
     return patch.items ? recomputeTotals(merged) : merged;
   });
   if (!persistMeals(meals, id)) return false;
+  markMealsPending([id]);
+  announceDataChanged();
   notifyLocalDataChanged();
   return true;
 }
 
 export function deleteMeal(id: string) {
   const meals = getMeals().filter((m) => m.id !== id);
-  writeMeals(meals);
+  if (!writeMeals(meals)) return;
+  clearPendingMeals([id]);
+  const deleted = readIdSet(MEALS_DELETED_KEY);
+  deleted.add(id);
+  writeIdSet(MEALS_DELETED_KEY, deleted);
+  announceDataChanged();
   notifyLocalDataChanged();
   void import("@/lib/userSync").then(({ deleteMealFromCloud }) => deleteMealFromCloud(id));
 }
@@ -329,7 +520,7 @@ export function addMealItem(mealId: string, item: MealItem): boolean {
 
 export function getMealsForDay(key: DayKey): Meal[] {
   return getMeals()
-    .filter((m) => dayKey(m.loggedAt) === key)
+    .filter((m) => mealDay(m) === key)
     .sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
 }
 
@@ -359,13 +550,13 @@ export function getTodayTotals() {
 
 /** Day keys in the active time zone that have at least one logged meal. */
 export function getLoggedDayKeys(): Set<DayKey> {
-  return new Set(getMeals().map((m) => dayKey(m.loggedAt)));
+  return new Set(getMeals().map((m) => mealDay(m)));
 }
 
 export function getLast7DaysTotals() {
   const meals = getMeals();
   return recentDayKeys(7).map((key) => {
-    const dayMeals = meals.filter((m) => dayKey(m.loggedAt) === key);
+    const dayMeals = meals.filter((m) => mealDay(m) === key);
     return {
       date: key,
       calories: dayMeals.reduce((s, m) => s + m.totalCalories, 0),
@@ -403,6 +594,7 @@ export function relogMeal(source: Meal, day: DayKey = todayKey()): Meal {
     ...source,
     id: createMealId(),
     loggedAt: timestampForDay(day),
+    day,
     // Drop image to keep storage small for one-tap re-logs
     imageDataUrl: null,
   };

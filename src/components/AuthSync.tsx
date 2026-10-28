@@ -35,9 +35,21 @@ const AuthSync = () => {
 
     const unregister = registerCloudSyncListener(() => scheduleCloudPush());
 
+    // Pick up meals logged on another device when the app comes back to the foreground.
+    let lastResync = Date.now();
+    const onVisible = () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastResync < 60_000) return;
+      lastResync = Date.now();
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) runSync(session.user.id);
+      });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       active = false;
       sub.subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
       unregister();
     };
   }, []);
