@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Minus, Pencil, Plus, Share2 } from "lucide-react";
 import { createMealId, saveMeal, type Meal } from "@/lib/profile";
+import { maybeRequestReview } from "@/lib/reviewPrompt";
 import {
   activeItems,
   foodToItem,
@@ -191,6 +192,7 @@ const Analyze = () => {
       }
 
       setSaved(true);
+      maybeRequestReview(meal.source);
       const t = window.setTimeout(() => navigate(todayPath, { replace: true }), 3200);
       setAutoNavTimer(t);
     } catch (e) {
