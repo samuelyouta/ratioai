@@ -39,7 +39,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>fbREPLACE-WITH-FACEBOOK-APP-ID</string>
+				<string>fb1631213781827687</string>
 			</array>
 		</dict>
 	</array>
@@ -71,9 +71,9 @@
 		</dict>
 	</array>
 	<key>FacebookAppID</key>
-	<string>REPLACE-WITH-FACEBOOK-APP-ID</string>
+	<string>1631213781827687</string>
 	<key>FacebookClientToken</key>
-	<string>REPLACE-WITH-FACEBOOK-CLIENT-TOKEN</string>
+	<string>ec59ba2ff085d3215ff3f34e4b2ec297</string>
 	<key>FacebookDisplayName</key>
 	<string>RatioAi</string>
 	<key>FacebookAutoInitEnabled</key>
