@@ -26,7 +26,7 @@ const Privacy = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold">Privacy Policy</h2>
-            <p className="text-xs text-muted-foreground">Last updated: September 2026</p>
+            <p className="text-xs text-muted-foreground">Last updated: October 2026</p>
           </div>
         </div>
 
@@ -75,7 +75,8 @@ const Privacy = () => {
           <p className="text-sm text-muted-foreground leading-relaxed">
             We use your data to personalize nutrition targets, analyze meals with AI, sync your history
             across devices, manage subscriptions, and provide support. We do not sell your personal data.
-            We do not use your data for cross-app tracking or advertising networks.
+            We never share your meals, photos, body metrics, or other health-related data with
+            advertising partners.
           </p>
         </section>
 
@@ -108,15 +109,30 @@ const Privacy = () => {
               <span className="text-foreground font-medium">RevenueCat &amp; Apple</span> — in-app
               purchases and subscription status (purchase history).
             </li>
+            <li>
+              <span className="text-foreground font-medium">Meta (Facebook)</span> — advertising
+              measurement. Our app uses the Meta SDK to learn which Meta ads led to an install,
+              sign-up, or subscription. See “Tracking” below.
+            </li>
           </ul>
         </section>
 
         <section className="space-y-3">
           <h3 className="text-sm font-bold text-foreground">5. Tracking</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            RatioAi does not use advertising identifiers (IDFA) or third-party ad SDKs to track you across
-            other companies’ apps or websites. Name, email, and purchase data are used for app
-            functionality and account management — not for cross-app tracking.
+            We advertise RatioAi on Meta (Facebook and Instagram). To measure those campaigns, the app
+            includes the Meta SDK, which sends Meta basic app events: that the app was opened, that an
+            account was created, that onboarding was completed, that checkout was started, and
+            that a subscription was purchased (with its price). These events are linked to a device
+            identifier. If you allow tracking when iOS asks, Meta can match them to your
+            Meta account using your device’s advertising identifier (IDFA); if you decline, only
+            aggregated, privacy-preserving attribution is used and your advertising identifier is not
+            collected.
+          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            We never send Meta your meals, photos, body metrics, goals, name, or email. You can change
+            your choice at any time in iOS Settings → Privacy &amp; Security → Tracking → RatioAi, and
+            you can manage ad preferences in your Meta account settings.
           </p>
         </section>
 

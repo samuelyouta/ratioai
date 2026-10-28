@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { registerCloudSyncListener } from "@/lib/cloudSyncTrigger";
 import { scheduleCloudPush, syncUserData } from "@/lib/userSync";
+import { trackRegistrationIfNew } from "@/lib/metaAds";
 
 /**
  * Keeps authenticated users' local profile + meals in sync with cloud tables.
@@ -26,6 +27,9 @@ const AuthSync = () => {
         (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")
       ) {
         runSync(session.user.id);
+      }
+      if (session?.user && event === "SIGNED_IN") {
+        trackRegistrationIfNew(session.user);
       }
     });
 

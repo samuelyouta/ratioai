@@ -25,6 +25,7 @@ import {
   type SubscriptionStatus,
 } from "@/lib/subscriptions";
 import { isReviewerEmail } from "@/lib/reviewerAccess";
+import { trackCheckoutStarted, trackSubscriptionPurchased } from "@/lib/metaAds";
 
 interface SubscriptionContextValue {
   status: SubscriptionStatus;
@@ -142,9 +143,18 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const purchase = useCallback(
     async (pkg: PurchasesPackage) => {
       try {
+        void trackCheckoutStarted(pkg.product.identifier);
         const info = await purchasePackage(pkg);
         applyCustomerInfo(info);
-        return hasActiveEntitlement(info);
+        const active = hasActiveEntitlement(info);
+        if (active) {
+          void trackSubscriptionPurchased(
+            pkg.product.identifier,
+            pkg.product.price,
+            pkg.product.currencyCode,
+          );
+        }
+        return active;
       } catch (e: unknown) {
         const err = e as { userCancelled?: boolean };
         if (!err?.userCancelled) console.error("purchase failed", e);

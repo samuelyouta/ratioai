@@ -36,6 +36,12 @@
 				<string>com.googleusercontent.apps.115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fbREPLACE-WITH-FACEBOOK-APP-ID</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
@@ -51,6 +57,33 @@
 	<string>RatioAi can save meal photos to your library when you choose to export them.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>RatioAi accesses your photo library so you can pick meal photos to analyze.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Allow tracking so we can measure which ads brought you to RatioAi and show you more relevant ads. Your meals, photos and health details are never shared.</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>v9wttpbfk9.skadnetwork</string>
+		</dict>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>n38lu8286q.skadnetwork</string>
+		</dict>
+	</array>
+	<key>FacebookAppID</key>
+	<string>REPLACE-WITH-FACEBOOK-APP-ID</string>
+	<key>FacebookClientToken</key>
+	<string>REPLACE-WITH-FACEBOOK-CLIENT-TOKEN</string>
+	<key>FacebookDisplayName</key>
+	<string>RatioAi</string>
+	<key>FacebookAutoInitEnabled</key>
+	<false/>
+	<key>FacebookAutoLogAppEventsEnabled</key>
+	<false/>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<true/>
+	<key>FacebookSKAdNetworkReportEnabled</key>
+	<true/>
 	<key>GIDClientID</key>
 	<string>115954156521-8d5o95c67lpkr7dht14bg9nquq4ju209.apps.googleusercontent.com</string>
 	<key>RevenueCatAPIKey</key>

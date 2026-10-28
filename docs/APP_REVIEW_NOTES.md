@@ -105,7 +105,11 @@ Your previous labels only listed Name, Email, Payment Info — all marked **Used
 
 ### Uncheck Tracking for everything
 
-RatioAi does not use ATT/IDFA or ad networks. **Do not** mark Name, Email, or Purchases as “Used for Tracking.”
+> **Once Meta ads are switched on** (`VITE_META_ADS_ENABLED=true`, see `docs/META_ADS_SETUP.md`) this
+> section no longer applies: the app then shows the ATT prompt and shares events with Meta, so the labels
+> must declare Tracking. Follow the "App Store Connect → App Privacy" section of that doc instead.
+
+While Meta ads are **off**, RatioAi does not use ATT/IDFA or ad networks. **Do not** mark Name, Email, or Purchases as “Used for Tracking.”
 
 ### Declare these data types (linked to identity, App Functionality)
 
@@ -118,7 +122,7 @@ RatioAi does not use ATT/IDFA or ad networks. **Do not** mark Name, Email, or Pu
 
 ### Do **not** declare
 
-- **Tracking** (no cross-app tracking)
+- **Tracking** (only while Meta ads are off)
 - **Payment Info / Credit Card** as if you store card numbers (use **Purchase History**)
 - **Continuous glucose / CGM** — this build does **not** collect CGM or blood-glucose device readings. Body metrics and any free-text notes are covered under Health & Fitness / user content. The Privacy Policy states this explicitly and includes a medical disclaimer.
 
