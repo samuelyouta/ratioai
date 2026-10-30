@@ -105,11 +105,12 @@ Your previous labels only listed Name, Email, Payment Info — all marked **Used
 
 ### Uncheck Tracking for everything
 
-> **Once Meta ads are switched on** (`VITE_META_ADS_ENABLED=true`, see `docs/META_ADS_SETUP.md`) this
-> section no longer applies: the app then shows the ATT prompt and shares events with Meta, so the labels
-> must declare Tracking. Follow the "App Store Connect → App Privacy" section of that doc instead.
+> **Once Meta or TikTok ads are switched on** (`VITE_META_ADS_ENABLED=true` / `VITE_TIKTOK_ADS_ENABLED=true`,
+> see `docs/META_ADS_SETUP.md` and `docs/AD_PLATFORMS_SETUP.md`) this section no longer applies: the app then
+> shows the ATT prompt and shares events with those platforms, so the labels must declare Tracking. Follow the
+> "App Store Connect → App Privacy" section of those docs instead.
 
-While Meta ads are **off**, RatioAi does not use ATT/IDFA or ad networks. **Do not** mark Name, Email, or Purchases as “Used for Tracking.”
+While Meta and TikTok ads are **off**, RatioAi does not use ATT/IDFA or ad networks. **Do not** mark Name, Email, or Purchases as “Used for Tracking.”
 
 ### Declare these data types (linked to identity, App Functionality)
 
