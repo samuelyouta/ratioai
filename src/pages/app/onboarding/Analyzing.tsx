@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { trackOnboardingCompleted } from "@/lib/metaAds";
+import { trackOnboardingCompleted } from "@/lib/adEvents";
 
 const STEPS = [
   "Parsing biological framework...",
@@ -25,7 +25,7 @@ const Analyzing = () => {
     );
     const tLeave = setTimeout(() => setLeaving(true), TOTAL_MS - 350);
     const tNav = setTimeout(() => {
-      void trackOnboardingCompleted();
+      trackOnboardingCompleted();
       void (async () => {
         // Users who signed in before onboarding must not be signed out here.
         // Doing so dropped them back on the login screen after every attempt,

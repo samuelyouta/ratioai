@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { registerCloudSyncListener } from "@/lib/cloudSyncTrigger";
 import { scheduleCloudPush, syncUserData } from "@/lib/userSync";
-import { trackRegistrationIfNew } from "@/lib/metaAds";
+import { trackRegistrationIfNew } from "@/lib/adEvents";
 
 /**
  * Keeps authenticated users' local profile + meals in sync with cloud tables.

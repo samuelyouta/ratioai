@@ -115,6 +115,16 @@ const Privacy = () => {
               of our ads led to an install, sign-up, or subscription, and can show our ads to people
               likely to be interested. See “Tracking” below.
             </li>
+            <li>
+              <span className="text-foreground font-medium">TikTok</span> — third-party advertising and
+              attribution. Our app uses the TikTok App Events SDK so TikTok can tell which of our ads
+              led to an install, sign-up, or subscription. See “Tracking” below.
+            </li>
+            <li>
+              <span className="text-foreground font-medium">Apple Ads</span> — attribution only. If you
+              installed RatioAi after tapping one of our Apple Ads, Apple gives us (through RevenueCat) the
+              campaign that led to your install. See “Tracking” below.
+            </li>
           </ul>
         </section>
 
@@ -122,21 +132,27 @@ const Privacy = () => {
           <h3 className="text-sm font-bold text-foreground">5. Tracking</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
             We use third-party advertising and attribution services, currently Meta (Facebook and
-            Instagram), to promote RatioAi and measure how well our ads work. For this, the app
-            includes the Meta SDK, which sends Meta basic app events: that the app was opened, that an
+            Instagram), TikTok, and Apple Ads, to promote RatioAi and measure how well our ads work. For this, the app
+            includes the Meta and TikTok SDKs, which send Meta and TikTok basic app events: that the app was opened, that an
             account was created, that onboarding was completed, that checkout was started, and
             that a subscription was purchased (with its price). These events are linked to a device
-            identifier. If you allow tracking when iOS asks, Meta can match them to your
-            Meta account using your device’s advertising identifier (IDFA); if you decline, only
+            identifier. If you allow tracking when iOS asks, Meta and TikTok can match them to your
+            Meta or TikTok account using your device’s advertising identifier (IDFA); if you decline, only
             aggregated, privacy-preserving attribution is used and your advertising identifier is not
-            collected. Meta processes this data under its own privacy policy
-            (<span className="text-primary">facebook.com/privacy/policy</span>). Declining tracking does
+            collected. Meta and TikTok process this data under their own privacy policies
+            (<span className="text-primary">facebook.com/privacy/policy</span>,{" "}
+            <span className="text-primary">tiktok.com/legal/privacy-policy</span>). Declining tracking does
             not limit any app feature.
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            We never send Meta your meals, photos, body metrics, goals, name, or email. You can change
+            We never send Meta or TikTok your meals, photos, body metrics, goals, name, or email. You can change
             your choice at any time in iOS Settings → Privacy &amp; Security → Tracking → RatioAi, and
-            you can manage ad preferences in your Meta account settings.
+            you can manage ad preferences in your Meta and TikTok account settings.
+          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Apple Ads attribution uses Apple’s AdServices framework. It does not use your advertising
+            identifier, does not require the tracking permission, and only tells us which Apple Ads
+            campaign, if any, led to your install.
           </p>
         </section>
 

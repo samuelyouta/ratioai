@@ -28,7 +28,7 @@ import {
   initMetaAds,
   resetMetaAdsForTests,
   trackCheckoutStarted,
-  trackRegistrationIfNew,
+  trackRegistration,
   trackSubscriptionPurchased,
 } from "@/lib/metaAds";
 
@@ -116,35 +116,14 @@ describe("metaAds", () => {
     });
   });
 
-  describe("trackRegistrationIfNew", () => {
-    const nowIso = () => new Date().toISOString();
-
-    it("logs CompletedRegistration once for a just-created account", async () => {
-      vi.stubEnv("VITE_META_ADS_ENABLED", "true");
-      const user = { id: "u1", created_at: nowIso(), app_metadata: { provider: "apple" } };
-      trackRegistrationIfNew(user);
-      trackRegistrationIfNew(user);
-      await flush();
-      expect(fb.logEvent).toHaveBeenCalledTimes(1);
-      expect(fb.logEvent).toHaveBeenCalledWith({
-        event: "fb_mobile_complete_registration",
-        params: { fb_registration_method: "apple" },
-      });
-    });
-
-    it("ignores returning users with older accounts", async () => {
-      vi.stubEnv("VITE_META_ADS_ENABLED", "true");
-      const old = new Date(Date.now() - 24 * 3600_000).toISOString();
-      trackRegistrationIfNew({ id: "u2", created_at: old });
-      await flush();
-      expect(fb.logEvent).not.toHaveBeenCalled();
-    });
-
-    it("is a no-op when Meta ads are disabled", async () => {
-      trackRegistrationIfNew({ id: "u3", created_at: nowIso() });
-      await flush();
-      expect(fb.logEvent).not.toHaveBeenCalled();
-      expect(localStorage.getItem("ratioai.meta.registered.u3")).toBeNull();
+  it("logs CompletedRegistration with the sign-in method", async () => {
+    vi.stubEnv("VITE_META_ADS_ENABLED", "true");
+    const p = trackRegistration("apple");
+    await flush();
+    await p;
+    expect(fb.logEvent).toHaveBeenCalledWith({
+      event: "fb_mobile_complete_registration",
+      params: { fb_registration_method: "apple" },
     });
   });
 });

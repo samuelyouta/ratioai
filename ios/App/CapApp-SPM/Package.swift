@@ -21,7 +21,8 @@ let package = Package(
         .package(name: "CapgoCapacitorAppTrackingTransparency", path: "../../../node_modules/@capgo/capacitor-app-tracking-transparency"),
         .package(name: "CapgoCapacitorFacebookAnalytics", path: "../../../node_modules/@capgo/capacitor-facebook-analytics"),
         .package(name: "CapgoCapacitorSocialLogin", path: "../../../node_modules/@capgo/capacitor-social-login"),
-        .package(name: "RevenuecatPurchasesCapacitor", path: "../../../node_modules/@revenuecat/purchases-capacitor")
+        .package(name: "RevenuecatPurchasesCapacitor", path: "../../../node_modules/@revenuecat/purchases-capacitor"),
+        .package(name: "CapacitorTiktokEvents", path: "../../../plugins/capacitor-tiktok-events")
     ],
     targets: [
         .target(
@@ -38,7 +39,8 @@ let package = Package(
                 .product(name: "CapgoCapacitorAppTrackingTransparency", package: "CapgoCapacitorAppTrackingTransparency"),
                 .product(name: "CapgoCapacitorFacebookAnalytics", package: "CapgoCapacitorFacebookAnalytics"),
                 .product(name: "CapgoCapacitorSocialLogin", package: "CapgoCapacitorSocialLogin"),
-                .product(name: "RevenuecatPurchasesCapacitor", package: "RevenuecatPurchasesCapacitor")
+                .product(name: "RevenuecatPurchasesCapacitor", package: "RevenuecatPurchasesCapacitor"),
+                .product(name: "CapacitorTiktokEvents", package: "CapacitorTiktokEvents")
             ]
         )
     ]
