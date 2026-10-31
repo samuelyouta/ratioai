@@ -143,16 +143,18 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const purchase = useCallback(
     async (pkg: PurchasesPackage) => {
       try {
-        trackCheckoutStarted(pkg.product.identifier);
+        const product = {
+          productId: pkg.product.identifier,
+          amount: pkg.product.price,
+          currency: pkg.product.currencyCode,
+          title: pkg.product.title,
+        };
+        trackCheckoutStarted(product);
         const info = await purchasePackage(pkg);
         applyCustomerInfo(info);
         const active = hasActiveEntitlement(info);
         if (active) {
-          trackSubscriptionPurchased(
-            pkg.product.identifier,
-            pkg.product.price,
-            pkg.product.currencyCode,
-          );
+          trackSubscriptionPurchased(product);
         }
         return active;
       } catch (e: unknown) {

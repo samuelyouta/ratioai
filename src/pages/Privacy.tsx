@@ -134,9 +134,9 @@ const Privacy = () => {
             We use third-party advertising and attribution services, currently Meta (Facebook and
             Instagram), TikTok, and Apple Ads, to promote RatioAi and measure how well our ads work. For this, the app
             includes the Meta and TikTok SDKs, which send Meta and TikTok basic app events: that the app was opened, that an
-            account was created, that onboarding was completed, that checkout was started, and
+            account was created or signed in to, that onboarding was completed, that checkout was started, and
             that a subscription was purchased (with its price). These events are linked to a device
-            identifier. If you allow tracking when iOS asks, Meta and TikTok can match them to your
+            identifier and, for TikTok, a random account ID (never your name, email, or phone number). If you allow tracking when iOS asks, Meta and TikTok can match them to your
             Meta or TikTok account using your device’s advertising identifier (IDFA); if you decline, only
             aggregated, privacy-preserving attribution is used and your advertising identifier is not
             collected. Meta and TikTok process this data under their own privacy policies

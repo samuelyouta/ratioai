@@ -65,42 +65,77 @@ export function initTikTokAds(): Promise<boolean> {
   return initPromise;
 }
 
-async function send(
-  event: string,
-  properties?: Record<string, string | number | boolean>,
-): Promise<void> {
+async function call(label: string, action: () => Promise<void>): Promise<void> {
   if (!isTikTokAdsEnabled()) return;
   if (!(await initTikTokAds())) return;
   try {
-    await TikTokEvents.trackEvent({ event, properties });
+    await action();
   } catch (e) {
-    console.warn(`TikTok ${event} event failed`, e);
+    console.warn(`TikTok ${label} failed`, e);
   }
+}
+
+function send(event: string, properties?: Record<string, unknown>): Promise<void> {
+  return call(`${event} event`, () => TikTokEvents.trackEvent({ event, properties }));
+}
+
+export interface ProductDetails {
+  productId: string;
+  amount: number;
+  currency: string;
+  title?: string;
+}
+
+/** Same shape the TikTok SDK's own Purchase/Checkout events build (`TikTokContentParams`). */
+function productProperties({ productId, amount, currency, title }: ProductDetails) {
+  const price = amount.toFixed(2);
+  return {
+    content_type: "subscription",
+    content_id: productId,
+    currency: currency.toUpperCase(),
+    value: price,
+    ...(title ? { description: title } : {}),
+    contents: [
+      {
+        price,
+        quantity: 1,
+        content_id: productId,
+        ...(title ? { content_name: title } : {}),
+      },
+    ],
+  };
+}
+
+/** Ties events to a pseudonymous account id, improving match quality. No name, email or phone. */
+export function identify(userId: string): Promise<void> {
+  return call("identify", () => TikTokEvents.identify({ externalId: userId }));
+}
+
+export function logout(): Promise<void> {
+  return call("logout", () => TikTokEvents.logout());
 }
 
 export function trackRegistration(method: string): Promise<void> {
   return send("Registration", { registration_method: method });
 }
 
+export function trackLogin(): Promise<void> {
+  return send("Login");
+}
+
 export function trackOnboardingCompleted(): Promise<void> {
   return send("CompleteTutorial");
 }
 
-export function trackCheckoutStarted(productId: string): Promise<void> {
-  return send("Checkout", { content_type: "subscription", content_id: productId });
+export function trackCheckoutStarted(details: ProductDetails): Promise<void> {
+  return send("Checkout", productProperties(details));
 }
 
-export function trackSubscriptionPurchased(
-  productId: string,
-  amount: number,
-  currency: string,
-): Promise<void> {
-  return send("Purchase", {
-    content_type: "subscription",
-    content_id: productId,
-    currency: currency.toUpperCase(),
-    value: amount.toFixed(2),
-  });
+/** `Purchase` carries the value for value-based optimization; `Subscribe` marks it as a subscription. */
+export async function trackSubscriptionPurchased(details: ProductDetails): Promise<void> {
+  const properties = productProperties(details);
+  await send("Purchase", properties);
+  await send("Subscribe", properties);
 }
 
 export function resetTikTokAdsForTests(): void {

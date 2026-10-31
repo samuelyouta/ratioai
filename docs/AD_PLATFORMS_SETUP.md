@@ -15,9 +15,13 @@ All three go through one place in the app, `src/lib/adEvents.ts`, so the funnel 
 |-------------|-----------|--------------|----------------|
 | Install / app open | automatic | automatic (`InstallApp`, `LaunchAPP`, 2-day retention) | SDK start |
 | New account created | `CompleteRegistration` | `Registration` | `AuthSync.tsx` |
+| Returning user signs in (once per launch) | none | `Login` | `AuthSync.tsx` |
+| Account linked | none | `identify` with the random account id only (no name, email, phone); `logout` on sign-out | `AuthSync.tsx` |
 | Onboarding finished | `CompleteTutorial` | `CompleteTutorial` | `Analyzing.tsx` |
-| Subscribe tapped | `InitiateCheckout` | `Checkout` | `useSubscription.tsx` |
-| Subscription active | `Purchase` (value + currency) | `Purchase` (value + currency) | `useSubscription.tsx` |
+| Subscribe tapped | `InitiateCheckout` | `Checkout` (value, currency, `contents`) | `useSubscription.tsx` |
+| Subscription active | `Purchase` (value + currency) | `Purchase` (value, currency, `contents`) and `Subscribe` | `useSubscription.tsx` |
+
+TikTok's other template events (Add to Cart, Wishlist, Search, loans, groups, achievements, in-app ads, Start Trial) do not match anything in RatioAi, so they are not sent. `Start Trial` can be added if you add a free trial. Launch and install are automatic.
 
 Never add health data (meals, photos, weight, goals, name, email) to any event.
 

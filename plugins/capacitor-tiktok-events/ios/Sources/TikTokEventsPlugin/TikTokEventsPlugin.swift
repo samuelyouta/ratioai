@@ -13,7 +13,9 @@ public class TikTokEventsPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "TikTokEvents"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "initialize", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "trackEvent", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "trackEvent", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "identify", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "logout", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func initialize(_ call: CAPPluginCall) {
@@ -68,6 +70,31 @@ public class TikTokEventsPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             let event = TikTokBaseEvent(eventName: name, properties: properties, eventId: eventId)
             TikTokBusiness.trackTTEvent(event)
+            call.resolve()
+        }
+    }
+
+    /// Links events to a pseudonymous account id (never name, email or phone).
+    @objc func identify(_ call: CAPPluginCall) {
+        guard let externalId = call.getString("externalId"), !externalId.isEmpty else {
+            call.reject("externalId is required")
+            return
+        }
+        DispatchQueue.main.async {
+            guard TikTokBusiness.isInitialized() else {
+                call.reject("TikTok SDK is not initialized")
+                return
+            }
+            TikTokBusiness.identify(withExternalID: externalId, externalUserName: nil, phoneNumber: nil, email: nil)
+            call.resolve()
+        }
+    }
+
+    @objc func logout(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if TikTokBusiness.isInitialized() {
+                TikTokBusiness.logout()
+            }
             call.resolve()
         }
     }

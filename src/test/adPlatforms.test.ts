@@ -4,6 +4,8 @@ const att = vi.hoisted(() => ({ requestPermission: vi.fn() }));
 const tt = vi.hoisted(() => ({
   initialize: vi.fn().mockResolvedValue(undefined),
   trackEvent: vi.fn().mockResolvedValue(undefined),
+  identify: vi.fn().mockResolvedValue(undefined),
+  logout: vi.fn().mockResolvedValue(undefined),
 }));
 const fb = vi.hoisted(() => ({
   enableAdvertiserTracking: vi.fn().mockResolvedValue(undefined),
@@ -38,7 +40,9 @@ import {
   initAdTracking,
   trackCheckoutStarted,
   trackOnboardingCompleted,
-  trackRegistrationIfNew,
+  resetAdEventsForTests,
+  trackSignIn,
+  trackSignOut,
   trackSubscriptionPurchased,
 } from "@/lib/adEvents";
 
@@ -58,6 +62,7 @@ describe("ad platforms", () => {
     localStorage.clear();
     resetMetaAdsForTests();
     resetTikTokAdsForTests();
+    resetAdEventsForTests();
     platform.current = "ios";
     att.requestPermission.mockResolvedValue({ status: "authorized" });
   });
@@ -124,29 +129,32 @@ describe("ad platforms", () => {
   });
 
   describe("funnel events", () => {
+    const yearly = { productId: "ratioai_pro_yearly", amount: 39.99, currency: "usd", title: "RatioAi Pro Yearly" };
+    const contents = [
+      { price: "39.99", quantity: 1, content_id: "ratioai_pro_yearly", content_name: "RatioAi Pro Yearly" },
+    ];
+    const productProps = {
+      content_type: "subscription",
+      content_id: "ratioai_pro_yearly",
+      currency: "USD",
+      value: "39.99",
+      description: "RatioAi Pro Yearly",
+      contents,
+    };
+
     it("sends the same funnel to Meta and TikTok with no health data", async () => {
       enableTikTok();
       vi.stubEnv("VITE_META_ADS_ENABLED", "true");
 
       trackOnboardingCompleted();
-      trackCheckoutStarted("ratioai_pro_yearly");
-      trackSubscriptionPurchased("ratioai_pro_yearly", 39.99, "usd");
+      trackCheckoutStarted(yearly);
+      trackSubscriptionPurchased(yearly);
       await flush();
 
       expect(tt.trackEvent).toHaveBeenCalledWith({ event: "CompleteTutorial", properties: undefined });
-      expect(tt.trackEvent).toHaveBeenCalledWith({
-        event: "Checkout",
-        properties: { content_type: "subscription", content_id: "ratioai_pro_yearly" },
-      });
-      expect(tt.trackEvent).toHaveBeenCalledWith({
-        event: "Purchase",
-        properties: {
-          content_type: "subscription",
-          content_id: "ratioai_pro_yearly",
-          currency: "USD",
-          value: "39.99",
-        },
-      });
+      expect(tt.trackEvent).toHaveBeenCalledWith({ event: "Checkout", properties: productProps });
+      expect(tt.trackEvent).toHaveBeenCalledWith({ event: "Purchase", properties: productProps });
+      expect(tt.trackEvent).toHaveBeenCalledWith({ event: "Subscribe", properties: productProps });
       expect(fb.logPurchase).toHaveBeenCalledWith(expect.objectContaining({ amount: 39.99, currency: "usd" }));
       expect(fb.logEvent).toHaveBeenCalledTimes(2);
     });
@@ -170,30 +178,59 @@ describe("ad platforms", () => {
     });
   });
 
-  describe("registration", () => {
+  describe("sign-in", () => {
     const nowIso = () => new Date().toISOString();
+    const events = () => tt.trackEvent.mock.calls.map((c) => c[0].event);
 
-    it("is reported once per new account to every enabled platform", async () => {
+    it("reports a new account once, links it to TikTok, and sends no Login for it", async () => {
       enableTikTok();
       vi.stubEnv("VITE_META_ADS_ENABLED", "true");
       const user = { id: "u1", created_at: nowIso(), app_metadata: { provider: "apple" } };
-      trackRegistrationIfNew(user);
-      trackRegistrationIfNew(user);
+      trackSignIn(user);
+      trackSignIn(user);
       await flush();
       expect(fb.logEvent).toHaveBeenCalledTimes(1);
-      expect(tt.trackEvent).toHaveBeenCalledTimes(1);
+      expect(events()).toEqual(["Registration"]);
       expect(tt.trackEvent).toHaveBeenCalledWith({
         event: "Registration",
         properties: { registration_method: "apple" },
       });
+      expect(tt.identify).toHaveBeenCalledWith({ externalId: "u1" });
     });
 
-    it("ignores returning users and does nothing when no platform is enabled", async () => {
+    it("reports Login once per launch for a returning user, never a registration", async () => {
       enableTikTok();
-      trackRegistrationIfNew({ id: "u2", created_at: new Date(Date.now() - 86_400_000).toISOString() });
-      vi.unstubAllEnvs();
-      trackRegistrationIfNew({ id: "u3", created_at: nowIso() });
+      vi.stubEnv("VITE_META_ADS_ENABLED", "true");
+      const old = new Date(Date.now() - 86_400_000).toISOString();
+      trackSignIn({ id: "u2", created_at: old });
+      trackSignIn({ id: "u2", created_at: old });
       await flush();
+      expect(events()).toEqual(["Login"]);
+      expect(fb.logEvent).not.toHaveBeenCalled();
+    });
+
+    it("reports Login again after signing out and back in", async () => {
+      enableTikTok();
+      const old = new Date(Date.now() - 86_400_000).toISOString();
+      trackSignIn({ id: "u2", created_at: old });
+      trackSignOut();
+      trackSignIn({ id: "u2", created_at: old });
+      await flush();
+      expect(events()).toEqual(["Login", "Login"]);
+      expect(tt.logout).toHaveBeenCalledTimes(1);
+    });
+
+    it("sends only a pseudonymous id, nothing personal", async () => {
+      enableTikTok();
+      trackSignIn({ id: "u9", created_at: nowIso() });
+      await flush();
+      expect(tt.identify.mock.calls[0][0]).toEqual({ externalId: "u9" });
+    });
+
+    it("does nothing when no platform is enabled", async () => {
+      trackSignIn({ id: "u3", created_at: nowIso() });
+      await flush();
+      expect(tt.identify).not.toHaveBeenCalled();
       expect(tt.trackEvent).not.toHaveBeenCalled();
       expect(localStorage.getItem("ratioai.ads.registered.u3")).toBeNull();
     });

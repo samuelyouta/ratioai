@@ -29,33 +29,61 @@ function fanOut(...calls: Array<() => Promise<void>>): void {
   }
 }
 
-export function trackRegistration(method: string): void {
+function trackRegistration(method: string): void {
   fanOut(
     () => meta.trackRegistration(method),
     () => tiktok.trackRegistration(method),
   );
 }
 
-/** Reports a sign-up once per brand-new account, never on later sign-ins. */
-export function trackRegistrationIfNew(user: {
+/** Reports a sign-up once per brand-new account. Returns true when it was sent. */
+function trackRegistrationIfNew(user: {
+  id: string;
+  created_at?: string;
+  app_metadata?: { provider?: string };
+}): boolean {
+  if (!user.created_at) return false;
+  if (!meta.isMetaAdsEnabled() && !tiktok.isTikTokAdsEnabled()) return false;
+
+  const age = Date.now() - new Date(user.created_at).getTime();
+  if (!Number.isFinite(age) || age < 0 || age > REGISTRATION_WINDOW_MS) return false;
+
+  const key = `${REGISTERED_KEY_PREFIX}${user.id}`;
+  try {
+    if (localStorage.getItem(key)) return false;
+    localStorage.setItem(key, "1");
+  } catch {
+    return false;
+  }
+  trackRegistration(user.app_metadata?.provider ?? "email");
+  return true;
+}
+
+const signedInThisLaunch = new Set<string>();
+
+/**
+ * Call on every sign-in event. Links the account to TikTok, then reports a
+ * sign-up for brand-new accounts or a login (at most once per app launch) for
+ * returning ones.
+ */
+export function trackSignIn(user: {
   id: string;
   created_at?: string;
   app_metadata?: { provider?: string };
 }): void {
-  if (!user.created_at) return;
-  if (!meta.isMetaAdsEnabled() && !tiktok.isTikTokAdsEnabled()) return;
-
-  const age = Date.now() - new Date(user.created_at).getTime();
-  if (!Number.isFinite(age) || age < 0 || age > REGISTRATION_WINDOW_MS) return;
-
-  const key = `${REGISTERED_KEY_PREFIX}${user.id}`;
-  try {
-    if (localStorage.getItem(key)) return;
-    localStorage.setItem(key, "1");
-  } catch {
+  fanOut(() => tiktok.identify(user.id));
+  if (trackRegistrationIfNew(user)) {
+    signedInThisLaunch.add(user.id);
     return;
   }
-  trackRegistration(user.app_metadata?.provider ?? "email");
+  if (signedInThisLaunch.has(user.id)) return;
+  signedInThisLaunch.add(user.id);
+  fanOut(() => tiktok.trackLogin());
+}
+
+export function trackSignOut(): void {
+  signedInThisLaunch.clear();
+  fanOut(() => tiktok.logout());
 }
 
 export function trackOnboardingCompleted(): void {
@@ -65,16 +93,20 @@ export function trackOnboardingCompleted(): void {
   );
 }
 
-export function trackCheckoutStarted(productId: string): void {
+export function trackCheckoutStarted(details: tiktok.ProductDetails): void {
   fanOut(
-    () => meta.trackCheckoutStarted(productId),
-    () => tiktok.trackCheckoutStarted(productId),
+    () => meta.trackCheckoutStarted(details.productId),
+    () => tiktok.trackCheckoutStarted(details),
   );
 }
 
-export function trackSubscriptionPurchased(productId: string, amount: number, currency: string): void {
+export function trackSubscriptionPurchased(details: tiktok.ProductDetails): void {
   fanOut(
-    () => meta.trackSubscriptionPurchased(productId, amount, currency),
-    () => tiktok.trackSubscriptionPurchased(productId, amount, currency),
+    () => meta.trackSubscriptionPurchased(details.productId, details.amount, details.currency),
+    () => tiktok.trackSubscriptionPurchased(details),
   );
+}
+
+export function resetAdEventsForTests(): void {
+  signedInThisLaunch.clear();
 }

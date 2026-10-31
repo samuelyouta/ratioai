@@ -9,9 +9,12 @@ export interface TikTokEventsPlugin {
   }): Promise<void>;
   trackEvent(options: {
     event: string;
-    properties?: Record<string, string | number | boolean>;
+    properties?: Record<string, unknown>;
     eventId?: string;
   }): Promise<void>;
+  /** Pseudonymous account id only. Never pass name, email or phone. */
+  identify(options: { externalId: string }): Promise<void>;
+  logout(): Promise<void>;
 }
 
 /** Native bridge lives in plugins/capacitor-tiktok-events (iOS only). */
