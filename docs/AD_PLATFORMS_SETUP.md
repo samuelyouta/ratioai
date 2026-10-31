@@ -27,6 +27,11 @@ Never add health data (meals, photos, weight, goals, name, email) to any event.
   [TikTok App Events SDK](https://github.com/tiktok/tiktok-business-ios-sdk) 1.7.2 through Swift Package Manager.
   Automatic payment tracking is turned off so a purchase is reported once, with RevenueCat's price.
   `npx cap sync ios` (already in `codemagic.yaml`) links it into `ios/App/CapApp-SPM/Package.swift`.
+- TikTok's "Install app code" steps in Events Manager are covered here: the SDK is added through Swift Package
+  Manager instead of CocoaPods (the app has no Podfile; adding the pod as well would link the SDK twice),
+  `-ObjC` and `-lc++` are set in the App target's *Other Linker Flags*, and the tracking permission prompt plus
+  `NSUserTrackingUsageDescription` already exist (`src/lib/attPrompt.ts`, `Info.plist`). In Events Manager just
+  continue past that step.
 - `src/lib/tiktokAds.ts`, `src/lib/appleAds.ts`, `src/lib/adEvents.ts`, `src/lib/attPrompt.ts`
   (one shared App Tracking Transparency prompt for every SDK).
 - `Info.plist`: TikTok SKAdNetwork ids (`238da6jt44`, `22mmun2rn5`) next to Meta's.
