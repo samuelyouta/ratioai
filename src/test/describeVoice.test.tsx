@@ -20,9 +20,9 @@ vi.mock("@/lib/voiceRecorder", () => ({
 
 import Describe from "@/pages/app/Describe";
 
-const renderPage = () =>
+const renderPage = (url = "/") =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <Describe />
     </MemoryRouter>,
   );
@@ -82,5 +82,16 @@ describe("Describe voice input", () => {
     await waitFor(() => expect(voice.startRecording).toHaveBeenCalled());
     expect(await screen.findByLabelText("Describe your meal by voice")).toBeEnabled();
     expect(ai.transcribeMealAudio).not.toHaveBeenCalled();
+  });
+
+  it("starts listening straight away when opened from the Log mic button", async () => {
+    renderPage("/?voice=1");
+    expect(await screen.findByLabelText("Stop recording and estimate")).toBeInTheDocument();
+    expect(voice.startRecording).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not start listening by itself otherwise", () => {
+    renderPage();
+    expect(voice.startRecording).not.toHaveBeenCalled();
   });
 });

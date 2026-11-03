@@ -72,6 +72,9 @@ const Describe = () => {
     return () => recordingRef.current?.cancel();
   }, []);
 
+  const autoStartedRef = useRef(false);
+  const wantsVoiceFirst = searchParams.get("voice") === "1";
+
   useEffect(() => {
     if (voice !== "recording") return;
     const startedAt = Date.now();
@@ -140,6 +143,13 @@ const Describe = () => {
       });
     }
   };
+
+  useEffect(() => {
+    if (!wantsVoiceFirst || autoStartedRef.current || !voiceSupported) return;
+    autoStartedRef.current = true;
+    void toggleDictation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsVoiceFirst, voiceSupported]);
 
   const insertPortion = (phrase: string) => {
     setText((prev) => {

@@ -72,3 +72,7 @@ After pulling account-deletion / rate-limit changes:
 supabase functions deploy delete-account
 supabase db push   # applies edge_rate_limits migration
 ```
+
+## Voice meal logging
+
+Tap the mic on the Log screen (or the mic inside Describe Meal). The app records a short clip with `MediaRecorder`, `/api/transcribe-audio` turns it into text with Whisper, and `/api/describe-meal` estimates the macros. Needs `NSMicrophoneUsageDescription` (already in `Info.plist`) and `OPENAI_API_KEY` on Vercel. If Microphone is switched off, iOS Settings > RatioAi > Microphone turns it back on.

@@ -38,7 +38,7 @@ async function transcribe(apiKey, audio, mimeType) {
   const base = String(mimeType || "").split(";")[0].trim().toLowerCase() || "audio/webm";
   form.append("file", new Blob([audio], { type: base }), `meal.${extensionFor(mimeType)}`);
   form.append("model", "whisper-1");
-  form.append("response_format", "json");
+  form.append("response_format", "verbose_json");
   form.append("temperature", "0");
   form.append("prompt", "A person describing what they ate: foods, drinks, portions, grams, cups, slices.");
 
@@ -66,7 +66,24 @@ async function transcribe(apiKey, audio, mimeType) {
   }
 
   const data = await response.json();
-  return String((data && data.text) || "").trim();
+  return cleanTranscript(data);
+}
+
+const SILENCE_THRESHOLD = 0.6;
+
+/**
+ * Whisper invents text ("Thanks for watching!") for silence and background noise.
+ * When every segment is flagged as probably-not-speech, treat the clip as empty so
+ * the app asks the user to try again instead of estimating a made-up meal.
+ */
+function cleanTranscript(data) {
+  const text = String((data && data.text) || "").trim();
+  const segments = data && Array.isArray(data.segments) ? data.segments : [];
+  if (text && segments.length > 0) {
+    const allSilent = segments.every((s) => Number(s && s.no_speech_prob) > SILENCE_THRESHOLD);
+    if (allSilent) return "";
+  }
+  return text;
 }
 
 async function handler(req, res) {
@@ -106,3 +123,4 @@ handler.config = {
 };
 
 module.exports = handler;
+module.exports.cleanTranscript = cleanTranscript;

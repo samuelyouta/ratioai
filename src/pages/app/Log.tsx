@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Camera, Image as ImageIcon, History as HistoryIcon, Loader2, RefreshCw } from "lucide-react";
+import { X, Camera, Image as ImageIcon, History as HistoryIcon, Loader2, Mic, RefreshCw } from "lucide-react";
 import RecentMeals from "@/components/app/RecentMeals";
 import MealPickerSheet from "@/components/app/MealPickerSheet";
 import { compressImageForAnalysis, isLikelyImageFile } from "@/lib/image";
@@ -20,6 +20,7 @@ import {
 import { formatDayLabel, isToday } from "@/lib/dayKey";
 import { readDayParam, withDay } from "@/lib/loggingDay";
 import { scansLeftToday, DAILY_SCAN_LIMIT } from "@/lib/scanQuota";
+import { isVoiceRecordingSupported } from "@/lib/voiceRecorder";
 import { toast } from "sonner";
 
 type CameraStatus = "starting" | "live" | "denied" | "unavailable" | "timeout";
@@ -34,6 +35,7 @@ const Log = () => {
 
   const [scanning, setScanning] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const voiceSupported = isVoiceRecordingSupported();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const scanningRef = useRef(false);
   const previewRef = useRef<string | null>(null);
@@ -562,7 +564,7 @@ const Log = () => {
           </button>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className={`mt-3 grid gap-2 ${voiceSupported ? "grid-cols-[1fr_1fr_2.75rem]" : "grid-cols-2"}`}>
           <button
             disabled={scanning}
             onClick={() => {
@@ -583,6 +585,20 @@ const Log = () => {
           >
             Describe Meal
           </button>
+          {voiceSupported && (
+            <button
+              disabled={scanning}
+              aria-label="Say what you ate"
+              title="Say what you ate"
+              onClick={() => {
+                stopCamera();
+                navigate(withDay("/app/describe?voice=1", targetDay));
+              }}
+              className="h-11 rounded-xl border border-primary/30 bg-primary/15 hover:bg-primary/25 transition-colors flex items-center justify-center"
+            >
+              <Mic className="w-4 h-4 text-primary" />
+            </button>
+          )}
         </div>
       </motion.div>
 
