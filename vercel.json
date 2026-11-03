@@ -6,6 +6,9 @@
     },
     "api/describe-meal.js": {
       "maxDuration": 30
+    },
+    "api/transcribe-audio.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [

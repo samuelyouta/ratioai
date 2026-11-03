@@ -45,3 +45,15 @@ describe("analyzeMealPhoto scan limit", () => {
     expect(f).not.toHaveBeenCalled();
   });
 });
+
+describe("transcribeMealAudio", () => {
+  it("posts the recording and returns the transcript", async () => {
+    const f = respond(200, { text: " two eggs " });
+    vi.stubGlobal("fetch", f);
+    const { transcribeMealAudio } = await import("@/lib/mealAiClient");
+    await expect(transcribeMealAudio("QUJD", "audio/mp4")).resolves.toBe("two eggs");
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toContain("/api/transcribe-audio");
+    expect(JSON.parse(init.body as string)).toEqual({ audioBase64: "QUJD", mimeType: "audio/mp4" });
+  });
+});

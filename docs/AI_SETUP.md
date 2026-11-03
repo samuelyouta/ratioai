@@ -5,6 +5,7 @@ The app calls **Vercel serverless** routes that use your **OpenAI** key:
 
 - `POST https://ratioai.vercel.app/api/analyze-meal`
 - `POST https://ratioai.vercel.app/api/describe-meal`
+- `POST https://ratioai.vercel.app/api/transcribe-audio` (voice notes, OpenAI `whisper-1`; uses the same `OPENAI_API_KEY`)
 
 ## One-time: add OPENAI_API_KEY on Vercel
 

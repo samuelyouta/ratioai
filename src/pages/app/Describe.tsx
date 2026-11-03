@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Mic, MicOff } from "lucide-react";
-import { describeMealText } from "@/lib/mealAiClient";
+import { ArrowLeft, Loader2, Mic, Square } from "lucide-react";
+import { describeMealText, transcribeMealAudio } from "@/lib/mealAiClient";
+import {
+  blobToBase64,
+  isVoiceRecordingSupported,
+  startRecording,
+  type ActiveRecording,
+} from "@/lib/voiceRecorder";
 import { createMealId, saveMeal, type Meal, type MealItem } from "@/lib/profile";
 import { maybeRequestReview } from "@/lib/reviewPrompt";
 import { formatDayLabel, isToday, timestampForDay } from "@/lib/dayKey";
@@ -35,6 +41,13 @@ const EXAMPLES = [
   "Chocolate protein smoothie with banana and oats",
 ];
 
+type VoiceState = "idle" | "starting" | "recording" | "transcribing";
+
+const formatClock = (ms: number) => {
+  const total = Math.floor(ms / 1000);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
+
 const Describe = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -42,179 +55,89 @@ const Describe = () => {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIResult | null>(null);
-  const [listening, setListening] = useState(false);
+  const [voice, setVoice] = useState<VoiceState>("idle");
+  const [elapsedMs, setElapsedMs] = useState(0);
   const [helperOpen, setHelperOpen] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const baseTextRef = useRef<string>("");
+  const recordingRef = useRef<ActiveRecording | null>(null);
+  const voiceBusyRef = useRef(false);
+  const textRef = useRef("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const SpeechRecognition =
-    typeof window !== "undefined"
-      ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-      : null;
-  const speechSupported = !!SpeechRecognition;
+  const voiceSupported = isVoiceRecordingSupported();
 
   useEffect(() => {
-    return () => {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        /* noop */
-      }
-    };
+    textRef.current = text;
+  }, [text]);
+
+  useEffect(() => {
+    return () => recordingRef.current?.cancel();
   }, []);
 
-  // Convert spoken number words ("two", "twenty-one") and digits to a number.
-  const NUMBER_WORDS: Record<string, number> = {
-    a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
-    eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
-    fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
-    thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
-    hundred: 100,
-  };
-  const parseSpokenNumber = (raw: string): number | null => {
-    const s = raw.trim().toLowerCase().replace(/-/g, " ");
-    if (!s) return null;
-    if (/^\d+(\.\d+)?$/.test(s)) return parseFloat(s);
-    const parts = s.split(/\s+/);
-    let total = 0;
-    for (const p of parts) {
-      const n = NUMBER_WORDS[p];
-      if (n == null) return null;
-      if (n === 100) total = (total || 1) * 100;
-      else total += n;
-    }
-    return total || null;
-  };
+  useEffect(() => {
+    if (voice !== "recording") return;
+    const startedAt = Date.now();
+    setElapsedMs(0);
+    const id = window.setInterval(() => setElapsedMs(Date.now() - startedAt), 250);
+    return () => window.clearInterval(id);
+  }, [voice]);
 
-  // Run voice commands on each finalized speech chunk.
-  // Returns handled=true when the chunk was consumed by a command.
-  const handleVoiceCommands = (chunk: string): { remaining: string; handled: boolean } => {
-    const raw = chunk.trim();
-    const lower = raw.toLowerCase().replace(/[.!?,]+$/g, "").trim();
-    if (!lower) return { remaining: chunk, handled: true };
-
-    // STOP / END dictation
-    if (/^(stop|stop dictation|stop listening|that's all|done|end dictation)$/.test(lower)) {
-      try { recognitionRef.current?.stop(); } catch { /* noop */ }
-      toast({ title: "Dictation stopped", description: "Voice command: stop." });
-      return { remaining: "", handled: true };
-    }
-
-    // CLEAR text
-    if (/^(clear text|clear all|clear everything|delete all|reset text|start over)$/.test(lower)) {
-      baseTextRef.current = "";
-      setText("");
-      toast({ title: "Cleared", description: "Voice command: clear text." });
-      return { remaining: "", handled: true };
-    }
-
-    // DELETE LAST word/sentence
-    const delMatch = lower.match(/^(delete|remove|scratch)\s+(that|last(?:\s+(word|sentence))?)$/);
-    if (delMatch) {
-      const target = delMatch[3] || (delMatch[2] === "that" ? "sentence" : "word");
-      const current = baseTextRef.current.trim();
-      let next = current;
-      if (target === "sentence") next = current.replace(/[^.!?]*[.!?]?\s*$/, "").trim();
-      else next = current.replace(/\s*\S+\s*$/, "").trim();
-      baseTextRef.current = next ? next + " " : "";
-      setText(next);
-      return { remaining: "", handled: true };
-    }
-
-    // ESTIMATE NOW
-    if (/^(estimate( now| it)?|run estimate|analyze( now)?|calculate( now)?)$/.test(lower)) {
-      try { recognitionRef.current?.stop(); } catch { /* noop */ }
-      setTimeout(() => estimate(), 250);
-      toast({ title: "Estimating", description: "Voice command: estimate." });
-      return { remaining: "", handled: true };
-    }
-
-    // ADD <quantity> <food>
-    const addMatch = lower.match(/^(?:add|log|include|put in)\s+(.+)$/);
-    if (addMatch) {
-      const rest = addMatch[1].trim();
-      const qtyMatch = rest.match(
-        /^((?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|\d+(?:\.\d+)?)(?:[\s-](?:and\s+)?(?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred))*)\s+(.+)$/,
-      );
-      let phrase = rest;
-      if (qtyMatch) {
-        const qty = parseSpokenNumber(qtyMatch[1]);
-        phrase = qty != null ? `${qty} ${qtyMatch[2]}` : `${qtyMatch[1]} ${qtyMatch[2]}`;
+  const stopAndTranscribe = async () => {
+    const active = recordingRef.current;
+    if (!active) return;
+    recordingRef.current = null;
+    setVoice("transcribing");
+    try {
+      const recording = await active.stop();
+      const transcript = await transcribeMealAudio(await blobToBase64(recording.blob), recording.mimeType);
+      if (!transcript) {
+        toast({ title: "Didn't catch that", description: "Speak a little closer to the phone and try again." });
+        return;
       }
-      const sep = baseTextRef.current.trim() && !baseTextRef.current.trim().endsWith(",") ? ", " : "";
-      baseTextRef.current = (baseTextRef.current + sep + phrase).replace(/\s+/g, " ");
-      setText(baseTextRef.current.trim());
-      return { remaining: "", handled: true };
+      const current = textRef.current.trim();
+      const joined = current ? `${current}${/[.,;]$/.test(current) ? " " : ", "}${transcript}` : transcript;
+      setText(joined);
+      setVoice("idle");
+      void estimate(joined);
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Couldn't use that recording",
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setVoice("idle");
+      voiceBusyRef.current = false;
     }
-
-    return { remaining: chunk, handled: false };
   };
 
-  const toggleDictation = () => {
-    if (!speechSupported) {
+  const toggleDictation = async () => {
+    if (voiceBusyRef.current && voice !== "recording") return;
+    if (voice === "recording") {
+      await stopAndTranscribe();
+      return;
+    }
+    if (!voiceSupported) {
       toast({
-        title: "Dictation not supported",
-        description: "Try Chrome or Safari on desktop / iOS to dictate your meal.",
+        title: "Voice input isn't available",
+        description: "This device can't record audio. You can still type your meal.",
       });
       return;
     }
-    if (listening) {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        /* noop */
-      }
-      return;
-    }
-    const rec = new SpeechRecognition();
-    rec.lang = navigator.language || "en-US";
-    rec.continuous = true;
-    rec.interimResults = true;
-
-    baseTextRef.current = text ? text.trim() + (text.trim().endsWith(".") ? " " : ". ") : "";
-
-    rec.onresult = (event: any) => {
-      let interim = "";
-      let finalChunk = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalChunk += transcript;
-        else interim += transcript;
-      }
-      if (finalChunk) {
-        const { remaining, handled } = handleVoiceCommands(finalChunk);
-        if (handled) {
-          // Command consumed — refresh base from current text and skip append
-          baseTextRef.current = text ? text.trim() + " " : "";
-          setText(baseTextRef.current.trim());
-          return;
-        }
-        baseTextRef.current = (baseTextRef.current + remaining).replace(/\s+/g, " ");
-      }
-      setText((baseTextRef.current + " " + interim).trim());
-    };
-    rec.onerror = (e: any) => {
-      console.error("SpeechRecognition error", e);
-      const code = e?.error || "unknown";
-      const msg =
-        code === "not-allowed" || code === "service-not-allowed"
-          ? "Microphone permission denied."
-          : code === "no-speech"
-            ? "Didn't catch that — try again."
-            : `Dictation error: ${code}`;
-      toast({ title: "Dictation stopped", description: msg });
-      setListening(false);
-    };
-    rec.onend = () => setListening(false);
-    rec.onstart = () => setListening(true);
-
+    voiceBusyRef.current = true;
+    setVoice("starting");
     try {
-      rec.start();
-      recognitionRef.current = rec;
-    } catch (err) {
-      console.error(err);
-      toast({ title: "Couldn't start mic", description: "Please allow microphone access." });
+      recordingRef.current = await startRecording({
+        onAutoStop: () => {
+          void stopAndTranscribe();
+        },
+      });
+      setVoice("recording");
+    } catch (e) {
+      voiceBusyRef.current = false;
+      setVoice("idle");
+      toast({
+        title: "Microphone unavailable",
+        description: e instanceof Error ? e.message : "Please allow microphone access.",
+      });
     }
   };
 
@@ -223,16 +146,14 @@ const Describe = () => {
       const trimmed = prev.trim();
       if (!trimmed) return phrase;
       const sep = /[.,;]$/.test(trimmed) ? " " : ", ";
-      const next = `${trimmed}${sep}${phrase}`;
-      baseTextRef.current = next + " ";
-      return next;
+      return `${trimmed}${sep}${phrase}`;
     });
     toast({ title: "Portion added", description: phrase });
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
-  const estimate = async () => {
-    const desc = text.trim();
+  const estimate = async (override?: string) => {
+    const desc = (override ?? text).trim();
     if (desc.length < 3) {
       toast({ title: "Describe your meal", description: "Add a few words about what you ate." });
       return;
@@ -349,57 +270,60 @@ const Describe = () => {
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             What did you eat?
           </label>
-          {listening && (
-            <span className="flex items-center gap-1.5 text-[10px] font-medium text-primary">
+          {voice === "recording" && (
+            <span className="flex items-center gap-1.5 text-[10px] font-medium text-primary" role="status">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Listening…
+              Listening… {formatClock(elapsedMs)}
+            </span>
+          )}
+          {voice === "transcribing" && (
+            <span className="flex items-center gap-1.5 text-[10px] font-medium text-primary" role="status">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Turning your voice into text…
             </span>
           )}
         </div>
         <div className="relative mt-2">
           <textarea
             ref={textareaRef}
-            autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="e.g. A big bowl of homemade lasagna and a side salad"
+            placeholder="Type it, or tap the mic and say what you ate"
             rows={4}
             className="w-full px-4 py-3 pr-14 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
           />
           <button
             type="button"
-            onClick={toggleDictation}
-            aria-label={listening ? "Stop dictation" : "Start dictation"}
-            title={
-              speechSupported
-                ? listening
-                  ? "Stop dictation"
-                  : "Dictate your meal"
-                : "Dictation unavailable in this browser"
-            }
-            className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-              listening
+            onClick={() => void toggleDictation()}
+            disabled={voice === "starting" || voice === "transcribing" || loading}
+            aria-label={voice === "recording" ? "Stop recording and estimate" : "Describe your meal by voice"}
+            title={voice === "recording" ? "Tap to finish" : "Tap and say what you ate"}
+            className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-colors disabled:opacity-60 ${
+              voice === "recording"
                 ? "bg-primary text-primary-foreground shadow-glow animate-pulse"
-                : speechSupported
-                  ? "bg-primary/15 text-primary hover:bg-primary/25 border border-primary/30"
-                  : "bg-secondary/60 text-muted-foreground border border-border opacity-60"
+                : "bg-primary/15 text-primary hover:bg-primary/25 border border-primary/30"
             }`}
           >
-            {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            {voice === "starting" || voice === "transcribing" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : voice === "recording" ? (
+              <Square className="w-4 h-4 fill-current" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
           </button>
         </div>
 
-        {speechSupported && listening && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {['"add two eggs"', '"delete last word"', '"clear text"', '"estimate"', '"stop"'].map((c) => (
-              <span
-                key={c}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
+        {voice === "recording" ? (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Say everything you ate, then tap the square. We'll estimate it for you.
+          </p>
+        ) : (
+          voiceSupported && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Tip: tap the mic, say "two eggs on toast and a coffee with milk", then tap stop.
+            </p>
+          )
         )}
 
         {/* Portion helper trigger */}
@@ -435,7 +359,7 @@ const Describe = () => {
         )}
 
         <button
-          onClick={estimate}
+          onClick={() => void estimate()}
           disabled={loading}
           className="mt-4 w-full h-12 rounded-xl gradient-glow shadow-glow flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
         >
@@ -517,7 +441,7 @@ const Describe = () => {
           </div>
 
           <button
-            onClick={estimate}
+            onClick={() => void estimate()}
             disabled={loading}
             className="mt-2 w-full h-10 rounded-xl text-xs text-muted-foreground hover:text-foreground"
           >

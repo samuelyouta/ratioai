@@ -89,6 +89,11 @@ const Privacy = () => {
             are not uploaded as permanent cloud meal history. You can delete meals and your account at any
             time from Profile.
           </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            If you describe a meal by voice, the microphone records only while you are using the mic
+            button. The short recording is sent to our backend and OpenAI to be turned into text, then
+            discarded; we do not store it. Only the resulting text is kept with the meal.
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -98,8 +103,8 @@ const Privacy = () => {
           </p>
           <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground leading-relaxed">
             <li>
-              <span className="text-foreground font-medium">OpenAI</span> — meal photo / description
-              analysis.
+              <span className="text-foreground font-medium">OpenAI</span> — meal photo, description and voice
+              note analysis.
             </li>
             <li>
               <span className="text-foreground font-medium">Supabase</span> — authentication and cloud

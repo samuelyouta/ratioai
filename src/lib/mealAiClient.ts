@@ -140,3 +140,8 @@ export async function analyzeMealPhoto<T = unknown>(imageBase64: string): Promis
 export function describeMealText<T = unknown>(description: string): Promise<T> {
   return postMealAi<T>("/api/describe-meal", { description });
 }
+
+export async function transcribeMealAudio(audioBase64: string, mimeType: string): Promise<string> {
+  const { text } = await postMealAi<{ text?: string }>("/api/transcribe-audio", { audioBase64, mimeType });
+  return (text ?? "").trim();
+}
