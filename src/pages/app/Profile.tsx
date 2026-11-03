@@ -5,7 +5,8 @@ import { AlertTriangle, X } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import TimeZonePicker from "@/components/app/TimeZonePicker";
 import { confirmTimeZone, formatDayLong, todayKey } from "@/lib/dayKey";
-import { getProfile } from "@/lib/profile";
+import { getProfile, saveProfile, type Profile as ProfileData } from "@/lib/profile";
+import ProfileEditSheet from "@/components/app/ProfileEditSheet";
 import { deleteAccount } from "@/lib/account";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,13 +30,19 @@ const Profile = () => {
   const navigate = useNavigate();
   const { restore } = useSubscription();
   const { user } = useAuth();
-  const profile = getProfile()!;
+  const [profile, setProfile] = useState<ProfileData>(() => getProfile()!);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [today, setToday] = useState(() => todayKey());
 
-  const handleRedo = () => navigate("/app/onboarding/goal");
+  const handleSaveProfile = (next: ProfileData) => {
+    saveProfile(next);
+    setProfile(next);
+    setEditOpen(false);
+    toast.success("Profile updated", { description: "Your targets and goal are saved." });
+  };
 
   const handleConfirmDelete = async () => {
     setDeleting(true);
@@ -76,8 +83,15 @@ const Profile = () => {
       </div>
 
       <div className="px-6 mb-5">
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <p className="font-semibold text-foreground">
+        <div className="bg-card border border-border rounded-2xl p-5 relative">
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="absolute top-4 right-4 text-xs font-semibold text-primary bg-primary/10 border border-primary/30 rounded-full px-3 py-1"
+          >
+            Edit
+          </button>
+          <p className="font-semibold text-foreground pr-14">
             {profile.name?.trim() || "RatioAi Athlete"}
           </p>
           {user?.email ? (
@@ -146,10 +160,10 @@ const Profile = () => {
 
       <div className="px-6 space-y-2">
         <button
-          onClick={handleRedo}
+          onClick={() => setEditOpen(true)}
           className="w-full bg-card border border-border rounded-xl py-3 text-sm font-medium text-foreground"
         >
-          Recalculate targets
+          Edit profile &amp; targets
         </button>
 
         <MedicalDisclaimer className="mb-3" />
@@ -193,6 +207,13 @@ const Profile = () => {
       </div>
 
       <BottomNav />
+
+      <ProfileEditSheet
+        open={editOpen}
+        profile={profile}
+        onSave={handleSaveProfile}
+        onClose={() => setEditOpen(false)}
+      />
 
       {/* Delete account verification modal */}
       <AnimatePresence>

@@ -1,5 +1,8 @@
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { motion } from "framer-motion";
+import { previousOnboardingRoute } from "@/lib/onboardingRoutes";
 
 interface OnboardingLayoutProps {
   step: number;
@@ -8,10 +11,19 @@ interface OnboardingLayoutProps {
 }
 
 const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps) => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Progress bar */}
       <div className="px-6 safe-top-sm pb-2">
+        <button
+          type="button"
+          onClick={() => navigate(previousOnboardingRoute(step), { replace: true })}
+          aria-label="Back"
+          className="mb-3 -ml-1 w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"
+        >
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+        </button>
         <div className="flex gap-1.5">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-muted">

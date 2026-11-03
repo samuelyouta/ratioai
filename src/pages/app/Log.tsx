@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Camera, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
+import { X, Camera, Image as ImageIcon, History as HistoryIcon, Loader2, RefreshCw } from "lucide-react";
 import RecentMeals from "@/components/app/RecentMeals";
+import MealPickerSheet from "@/components/app/MealPickerSheet";
 import { compressImageForAnalysis, isLikelyImageFile } from "@/lib/image";
 import { setPendingMealImage } from "@/lib/mealImageStore";
 import { isNative } from "@/lib/native";
@@ -18,6 +19,7 @@ import {
 } from "@/lib/camera";
 import { formatDayLabel, isToday } from "@/lib/dayKey";
 import { readDayParam, withDay } from "@/lib/loggingDay";
+import { scansLeftToday, DAILY_SCAN_LIMIT } from "@/lib/scanQuota";
 import { toast } from "sonner";
 
 type CameraStatus = "starting" | "live" | "denied" | "unavailable" | "timeout";
@@ -31,6 +33,7 @@ const Log = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [scanning, setScanning] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const scanningRef = useRef(false);
   const previewRef = useRef<string | null>(null);
@@ -42,6 +45,8 @@ const Log = () => {
 
   const startToken = useRef(0);
   const restartsLeft = useRef(2);
+  const lastStartAt = useRef(0);
+  const [slowStart, setSlowStart] = useState(false);
 
   const stopCamera = useCallback(() => {
     stopStream(streamRef.current);
@@ -55,8 +60,9 @@ const Log = () => {
   }, []);
 
   const startCamera = useCallback(
-    async (facing: "environment" | "user" = facingMode) => {
+    async (facing: "environment" | "user" = facingMode, autoRetry = true) => {
       const token = ++startToken.current;
+      lastStartAt.current = Date.now();
       const stale = () => token !== startToken.current;
 
       setCameraStatus("starting");
@@ -99,6 +105,12 @@ const Log = () => {
         }
         console.warn("camera start failed", e);
         stopCamera();
+        if (e instanceof CameraTimeoutError && autoRetry) {
+          // The first start after a long idle is the one most likely to stall; one quiet retry usually clears it.
+          await new Promise((resolve) => window.setTimeout(resolve, 300));
+          if (!stale()) void startCamera(facing, false);
+          return;
+        }
         if (isCameraPermissionError(e)) setCameraStatus("denied");
         else if (e instanceof CameraTimeoutError) setCameraStatus("timeout");
         else setCameraStatus("unavailable");
@@ -108,9 +120,18 @@ const Log = () => {
   );
 
   const retryCamera = useCallback(() => {
+    // Foreground events can arrive twice (page visibility and the native app state); one start is enough.
+    if (Date.now() - lastStartAt.current < 1_000) return;
     restartsLeft.current = 2;
     void startCamera();
   }, [startCamera]);
+
+  useEffect(() => {
+    setSlowStart(false);
+    if (cameraStatus !== "starting") return;
+    const timer = window.setTimeout(() => setSlowStart(true), 3_000);
+    return () => window.clearTimeout(timer);
+  }, [cameraStatus]);
 
   useEffect(() => {
     void startCamera(facingMode);
@@ -155,6 +176,15 @@ const Log = () => {
     };
   }, [cancelPendingStart, retryCamera, stopCamera]);
 
+  /** Photo scans are capped per day; point people at the other ways to log once they are used up. */
+  const scanAllowed = () => {
+    if (scansLeftToday() > 0) return true;
+    toast.error("Daily scan limit reached", {
+      description: `You've used all ${DAILY_SCAN_LIMIT} photo scans for today. You can still log with Search & Edit or Describe Meal.`,
+    });
+    return false;
+  };
+
   const storeAndAnalyze = async (dataUrl: string) => {
     setScanning(true);
     cancelPendingStart();
@@ -182,6 +212,7 @@ const Log = () => {
   };
 
   const captureFromStream = async () => {
+    if (!scanAllowed()) return;
     const video = videoRef.current;
     if (!video || video.readyState < 2) {
       toast.error("Camera not ready", { description: "Wait a moment and try again." });
@@ -232,7 +263,7 @@ const Log = () => {
   };
 
   const openGallery = async () => {
-    if (scanning) return;
+    if (scanning || !scanAllowed()) return;
 
     // Native: use Capacitor Photos picker (converts HEIC → JPEG).
     if (isNative()) {
@@ -268,6 +299,7 @@ const Log = () => {
       toast.error("Camera unavailable", { description: "Allow camera access and try again." });
       return;
     }
+    if (!scanAllowed()) return;
     setScanning(true);
     cancelPendingStart();
     stopCamera();
@@ -301,14 +333,15 @@ const Log = () => {
   };
 
   const showLive = cameraStatus === "live" && !previewUrl;
+  const scansLeft = scansLeftToday();
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background flex flex-col relative"
+      className="h-[100dvh] bg-background flex flex-col relative overflow-hidden"
     >
-      <div className="flex-1 relative bg-black overflow-hidden min-h-[48vh]">
+      <div className="flex-1 min-h-0 relative bg-black overflow-hidden">
         {/* Live camera feed */}
         <video
           ref={videoRef}
@@ -330,6 +363,31 @@ const Log = () => {
               <>
                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
                 <p className="text-sm text-primary font-medium tracking-wide">Starting camera…</p>
+                {slowStart && (
+                  <div className="mt-1 flex flex-col items-center gap-2">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Taking longer than usual. You don't have to wait.
+                    </p>
+                    <div className="flex gap-2">
+                      {isNative() && (
+                        <button
+                          type="button"
+                          onClick={() => void handleNativeFallbackCapture()}
+                          className="px-4 h-10 rounded-xl gradient-glow text-xs font-semibold text-primary-foreground"
+                        >
+                          Open system camera
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void openGallery()}
+                        className="px-4 h-10 rounded-xl border border-border bg-secondary text-xs font-semibold text-foreground"
+                      >
+                        Pick from Gallery
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -416,7 +474,15 @@ const Log = () => {
             className="glass border border-border rounded-full px-3 py-1.5"
           >
             <span className="text-xs font-medium text-foreground">
-              {scanning ? "Capturing…" : showLive ? "Place food in frame" : "Snap a meal"}
+              {scanning
+                ? "Capturing…"
+                : scansLeft <= 5
+                  ? scansLeft === 0
+                    ? "No scans left today"
+                    : `${scansLeft} scan${scansLeft === 1 ? "" : "s"} left today`
+                  : showLive
+                    ? "Place food in frame"
+                    : "Snap a meal"}
             </span>
           </motion.div>
           <button
@@ -439,22 +505,17 @@ const Log = () => {
         </div>
       </div>
 
-      <motion.div className="bg-background px-6 py-6 safe-bottom">
+      <motion.div className="shrink-0 bg-background px-4 pt-3 pb-3 safe-bottom">
         {!isToday(targetDay) && (
-          <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-            <p className="text-xs font-semibold text-primary">
-              Adding to {formatDayLabel(targetDay)}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Anything you log here is stamped on that day, not today.
-            </p>
-          </div>
+          <p className="mb-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary">
+            Adding to {formatDayLabel(targetDay)} · not today
+          </p>
         )}
 
-        <div className="mb-5">
+        <div className="mb-3">
           <RecentMeals
-            limit={4}
-            variant="stack"
+            limit={6}
+            variant="chips"
             title="Quick re-log"
             day={targetDay}
             onLogged={() => navigate(withDay("/app/today", targetDay))}
@@ -465,9 +526,9 @@ const Log = () => {
           <button
             disabled={scanning}
             onClick={() => void openGallery()}
-            className="flex flex-col items-center gap-1"
+            className="flex flex-col items-center gap-1 w-16"
           >
-            <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
               <ImageIcon className="w-5 h-5 text-secondary-foreground" />
             </div>
             <span className="text-[10px] text-muted-foreground">Gallery</span>
@@ -477,34 +538,31 @@ const Log = () => {
             disabled={scanning}
             onClick={() => void handleShutter()}
             whileTap={{ scale: 0.9 }}
-            className="w-20 h-20 rounded-full gradient-glow shadow-glow flex items-center justify-center"
+            className="w-[4.5rem] h-[4.5rem] rounded-full gradient-glow shadow-glow flex items-center justify-center"
             aria-label="Take photo"
           >
-            <div className="w-16 h-16 rounded-full border-4 border-primary-foreground/20 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full border-4 border-primary-foreground/20 flex items-center justify-center">
               {scanning ? (
-                <Loader2 className="w-7 h-7 text-primary-foreground animate-spin" />
+                <Loader2 className="w-6 h-6 text-primary-foreground animate-spin" />
               ) : (
-                <Camera className="w-7 h-7 text-primary-foreground" />
+                <Camera className="w-6 h-6 text-primary-foreground" />
               )}
             </div>
           </motion.button>
 
           <button
             disabled={scanning}
-            onClick={() => {
-              stopCamera();
-              navigate(withDay("/app/manual", targetDay));
-            }}
-            className="flex flex-col items-center gap-1"
+            onClick={() => setPickerOpen(true)}
+            className="flex flex-col items-center gap-1 w-16"
           >
-            <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
-              <span className="text-xs font-bold text-secondary-foreground">A–Z</span>
+            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+              <HistoryIcon className="w-5 h-5 text-secondary-foreground" />
             </div>
-            <span className="text-[10px] text-muted-foreground">Search</span>
+            <span className="text-[10px] text-muted-foreground">All meals</span>
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <button
             disabled={scanning}
             onClick={() => {
@@ -513,7 +571,7 @@ const Log = () => {
             }}
             className="h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors text-sm font-medium text-foreground/90"
           >
-            Search & Edit
+            Search &amp; Edit
           </button>
           <button
             disabled={scanning}
@@ -526,10 +584,17 @@ const Log = () => {
             Describe Meal
           </button>
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground text-center">
-          Can't find it? Describe it — we'll estimate the macros.
-        </p>
       </motion.div>
+
+      <MealPickerSheet
+        open={pickerOpen}
+        day={targetDay}
+        onClose={() => setPickerOpen(false)}
+        onLogged={() => {
+          stopCamera();
+          navigate(withDay("/app/today", targetDay));
+        }}
+      />
 
       <input
         ref={galleryRef}

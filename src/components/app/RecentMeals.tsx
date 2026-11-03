@@ -7,8 +7,8 @@ import { toast } from "sonner";
 interface Props {
   /** Max number of meals to show */
   limit?: number;
-  /** "row" = horizontal scroller (Today), "stack" = vertical list (Log) */
-  variant?: "row" | "stack";
+  /** "row" = horizontal cards (Today), "chips" = one compact line (Log), "stack" = vertical list */
+  variant?: "row" | "chips" | "stack";
   /** Optional title override */
   title?: string;
   /** Day the re-log lands on; defaults to today */
@@ -40,6 +40,33 @@ const RecentMeals = ({ limit = 6, variant = "row", title, day, onLogged }: Props
     onLogged?.(copy);
     setTimeout(() => setBusyId(null), 400);
   };
+
+  if (variant === "chips") {
+    return (
+      <div>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+          {title ?? "Quick re-log"}
+        </h3>
+        <div className="-mx-4 px-4 flex gap-2 overflow-x-auto no-scrollbar">
+          {meals.map((m) => (
+            <motion.button
+              key={m.id}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => handleRelog(m)}
+              disabled={busyId === m.id}
+              aria-label={`Log ${m.title} again`}
+              className="shrink-0 max-w-[10.5rem] text-left rounded-xl border border-border bg-card hover:border-primary/40 transition-colors px-3 py-2 disabled:opacity-60"
+            >
+              <p className="text-xs font-semibold text-foreground truncate">{m.title}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                <span className="font-semibold text-primary">{m.totalCalories}</span> cal · + Log
+              </p>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const heading = (
     <div className="flex items-center justify-between mb-2">

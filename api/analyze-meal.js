@@ -3,18 +3,30 @@
  * Uses .cjs so package.json "type":"module" cannot break function boot.
  */
 
+const { reserveScan } = require("./_lib/scanLimit.js");
+
 async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "authorization, content-type");
+  res.setHeader("Access-Control-Allow-Headers", "authorization, content-type, x-scan-day");
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  let slot = null;
   try {
     const imageBase64 = req.body && req.body.imageBase64;
     if (!imageBase64 || typeof imageBase64 !== "string") {
       return res.status(400).json({ error: "imageBase64 required" });
+    }
+
+    slot = await reserveScan(req);
+    if (!slot.allowed) {
+      return res.status(429).json({
+        code: "daily_scan_limit",
+        limit: slot.limit,
+        error: `You've used all ${slot.limit} photo scans for today. Your allowance resets tomorrow. You can still log meals by searching or describing them.`,
+      });
     }
 
     const apiKey = getOpenAiKey();
@@ -40,6 +52,7 @@ async function handler(req, res) {
 
     return res.status(200).json(parsed);
   } catch (e) {
+    if (slot) await slot.refund();
     console.error("analyze-meal error", e);
     const message = e instanceof Error ? e.message : "Unknown error";
     const status = message.includes("missing") || message.includes("rejected") ? 503 : 500;

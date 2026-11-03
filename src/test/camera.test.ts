@@ -83,3 +83,19 @@ describe("withTimeout", () => {
     await expect(withTimeout(Promise.reject(new Error("x")), 100, () => new Error("t"))).rejects.toThrow("x");
   });
 });
+
+describe("openCameraStream stalled attempts", () => {
+  it("moves on to a simpler constraint set when the first one stalls", async () => {
+    vi.useFakeTimers();
+    const { stream } = fakeStream();
+    const getUserMedia = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise<MediaStream>(() => undefined))
+      .mockResolvedValueOnce(stream);
+
+    const result = openCameraStream("environment", { getUserMedia }, 9000, 4000);
+    await vi.advanceTimersByTimeAsync(4100);
+    await expect(result).resolves.toBe(stream);
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+  });
+});

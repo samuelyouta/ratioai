@@ -1,5 +1,13 @@
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
+import { todayKey } from "@/lib/dayKey";
+import {
+  DAILY_SCAN_LIMIT,
+  ScanLimitError,
+  markScanLimitReached,
+  recordScan,
+  scansLeftToday,
+} from "@/lib/scanQuota";
 
 const PUBLIC_WEB_ORIGIN = (
   import.meta.env.VITE_PUBLIC_APP_URL || "https://ratioai.vercel.app"
@@ -48,7 +56,11 @@ function userFacingAiError(raw: string, status?: number): string {
   return raw || "Meal analysis failed. Please try again.";
 }
 
-async function postMealAi<T>(path: string, body: Record<string, unknown>): Promise<T> {
+async function postMealAi<T>(
+  path: string,
+  body: Record<string, unknown>,
+  extraHeaders: Record<string, string> = {},
+): Promise<T> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     throw new Error("You appear to be offline. Check your network and try again.");
   }
@@ -69,6 +81,7 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...extraHeaders,
         ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
       body: JSON.stringify(body),
@@ -90,6 +103,17 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
     payload = null;
   }
 
+  if (
+    res.status === 429 &&
+    payload &&
+    typeof payload === "object" &&
+    (payload as { code?: string }).code === "daily_scan_limit"
+  ) {
+    markScanLimitReached();
+    const limit = Number((payload as { limit?: number }).limit) || DAILY_SCAN_LIMIT;
+    throw new ScanLimitError(limit, String((payload as { error?: string }).error || "") || undefined);
+  }
+
   if (!res.ok) {
     const errMsg =
       payload && typeof payload === "object" && "error" in payload && (payload as { error?: string }).error
@@ -105,8 +129,12 @@ async function postMealAi<T>(path: string, body: Record<string, unknown>): Promi
   return payload as T;
 }
 
-export function analyzeMealPhoto<T = unknown>(imageBase64: string): Promise<T> {
-  return postMealAi<T>("/api/analyze-meal", { imageBase64 });
+export async function analyzeMealPhoto<T = unknown>(imageBase64: string): Promise<T> {
+  if (scansLeftToday() <= 0) throw new ScanLimitError();
+  const day = todayKey();
+  const result = await postMealAi<T>("/api/analyze-meal", { imageBase64 }, { "x-scan-day": day });
+  recordScan(day);
+  return result;
 }
 
 export function describeMealText<T = unknown>(description: string): Promise<T> {

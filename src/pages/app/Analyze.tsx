@@ -14,6 +14,7 @@ import {
 import type { FoodDef } from "@/lib/foodDb";
 import { AddItemSheet, ItemEditorSheet } from "@/components/app/MealItemSheets";
 import { analyzeMealPhoto } from "@/lib/mealAiClient";
+import { ScanLimitError } from "@/lib/scanQuota";
 import { consumePendingMealImage } from "@/lib/mealImageStore";
 import { sanitizeMealIcon } from "@/lib/mealIcon";
 import PortionGuideOverlay from "@/components/app/PortionGuideOverlay";
@@ -60,6 +61,7 @@ const Analyze = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [items, setItems] = useState<EditableItem[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -81,6 +83,7 @@ const Analyze = () => {
     const current = () => runId === runIdRef.current;
     setLoading(true);
     setError(null);
+    setLimitReached(false);
     setSlow(false);
     try {
       const r = await analyzeMealPhoto<AnalysisResult>(dataUrl);
@@ -93,6 +96,11 @@ const Analyze = () => {
       setItems(r.items.map((it) => ({ ...it, servings: 1 })));
     } catch (e) {
       if (!current()) return;
+      if (e instanceof ScanLimitError) {
+        setLimitReached(true);
+        setError(e.message);
+        return;
+      }
       const raw = e instanceof Error ? e.message : "Analysis failed";
       const lower = raw.toLowerCase();
       // WebKit often surfaces failed fetch as exactly "Load failed".
@@ -225,6 +233,37 @@ const Analyze = () => {
           className="mt-6 text-xs font-medium text-muted-foreground underline underline-offset-4"
         >
           Cancel
+        </button>
+      </motion.div>
+    );
+  }
+
+  if (limitReached) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center"
+      >
+        <p className="text-base font-semibold text-foreground">Daily scan limit reached</p>
+        <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm">{error}</p>
+        <button
+          onClick={() => navigate(withDay("/app/manual", targetDay), { replace: true })}
+          className="w-full max-w-xs gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
+        >
+          Search &amp; Edit
+        </button>
+        <button
+          onClick={() => navigate(withDay("/app/describe", targetDay), { replace: true })}
+          className="mt-3 w-full max-w-xs border border-primary/30 bg-primary/10 text-foreground font-semibold px-6 py-3 rounded-xl"
+        >
+          Describe Meal
+        </button>
+        <button
+          onClick={() => navigate(todayPath, { replace: true })}
+          className="mt-4 text-sm font-medium text-muted-foreground underline underline-offset-4"
+        >
+          Back to today
         </button>
       </motion.div>
     );

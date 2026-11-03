@@ -7,7 +7,9 @@
  * spinner that never ends. Everything here is bounded.
  */
 
-export const CAMERA_START_TIMEOUT_MS = 8_000;
+export const CAMERA_START_TIMEOUT_MS = 9_000;
+/** One constraint set that never answers must not eat the whole budget; try the next, simpler one. */
+export const CAMERA_ATTEMPT_TIMEOUT_MS = 4_000;
 export const CAMERA_FRAME_TIMEOUT_MS = 5_000;
 
 export class CameraTimeoutError extends Error {
@@ -55,7 +57,7 @@ function constraintLadder(facing: Facing): MediaStreamConstraints[] {
   return [
     {
       audio: false,
-      video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
     },
     { audio: false, video: { facingMode: { ideal: facing } } },
     { audio: false, video: true },
@@ -64,8 +66,10 @@ function constraintLadder(facing: Facing): MediaStreamConstraints[] {
 
 /**
  * Open a camera stream, easing off the constraints if the device rejects them,
- * and give up after `timeoutMs` overall. A stream that arrives after the
- * deadline is stopped so the camera is never left running in the background.
+ * and give up after `timeoutMs` overall. A constraint set that never answers is
+ * abandoned after `attemptTimeoutMs` so the next, simpler one still gets a turn.
+ * A stream that arrives after the deadline is stopped so the camera is never
+ * left running in the background.
  */
 export async function openCameraStream(
   facing: Facing,
@@ -73,6 +77,7 @@ export async function openCameraStream(
     ? undefined
     : navigator.mediaDevices,
   timeoutMs = CAMERA_START_TIMEOUT_MS,
+  attemptTimeoutMs = CAMERA_ATTEMPT_TIMEOUT_MS,
 ): Promise<MediaStream> {
   if (!mediaDevices?.getUserMedia) throw new Error("Camera API unavailable");
 
@@ -85,13 +90,14 @@ export async function openCameraStream(
 
     const pending = mediaDevices.getUserMedia(constraints);
     try {
-      return await withTimeout(pending, remaining, () => new CameraTimeoutError());
+      return await withTimeout(pending, Math.min(remaining, attemptTimeoutMs), () => new CameraTimeoutError());
     } catch (e) {
       if (e instanceof CameraTimeoutError) {
+        // A stream that shows up after we gave up on it must not keep the camera running.
         pending.then(stopStream, () => undefined);
+      } else if (isCameraPermissionError(e)) {
         throw e;
       }
-      if (isCameraPermissionError(e)) throw e;
       lastError = e;
     }
   }
