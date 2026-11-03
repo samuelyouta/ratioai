@@ -1,0 +1,24 @@
+{
+  "name": "capacitor-tiktok-events",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor bridge for the TikTok App Events SDK (iOS). Sends install and in-app events to TikTok Events Manager.",
+  "files": [
+    "ios/Sources",
+    "Package.swift"
+  ],
+  "keywords": [
+    "capacitor",
+    "plugin",
+    "tiktok"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  },
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  }
+}

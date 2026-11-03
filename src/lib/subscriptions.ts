@@ -7,6 +7,7 @@ import {
   type PurchasesPackage,
 } from "@revenuecat/purchases-capacitor";
 import { isNative } from "@/lib/native";
+import { enableAppleAdsAttribution } from "@/lib/appleAds";
 
 /** RevenueCat entitlement identifier — must match dashboard + App Store setup. */
 export const ENTITLEMENT_ID =
@@ -68,6 +69,7 @@ export async function configureRevenueCat(appUserId?: string): Promise<boolean> 
         appUserID: appUserId,
       });
       configured = true;
+      void enableAppleAdsAttribution();
       return true;
     }
     if (appUserId) {

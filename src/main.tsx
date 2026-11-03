@@ -2,9 +2,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { configureRevenueCat } from "@/lib/subscriptions";
-import { initMetaAds } from "@/lib/metaAds";
+import { initAdTracking } from "@/lib/adEvents";
 
 void configureRevenueCat();
-void initMetaAds();
+initAdTracking();
 
 createRoot(document.getElementById("root")!).render(<App />);

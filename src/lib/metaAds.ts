@@ -1,10 +1,10 @@
-import { AppTrackingTransparency } from "@capgo/capacitor-app-tracking-transparency";
 import {
   FacebookAnalytics,
   FacebookEventName,
   FacebookEventParameterName,
 } from "@capgo/capacitor-facebook-analytics";
 import { getPlatform } from "@/lib/native";
+import { requestTrackingPermission, resetTrackingPermissionForTests } from "@/lib/attPrompt";
 
 /**
  * Meta (Facebook) App Events for app-install ad campaigns.
@@ -17,10 +17,6 @@ import { getPlatform } from "@/lib/native";
  *   or any other health data as event parameters (Meta policy + App Review).
  */
 
-const ATT_PROMPT_DELAY_MS = 1_500;
-const REGISTRATION_WINDOW_MS = 10 * 60 * 1_000;
-const REGISTERED_KEY_PREFIX = "ratioai.meta.registered.";
-
 let initPromise: Promise<boolean> | null = null;
 
 export function isMetaAdsEnabled(): boolean {
@@ -29,16 +25,7 @@ export function isMetaAdsEnabled(): boolean {
 
 async function startMetaSdk(): Promise<boolean> {
   try {
-    // The ATT dialog only appears once the app is active, not during launch.
-    await new Promise((resolve) => setTimeout(resolve, ATT_PROMPT_DELAY_MS));
-
-    let authorized = false;
-    try {
-      const { status } = await AppTrackingTransparency.requestPermission();
-      authorized = status === "authorized";
-    } catch (e) {
-      console.warn("ATT request failed", e);
-    }
+    const authorized = await requestTrackingPermission();
 
     if (authorized) {
       await FacebookAnalytics.enableAdvertiserTracking();
@@ -77,26 +64,6 @@ export async function trackRegistration(method: string): Promise<void> {
   } catch (e) {
     console.warn("Meta registration event failed", e);
   }
-}
-
-/** Logs CompletedRegistration once per brand-new account, never on later sign-ins. */
-export function trackRegistrationIfNew(user: {
-  id: string;
-  created_at?: string;
-  app_metadata?: { provider?: string };
-}): void {
-  if (!isMetaAdsEnabled() || !user.created_at) return;
-  const age = Date.now() - new Date(user.created_at).getTime();
-  if (!Number.isFinite(age) || age < 0 || age > REGISTRATION_WINDOW_MS) return;
-
-  const key = `${REGISTERED_KEY_PREFIX}${user.id}`;
-  try {
-    if (localStorage.getItem(key)) return;
-    localStorage.setItem(key, "1");
-  } catch {
-    return;
-  }
-  void trackRegistration(user.app_metadata?.provider ?? "email");
 }
 
 export async function trackOnboardingCompleted(): Promise<void> {
@@ -149,4 +116,5 @@ export async function trackSubscriptionPurchased(
 /** Test helper: forget the cached init so each test starts clean. */
 export function resetMetaAdsForTests(): void {
   initPromise = null;
+  resetTrackingPermissionForTests();
 }
