@@ -4,12 +4,14 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight } from "lucide-react";
 import { getDraft, setDraft } from "@/lib/onboardingDraft";
 import ScaleSlider from "@/components/onboarding/ScaleSlider";
+import { useT } from "@/i18n";
 
 type HeightUnit = "cm" | "in";
 type WeightUnit = "kg" | "lbs";
 
 const StepBody = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const draft = getDraft();
   const [heightUnit, setHeightUnit] = useState<HeightUnit>(draft.unit === "imperial" ? "in" : "cm");
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(draft.unit === "imperial" ? "lbs" : "kg");
@@ -98,14 +100,14 @@ const StepBody = () => {
   return (
     <OnboardingLayout step={4} totalSteps={8}>
       <div className="mb-6">
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Your body</h2>
-        <p className="text-muted-foreground mt-2 text-base">Drag to adjust. We use this for your metabolic rate.</p>
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">{t("body.title")}</h2>
+        <p className="text-muted-foreground mt-2 text-base">{t("body.subtitle")}</p>
       </div>
 
       <div className="space-y-10 flex-1">
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">Height</h3>
+            <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">{t("body.height")}</h3>
             {renderToggle(heightUnit, ["cm", "in"], (v) => setHeightUnit(v as HeightUnit))}
           </div>
           <ScaleSlider
@@ -120,7 +122,7 @@ const StepBody = () => {
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">Weight</h3>
+            <h3 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground">{t("body.weight")}</h3>
             {renderToggle(weightUnit, ["kg", "lbs"], (v) => setWeightUnit(v as WeightUnit))}
           </div>
           <ScaleSlider
@@ -138,7 +140,7 @@ const StepBody = () => {
         onClick={handleNext}
         className="gradient-glow text-primary-foreground font-semibold text-base px-8 py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center mt-6 transition-opacity"
       >
-        Continue <ArrowRight className="w-5 h-5" />
+        {t("common.continue")} <ArrowRight className="w-5 h-5" />
       </button>
     </OnboardingLayout>
   );

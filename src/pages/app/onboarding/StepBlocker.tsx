@@ -5,42 +5,19 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight } from "lucide-react";
 import { getDraft, setDraft, clearDraft } from "@/lib/onboardingDraft";
 import { calculateTargets, saveProfile } from "@/lib/profile";
+import { useT } from "@/i18n";
 
-const blockers = [
-  {
-    id: "support",
-    label: "Lack of support",
-    desc: "No one to keep me accountable.",
-    emoji: "🤝",
-  },
-  {
-    id: "consistency",
-    label: "Inconsistency",
-    desc: "I start strong, then fall off.",
-    emoji: "🔁",
-  },
-  {
-    id: "tracking",
-    label: "Tracking is tedious",
-    desc: "Logging meals feels like a chore.",
-    emoji: "📝",
-  },
-  {
-    id: "knowledge",
-    label: "Don't know what to eat",
-    desc: "Macros and portions confuse me.",
-    emoji: "🤔",
-  },
-  {
-    id: "time",
-    label: "Not enough time",
-    desc: "My schedule is unpredictable.",
-    emoji: "⏱️",
-  },
+const blockers: { id: "support" | "consistency" | "tracking" | "knowledge" | "time"; emoji: string }[] = [
+  { id: "support", emoji: "🤝" },
+  { id: "consistency", emoji: "🔁" },
+  { id: "tracking", emoji: "📝" },
+  { id: "knowledge", emoji: "🤔" },
+  { id: "time", emoji: "⏱️" },
 ];
 
 const StepBlocker = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const draft = getDraft();
   const [blocker, setBlocker] = useState<string | null>(draft.blocker ?? null);
 
@@ -79,15 +56,15 @@ const StepBlocker = () => {
     <OnboardingLayout step={7} totalSteps={8}>
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
-          What's holding you back?
+          {t("blocker.title")}
         </h2>
         <p className="text-muted-foreground mt-2 text-base">
-          Knowing the obstacle lets us design around it.
+          {t("blocker.subtitle")}
         </p>
       </div>
 
       <div className="flex-1 space-y-2.5">
-        {blockers.map(({ id, label, desc, emoji }, i) => {
+        {blockers.map(({ id, emoji }, i) => {
           const active = blocker === id;
           return (
             <motion.button
@@ -110,8 +87,8 @@ const StepBlocker = () => {
             >
               <span className="text-2xl">{emoji}</span>
               <div>
-                <h3 className="font-semibold text-foreground text-sm">{label}</h3>
-                <p className="text-xs text-muted-foreground">{desc}</p>
+                <h3 className="font-semibold text-foreground text-sm">{t(`blocker.${id}`)}</h3>
+                <p className="text-xs text-muted-foreground">{t(`blocker.${id}.desc`)}</p>
               </div>
             </motion.button>
           );
@@ -123,7 +100,7 @@ const StepBlocker = () => {
         onClick={handleFinish}
         className="gradient-glow text-primary-foreground font-semibold text-base px-8 py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center mt-6 disabled:opacity-40 disabled:shadow-none transition-opacity"
       >
-        Build My Plan <ArrowRight className="w-5 h-5" />
+        {t("blocker.build")} <ArrowRight className="w-5 h-5" />
       </button>
     </OnboardingLayout>
   );

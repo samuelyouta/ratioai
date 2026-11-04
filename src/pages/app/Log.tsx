@@ -22,11 +22,13 @@ import { readDayParam, withDay } from "@/lib/loggingDay";
 import { scansLeftToday, DAILY_SCAN_LIMIT } from "@/lib/scanQuota";
 import { isVoiceRecordingSupported } from "@/lib/voiceRecorder";
 import { toast } from "sonner";
+import { useT } from "@/i18n";
 
 type CameraStatus = "starting" | "live" | "denied" | "unavailable" | "timeout";
 
 const Log = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const [searchParams] = useSearchParams();
   const targetDay = readDayParam(searchParams);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -181,8 +183,8 @@ const Log = () => {
   /** Photo scans are capped per day; point people at the other ways to log once they are used up. */
   const scanAllowed = () => {
     if (scansLeftToday() > 0) return true;
-    toast.error("Daily scan limit reached", {
-      description: `You've used all ${DAILY_SCAN_LIMIT} photo scans for today. You can still log with Search & Edit or Describe Meal.`,
+    toast.error(t("log.limitTitle"), {
+      description: t("log.limitDesc", { n: DAILY_SCAN_LIMIT }),
     });
     return false;
   };
@@ -195,18 +197,15 @@ const Log = () => {
       const compressed = await withTimeout(
         compressImageForAnalysis(dataUrl),
         20_000,
-        () => new Error("Preparing the photo took too long. Please try again."),
+        () => new Error(t("log.prepTooLong")),
       );
       setPreviewUrl(compressed);
       setPendingMealImage(compressed);
       navigate(withDay("/app/analyze", targetDay));
     } catch (e) {
       console.error(e);
-      toast.error("Couldn't load that photo", {
-        description:
-          e instanceof Error
-            ? e.message
-            : "Try another image, or take a new photo with the camera.",
+      toast.error(t("log.photoFail"), {
+        description: e instanceof Error ? e.message : t("log.photoFailDesc"),
       });
       setScanning(false);
       void startCamera();
@@ -217,7 +216,7 @@ const Log = () => {
     if (!scanAllowed()) return;
     const video = videoRef.current;
     if (!video || video.readyState < 2) {
-      toast.error("Camera not ready", { description: "Wait a moment and try again." });
+      toast.error(t("log.notReady"), { description: t("log.notReadyDesc") });
       return;
     }
 
@@ -236,14 +235,14 @@ const Log = () => {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
       await storeAndAnalyze(dataUrl);
     } catch {
-      toast.error("Couldn't capture photo");
+      toast.error(t("log.captureFail"));
       setScanning(false);
     }
   };
 
   const handleFile = async (file: File) => {
     if (!isLikelyImageFile(file)) {
-      toast.error("Please choose an image file");
+      toast.error(t("log.chooseImage"));
       return;
     }
     setScanning(true);
@@ -256,8 +255,8 @@ const Log = () => {
       });
       await storeAndAnalyze(dataUrl);
     } catch {
-      toast.error("Couldn't load that photo", {
-        description: "Try another image, or take a new photo with the camera.",
+      toast.error(t("log.photoFail"), {
+        description: t("log.photoFailDesc"),
       });
       setScanning(false);
       void startCamera();
@@ -282,9 +281,8 @@ const Log = () => {
         await storeAndAnalyze(dataUrl);
       } catch (e) {
         console.error(e);
-        toast.error("Couldn't load that photo", {
-          description:
-            e instanceof Error ? e.message : "Allow Photos access in Settings, then try again.",
+        toast.error(t("log.photoFail"), {
+          description: e instanceof Error ? e.message : t("log.photosAccess"),
         });
         setScanning(false);
         void startCamera();
@@ -298,7 +296,7 @@ const Log = () => {
   /** Fallback when live preview isn't available (permissions / old WebView). */
   const handleNativeFallbackCapture = async () => {
     if (!isNative()) {
-      toast.error("Camera unavailable", { description: "Allow camera access and try again." });
+      toast.error(t("log.camUnavailable"), { description: t("log.allowCamera") });
       return;
     }
     if (!scanAllowed()) return;
@@ -314,7 +312,7 @@ const Log = () => {
       }
       await storeAndAnalyze(dataUrl);
     } catch {
-      toast.error("Camera unavailable", { description: "Check camera permissions in Settings." });
+      toast.error(t("log.camUnavailable"), { description: t("log.checkPerms") });
       setScanning(false);
       void startCamera();
     }
@@ -364,11 +362,11 @@ const Log = () => {
             {cameraStatus === "starting" ? (
               <>
                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                <p className="text-sm text-primary font-medium tracking-wide">Starting camera…</p>
+                <p className="text-sm text-primary font-medium tracking-wide">{t("log.starting")}</p>
                 {slowStart && (
                   <div className="mt-1 flex flex-col items-center gap-2">
                     <p className="text-xs text-muted-foreground text-center">
-                      Taking longer than usual. You don't have to wait.
+                      {t("log.slow")}
                     </p>
                     <div className="flex gap-2">
                       {isNative() && (
@@ -377,7 +375,7 @@ const Log = () => {
                           onClick={() => void handleNativeFallbackCapture()}
                           className="px-4 h-10 rounded-xl gradient-glow text-xs font-semibold text-primary-foreground"
                         >
-                          Open system camera
+                          {t("log.openSystem")}
                         </button>
                       )}
                       <button
@@ -385,7 +383,7 @@ const Log = () => {
                         onClick={() => void openGallery()}
                         className="px-4 h-10 rounded-xl border border-border bg-secondary text-xs font-semibold text-foreground"
                       >
-                        Pick from Gallery
+                        {t("log.pickGallery")}
                       </button>
                     </div>
                   </div>
@@ -395,17 +393,17 @@ const Log = () => {
               <>
                 <p className="text-sm text-foreground font-medium text-center">
                   {cameraStatus === "denied"
-                    ? "Camera permission needed"
+                    ? t("log.permNeeded")
                     : cameraStatus === "timeout"
-                      ? "The camera is taking too long"
-                      : "Camera unavailable"}
+                      ? t("log.tooLong")
+                      : t("log.camUnavailable")}
                 </p>
                 <p className="text-xs text-muted-foreground text-center">
                   {cameraStatus === "denied"
-                    ? "Allow camera access in Settings to frame your meal, or pick a photo from Gallery."
+                    ? t("log.permHelp")
                     : isNative()
-                      ? "Open the system camera, pick from Gallery, or try the live preview again."
-                      : "Pick a photo from Gallery, or try the camera again."}
+                      ? t("log.nativeHelp")
+                      : t("log.webHelp")}
                 </p>
                 <div className="mt-1 flex flex-col items-center gap-2">
                   {isNative() && cameraStatus !== "denied" && (
@@ -414,7 +412,7 @@ const Log = () => {
                       onClick={() => void handleNativeFallbackCapture()}
                       className="px-4 h-10 rounded-xl gradient-glow text-xs font-semibold text-primary-foreground"
                     >
-                      Open system camera
+                      {t("log.openSystem")}
                     </button>
                   )}
                   <button
@@ -422,7 +420,7 @@ const Log = () => {
                     onClick={retryCamera}
                     className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
                   >
-                    Try again
+                    {t("log.tryAgain")}
                   </button>
                 </div>
               </>
@@ -465,7 +463,7 @@ const Log = () => {
               navigate(withDay("/app/today", targetDay));
             }}
             className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center"
-            aria-label="Close"
+            aria-label={t("common.close")}
           >
             <X className="w-5 h-5 text-foreground" />
           </button>
@@ -477,14 +475,14 @@ const Log = () => {
           >
             <span className="text-xs font-medium text-foreground">
               {scanning
-                ? "Capturing…"
+                ? t("log.capturing")
                 : scansLeft <= 5
                   ? scansLeft === 0
-                    ? "No scans left today"
-                    : `${scansLeft} scan${scansLeft === 1 ? "" : "s"} left today`
+                    ? t("log.noScans")
+                    : scansLeft === 1 ? t("log.scanLeft1") : t("log.scansLeft", { n: scansLeft })
                   : showLive
-                    ? "Place food in frame"
-                    : "Snap a meal"}
+                    ? t("log.placeFood")
+                    : t("log.snap")}
             </span>
           </motion.div>
           <button
@@ -492,7 +490,7 @@ const Log = () => {
             disabled={scanning || cameraStatus !== "live"}
             onClick={flipCamera}
             className="w-10 h-10 rounded-xl glass border border-border flex items-center justify-center disabled:opacity-40"
-            aria-label="Flip camera"
+            aria-label={t("log.flip")}
           >
             <RefreshCw className="w-4 h-4 text-foreground" />
           </button>
@@ -501,7 +499,7 @@ const Log = () => {
         <div className="absolute bottom-6 left-4 right-4">
           <div className="glass border border-border rounded-2xl p-3">
             <p className="text-xs text-muted-foreground text-center">
-              Tip: include the whole plate in frame for better portion estimates
+              {t("log.tip")}
             </p>
           </div>
         </div>
@@ -510,7 +508,7 @@ const Log = () => {
       <motion.div className="shrink-0 bg-background px-4 pt-3 pb-3 safe-bottom">
         {!isToday(targetDay) && (
           <p className="mb-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary">
-            Adding to {formatDayLabel(targetDay)} · not today
+            {t("log.notToday", { day: formatDayLabel(targetDay) })}
           </p>
         )}
 
@@ -518,7 +516,7 @@ const Log = () => {
           <RecentMeals
             limit={6}
             variant="chips"
-            title="Quick re-log"
+            title={t("relog.quick")}
             day={targetDay}
             onLogged={() => navigate(withDay("/app/today", targetDay))}
           />
@@ -533,7 +531,7 @@ const Log = () => {
             <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
               <ImageIcon className="w-5 h-5 text-secondary-foreground" />
             </div>
-            <span className="text-[10px] text-muted-foreground">Gallery</span>
+            <span className="text-[10px] text-muted-foreground">{t("log.gallery")}</span>
           </button>
 
           <motion.button
@@ -541,7 +539,7 @@ const Log = () => {
             onClick={() => void handleShutter()}
             whileTap={{ scale: 0.9 }}
             className="w-[4.5rem] h-[4.5rem] rounded-full gradient-glow shadow-glow flex items-center justify-center"
-            aria-label="Take photo"
+            aria-label={t("log.takePhoto")}
           >
             <div className="w-14 h-14 rounded-full border-4 border-primary-foreground/20 flex items-center justify-center">
               {scanning ? (
@@ -560,7 +558,7 @@ const Log = () => {
             <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
               <HistoryIcon className="w-5 h-5 text-secondary-foreground" />
             </div>
-            <span className="text-[10px] text-muted-foreground">All meals</span>
+            <span className="text-[10px] text-muted-foreground">{t("log.allMeals")}</span>
           </button>
         </div>
 
@@ -573,7 +571,7 @@ const Log = () => {
             }}
             className="h-11 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 transition-colors text-sm font-medium text-foreground/90"
           >
-            Search &amp; Edit
+            {t("log.searchEdit")}
           </button>
           <button
             disabled={scanning}
@@ -583,13 +581,13 @@ const Log = () => {
             }}
             className="h-11 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-colors text-sm font-medium text-foreground"
           >
-            Describe Meal
+            {t("log.describe")}
           </button>
           {voiceSupported && (
             <button
               disabled={scanning}
-              aria-label="Say what you ate"
-              title="Say what you ate"
+              aria-label={t("log.sayAte")}
+              title={t("log.sayAte")}
               onClick={() => {
                 stopCamera();
                 navigate(withDay("/app/describe?voice=1", targetDay));

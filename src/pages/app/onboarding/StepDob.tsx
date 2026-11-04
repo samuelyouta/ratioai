@@ -4,11 +4,12 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight } from "lucide-react";
 import NumberDial from "@/components/onboarding/NumberDial";
 import { getDraft, setDraft } from "@/lib/onboardingDraft";
+import { intlLocale, useT } from "@/i18n";
 
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
+function monthNames(lang: Parameters<typeof intlLocale>[0]) {
+  const fmt = new Intl.DateTimeFormat(intlLocale(lang), { month: "short" });
+  return Array.from({ length: 12 }, (_, i) => fmt.format(new Date(2024, i, 1)));
+}
 
 function daysInMonth(year: number, month1: number) {
   return new Date(year, month1, 0).getDate();
@@ -24,6 +25,8 @@ function ageFromDob(year: number, month1: number, day: number) {
 
 const StepDob = () => {
   const navigate = useNavigate();
+  const { t, rich, lang } = useT();
+  const MONTHS = useMemo(() => monthNames(lang), [lang]);
   const draft = getDraft();
   const currentYear = new Date().getFullYear();
 
@@ -49,24 +52,24 @@ const StepDob = () => {
     <OnboardingLayout step={3} totalSteps={8}>
       <div className="mb-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
-          When were you born?
+          {t("dob.title")}
         </h2>
         <p className="text-muted-foreground mt-2 text-base">
-          Scroll each dial to set your date of birth.
+          {t("dob.subtitle")}
         </p>
       </div>
 
       <div className="flex-1 space-y-6">
         <div>
           <h3 className="font-semibold text-[11px] mb-1 uppercase tracking-widest text-muted-foreground text-center">
-            Day
+            {t("dob.day")}
           </h3>
           <NumberDial value={clampedDay} min={1} max={maxDay} onChange={setDay} />
         </div>
 
         <div>
           <h3 className="font-semibold text-[11px] mb-1 uppercase tracking-widest text-muted-foreground text-center">
-            Month
+            {t("dob.month")}
           </h3>
           <div className="text-center mb-2">
             <span
@@ -98,13 +101,13 @@ const StepDob = () => {
 
         <div>
           <h3 className="font-semibold text-[11px] mb-1 uppercase tracking-widest text-muted-foreground text-center">
-            Year
+            {t("dob.year")}
           </h3>
           <NumberDial value={year} min={currentYear - 110} max={currentYear - 13} onChange={setYear} />
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          You are <span className="text-primary font-bold">{age}</span> years old
+          {rich("dob.age", { age: <span className="text-primary font-bold">{age}</span> })}
         </p>
       </div>
 
@@ -113,7 +116,7 @@ const StepDob = () => {
         onClick={handleNext}
         className="gradient-glow text-primary-foreground font-semibold text-base px-8 py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center mt-6 disabled:opacity-40 disabled:shadow-none transition-opacity"
       >
-        Continue <ArrowRight className="w-5 h-5" />
+        {t("common.continue")} <ArrowRight className="w-5 h-5" />
       </button>
     </OnboardingLayout>
   );

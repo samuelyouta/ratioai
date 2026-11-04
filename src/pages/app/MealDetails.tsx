@@ -15,19 +15,14 @@ import {
   type Meal,
   type MealSource,
 } from "@/lib/profile";
-import { formatDayLabel, formatTimeOfDay, getTimeZone } from "@/lib/dayKey";
+import { dateLocale, formatDayLabel, formatTimeOfDay, getTimeZone } from "@/lib/dayKey";
 import { withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
-
-const sourceLabel: Record<MealSource, string> = {
-  photo: "Photo capture",
-  voice: "Voice log",
-  manual: "Manual entry",
-};
+import { useT } from "@/i18n";
 
 const formatWhen = (iso: string) => {
   const d = new Date(iso);
-  return `${d.toLocaleDateString(undefined, {
+  return `${d.toLocaleDateString(dateLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -36,6 +31,7 @@ const formatWhen = (iso: string) => {
 };
 
 const MealDetails = () => {
+  const { t } = useT();
   const { id } = useParams();
   const navigate = useNavigate();
   const [meal, setMeal] = useState<Meal | undefined>(undefined);
@@ -52,11 +48,11 @@ const MealDetails = () => {
   if (!meal) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
-        <h1 className="text-xl font-bold text-foreground mb-2">Meal not found</h1>
+        <h1 className="text-xl font-bold text-foreground mb-2">{t("md.notFound")}</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          This entry may have been deleted from your history.
+          {t("md.deletedEntry")}
         </p>
-        <Button onClick={() => navigate("/app/history")}>Back to history</Button>
+        <Button onClick={() => navigate("/app/history")}>{t("md.backHistory")}</Button>
       </div>
     );
   }
@@ -64,23 +60,23 @@ const MealDetails = () => {
   const src = (meal.source ?? "photo") as MealSource;
 
   const macros = [
-    { key: "Protein", value: meal.totalProtein, color: "hsl(var(--primary))" },
-    { key: "Carbs", value: meal.totalCarbs, color: "hsl(var(--accent))" },
-    { key: "Fat", value: meal.totalFat, color: "hsl(var(--muted-foreground))" },
+    { key: t("macro.protein"), value: meal.totalProtein, color: "hsl(var(--primary))" },
+    { key: t("macro.carbs"), value: meal.totalCarbs, color: "hsl(var(--accent))" },
+    { key: t("macro.fat"), value: meal.totalFat, color: "hsl(var(--muted-foreground))" },
   ];
   const macroTotal = Math.max(meal.totalProtein + meal.totalCarbs + meal.totalFat, 1);
 
   const handleDelete = () => {
     deleteMeal(meal.id);
-    toast.success("Meal deleted");
+    toast.success(t("hist.deleted"));
     navigate("/app/history");
   };
 
   const changeServings = (index: number, next: number) => {
     if (next < 0.5) return;
     if (!setMealItemServings(meal.id, index, next)) {
-      toast.error("Couldn't update this portion", {
-        description: "Your device is out of storage space.",
+      toast.error(t("md.updateFail"), {
+        description: t("md.storage"),
       });
       return;
     }
@@ -107,9 +103,9 @@ const MealDetails = () => {
           fat: Math.round((last.fat / itemServings(last)) * 10) / 10,
         }
       : {
-          name: "Extra portion",
-          portion: "1 serving",
-          basePortion: "1 serving",
+          name: t("md.extra"),
+          portion: t("hist.serving"),
+          basePortion: t("hist.serving"),
           servings: 1,
           baseMacros: { calories: 0, protein: 0, carbs: 0, fat: 0 },
           calories: 0,
@@ -119,14 +115,14 @@ const MealDetails = () => {
         };
 
     if (!addMealItem(meal.id, template)) {
-      toast.error("Couldn't add a portion", {
-        description: "Your device is out of storage space.",
+      toast.error(t("md.addFail"), {
+        description: t("md.storage"),
       });
       return;
     }
     reload();
-    toast.success("Portion added", {
-      description: "Adjust the amount below, or edit the macros in history.",
+    toast.success(t("md.portionAdded"), {
+      description: t("md.adjust"),
     });
   };
 
@@ -136,14 +132,14 @@ const MealDetails = () => {
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"
-          aria-label="Back"
+          aria-label={t("common.back")}
         >
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </button>
         <button
           onClick={handleDelete}
           className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-destructive"
-          aria-label="Delete meal"
+          aria-label={t("md.delete")}
         >
           <Trash2 className="w-5 h-5" />
         </button>
@@ -173,11 +169,11 @@ const MealDetails = () => {
 
         <div className="flex flex-wrap gap-2 mb-5">
           <span className="text-[11px] bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">
-            {sourceLabel[src]}
+            {t(`md.${src}`)}
           </span>
           {meal.verified && (
             <span className="text-[11px] bg-primary/15 text-primary px-2.5 py-1 rounded-full font-semibold">
-              Verified
+              {t("hist.verified")}
             </span>
           )}
         </div>
@@ -185,7 +181,7 @@ const MealDetails = () => {
         {meal.hiddenIngredient && (
           <div className="gradient-card border border-border rounded-2xl p-4 mb-5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-warning mb-1">
-              Ingredient probe
+              {t("md.probe")}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {meal.hiddenIngredient}
@@ -195,7 +191,7 @@ const MealDetails = () => {
 
         <div className="mb-5">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Macro totals
+            {t("md.totals")}
           </h2>
           <div className="gradient-card border border-border rounded-2xl p-4">
             <div className="h-2 w-full rounded-full bg-secondary overflow-hidden flex mb-3">
@@ -223,13 +219,13 @@ const MealDetails = () => {
         <div className="mb-5">
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Item breakdown
+              {t("md.breakdown")}
             </h2>
             <span className="text-[10px] text-muted-foreground">tap − / + to change portions</span>
           </div>
           <div className="space-y-2">
             {meal.items.length === 0 && (
-              <p className="text-xs text-muted-foreground">No items recorded.</p>
+              <p className="text-xs text-muted-foreground">{t("md.noItems")}</p>
             )}
             {meal.items.map((it, idx) => {
               const servings = itemServings(it);
@@ -248,20 +244,20 @@ const MealDetails = () => {
                     </div>
                     <span className="text-sm font-bold text-primary whitespace-nowrap">
                       {it.calories}{" "}
-                      <span className="text-[10px] text-muted-foreground">cal</span>
+                      <span className="text-[10px] text-muted-foreground">{t("common.cal")}</span>
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Portions
+                      {t("md.portions")}
                     </span>
                     <div className="flex items-center gap-1 bg-secondary rounded-lg px-1 ml-auto">
                       <button
                         type="button"
                         onClick={() => changeServings(idx, servings - 0.5)}
                         disabled={servings <= 0.5}
-                        aria-label={`Fewer portions of ${it.name}`}
+                        aria-label={t("md.fewerOf", { name: it.name })}
                         className="w-7 h-7 flex items-center justify-center text-muted-foreground disabled:opacity-30"
                       >
                         <Minus className="w-3.5 h-3.5" />
@@ -272,7 +268,7 @@ const MealDetails = () => {
                       <button
                         type="button"
                         onClick={() => changeServings(idx, servings + 0.5)}
-                        aria-label={`More portions of ${it.name}`}
+                        aria-label={t("md.moreOf", { name: it.name })}
                         className="w-7 h-7 flex items-center justify-center text-muted-foreground"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -286,7 +282,7 @@ const MealDetails = () => {
                         key={k}
                         className="bg-secondary/60 rounded-lg px-2 py-1 text-center"
                       >
-                        <p className="text-[10px] text-muted-foreground capitalize">{k}</p>
+                        <p className="text-[10px] text-muted-foreground capitalize">{t(`macro.${k}`)}</p>
                         <p className="text-xs font-semibold text-foreground">
                           {Math.round(it[k])}g
                         </p>
@@ -304,14 +300,14 @@ const MealDetails = () => {
             className="w-full mt-2 text-sm"
           >
             <Plus className="w-4 h-4 mr-1" />
-            Add a portion
+            {t("md.addPortion")}
           </Button>
         </div>
 
         {meal.notes && (
           <div className="mb-5">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Notes
+              {t("md.notes")}
             </h2>
             <div className="gradient-card border border-border rounded-2xl p-4 text-sm text-foreground whitespace-pre-wrap">
               {meal.notes}
@@ -323,14 +319,14 @@ const MealDetails = () => {
           onClick={() => navigate(`/app/history?edit=${meal.id}`)}
           className="w-full gradient-glow text-primary-foreground font-semibold"
         >
-          Edit meal
+          {t("md.editMeal")}
         </Button>
 
         <button
           onClick={() => navigate(withDay("/app/today", mealDay(meal)))}
           className="w-full mt-2 text-xs font-semibold text-primary py-2"
         >
-          View {formatDayLabel(mealDay(meal)).toLowerCase()}
+          {t("md.view", { day: formatDayLabel(mealDay(meal)).toLowerCase() })}
         </button>
       </motion.div>
 

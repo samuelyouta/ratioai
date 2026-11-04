@@ -1,3 +1,4 @@
+import { translate } from "@/i18n";
 import { calculateTargets, type Activity, type Gender, type Goal, type Profile, type Unit } from "@/lib/profile";
 
 /** Editable copy of the profile, always in metric units. */
@@ -106,15 +107,15 @@ function inRange(value: number, { min, max }: { min: number; max: number }) {
 export function validateProfile(d: ProfileDraft): ProfileErrors {
   const errors: ProfileErrors = {};
   const { age, heightCm, weightKg, calories, macro } = PROFILE_LIMITS;
-  if (!inRange(d.age, age)) errors.age = `Enter an age from ${age.min} to ${age.max}.`;
-  if (!inRange(d.heightCm, heightCm)) errors.heightCm = "Enter a realistic height.";
-  if (!inRange(d.weightKg, weightKg)) errors.weightKg = "Enter a realistic weight.";
+  if (!inRange(d.age, age)) errors.age = translate("edit.err.age", { min: age.min, max: age.max });
+  if (!inRange(d.heightCm, heightCm)) errors.heightCm = translate("edit.err.height");
+  if (!inRange(d.weightKg, weightKg)) errors.weightKg = translate("edit.err.weight");
   if (!inRange(d.calorieTarget, calories)) {
-    errors.calorieTarget = `Calories must be ${calories.min}–${calories.max}.`;
+    errors.calorieTarget = translate("edit.err.calories", { min: calories.min, max: calories.max });
   }
   const macros = ["proteinTarget", "carbsTarget", "fatTarget"] as const;
   for (const key of macros) {
-    if (!inRange(d[key], macro)) errors[key] = `Enter 0–${macro.max} g.`;
+    if (!inRange(d[key], macro)) errors[key] = translate("edit.err.macro", { max: macro.max });
   }
   return errors;
 }

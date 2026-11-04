@@ -21,17 +21,13 @@ import { formatDayLabel, formatTimeOfDay } from "@/lib/dayKey";
 import { useMealLogVersion } from "@/hooks/useMealLog";
 import { withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
+import { useT, type TranslationKey } from "@/i18n";
 
 type Filter = "all" | MealSource | "verified";
 
-const sourceLabel: Record<MealSource, string> = {
-  photo: "Photo",
-  voice: "Voice",
-  manual: "Manual",
-};
-
 const History = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const [searchParams] = useSearchParams();
   const [meals, setMeals] = useState<Meal[]>(() =>
     [...getMeals()].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)),
@@ -76,7 +72,7 @@ const History = () => {
   const handleDelete = (m: Meal) => {
     deleteMeal(m.id);
     setMeals((prev) => prev.filter((x) => x.id !== m.id));
-    toast.success("Meal deleted");
+    toast.success(t("hist.deleted"));
   };
 
   const handleSaveEdit = () => {
@@ -88,8 +84,8 @@ const History = () => {
       notes: editing.notes,
     });
     if (!ok) {
-      toast.error("Couldn't save those changes", {
-        description: "Your device is out of storage space.",
+      toast.error(t("hist.saveFail"), {
+        description: t("hist.saveFailDesc"),
       });
       return;
     }
@@ -97,15 +93,15 @@ const History = () => {
       [...getMeals()].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)),
     );
     setEditing(null);
-    toast.success("Meal updated");
+    toast.success(t("hist.updated"));
   };
 
   const filters: { id: Filter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "photo", label: "Photo" },
-    { id: "voice", label: "Voice" },
-    { id: "manual", label: "Manual" },
-    { id: "verified", label: "Verified" },
+    { id: "all", label: t("hist.all") },
+    { id: "photo", label: t("hist.photo") },
+    { id: "voice", label: t("hist.voice") },
+    { id: "manual", label: t("hist.manual") },
+    { id: "verified", label: t("hist.verified") },
   ];
 
   return (
@@ -114,12 +110,12 @@ const History = () => {
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"
-          aria-label="Back"
+          aria-label={t("common.back")}
         >
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-foreground">Meal history</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("hist.title")}</h1>
           <p className="text-xs text-muted-foreground">{meals.length} entries logged</p>
         </div>
       </div>
@@ -130,7 +126,7 @@ const History = () => {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search meals or ingredients"
+            placeholder={t("hist.search")}
             className="pl-9 bg-card border-border"
           />
         </div>
@@ -155,7 +151,7 @@ const History = () => {
       <div className="px-6 space-y-6">
         {grouped.length === 0 && (
           <div className="text-center py-16 text-muted-foreground text-sm">
-            No meals match your search.
+            {t("hist.noMatch")}
           </div>
         )}
 
@@ -169,7 +165,7 @@ const History = () => {
                 onClick={() => navigate(withDay("/app/today", day))}
                 className="text-[11px] font-semibold text-primary"
               >
-                Open day
+                {t("hist.openDay")}
               </button>
             </div>
             <div className="space-y-2">
@@ -196,21 +192,21 @@ const History = () => {
                             {m.title}
                           </h3>
                           <p className="text-[11px] text-muted-foreground">
-                            {formatTimeOfDay(m.loggedAt)} · {m.items.length} item
-                            {m.items.length !== 1 ? "s" : ""}
+                            {formatTimeOfDay(m.loggedAt)} ·{" "}
+                            {m.items.length === 1 ? t("hist.item1") : t("hist.items", { n: m.items.length })}
                           </p>
                         </div>
                         <span className="text-sm font-bold text-primary whitespace-nowrap">
-                          {m.totalCalories} <span className="text-[10px] text-muted-foreground">cal</span>
+                          {m.totalCalories} <span className="text-[10px] text-muted-foreground">{t("common.cal")}</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
-                          {sourceLabel[src]}
+                          {t(`hist.${src}`)}
                         </span>
                         {m.verified && (
                           <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">
-                            Verified
+                            {t("hist.verified")}
                           </span>
                         )}
                         <div className="ml-auto flex gap-1">
@@ -220,7 +216,7 @@ const History = () => {
                               setEditing(m);
                             }}
                             className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground"
-                            aria-label="Edit"
+                            aria-label={t("hist.edit")}
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -230,7 +226,7 @@ const History = () => {
                               handleDelete(m);
                             }}
                             className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-destructive"
-                            aria-label="Delete"
+                            aria-label={t("hist.delete")}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -262,7 +258,7 @@ const History = () => {
               className="w-full max-w-md bg-card border border-border rounded-3xl p-5 max-h-[85vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-foreground">Edit meal</h3>
+                <h3 className="text-lg font-bold text-foreground">{t("hist.editMeal")}</h3>
                 <button
                   onClick={() => setEditing(null)}
                   className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center"
@@ -271,14 +267,14 @@ const History = () => {
                 </button>
               </div>
 
-              <label className="text-xs text-muted-foreground">Title</label>
+              <label className="text-xs text-muted-foreground">{t("hist.titleLabel")}</label>
               <Input
                 value={editing.title}
                 onChange={(e) => setEditing({ ...editing, title: e.target.value })}
                 className="mt-1 mb-4 bg-background border-border"
               />
 
-              <p className="text-xs text-muted-foreground mb-2">Items & portions</p>
+              <p className="text-xs text-muted-foreground mb-2">{t("hist.itemsPortions")}</p>
               <div className="space-y-2 mb-4">
                 {editing.items.map((it, idx) => {
                   const servings = itemServings(it);
@@ -292,12 +288,12 @@ const History = () => {
                       <Input
                         value={it.name}
                         onChange={(e) => patchItem({ ...it, name: e.target.value })}
-                        placeholder="Name"
+                        placeholder={t("hist.name")}
                         className="bg-card border-border mb-2"
                       />
 
                       <label className="text-[10px] text-muted-foreground uppercase">
-                        Portion
+                        {t("hist.portion")}
                       </label>
                       <div className="flex items-center gap-2 mt-1 mb-2">
                         <Input
@@ -318,7 +314,7 @@ const History = () => {
                             type="button"
                             onClick={() => patchItem(withItemServings(it, servings - 0.5))}
                             disabled={servings <= 0.5}
-                            aria-label="Fewer portions"
+                            aria-label={t("hist.fewer")}
                             className="w-7 h-7 flex items-center justify-center text-muted-foreground disabled:opacity-30"
                           >
                             <Minus className="w-3.5 h-3.5" />
@@ -329,7 +325,7 @@ const History = () => {
                           <button
                             type="button"
                             onClick={() => patchItem(withItemServings(it, servings + 0.5))}
-                            aria-label="More portions"
+                            aria-label={t("hist.morePortions")}
                             className="w-7 h-7 flex items-center justify-center text-muted-foreground"
                           >
                             <Plus className="w-3.5 h-3.5" />
@@ -340,7 +336,7 @@ const History = () => {
                       <div className="grid grid-cols-4 gap-2">
                         {(["calories", "protein", "carbs", "fat"] as const).map((k) => (
                           <div key={k}>
-                            <label className="text-[10px] text-muted-foreground uppercase">{k}</label>
+                            <label className="text-[10px] text-muted-foreground uppercase">{t(`macro.${k === "calories" ? "calories" : k}` as TranslationKey)}</label>
                             <Input
                               type="number"
                               value={it[k]}
@@ -371,13 +367,13 @@ const History = () => {
                         }}
                         className="text-[11px] text-destructive mt-2"
                       >
-                        Remove
+                        {t("hist.remove")}
                       </button>
                     </div>
                   );
                 })}
                 {editing.items.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No items yet.</p>
+                  <p className="text-xs text-muted-foreground">{t("hist.noItems")}</p>
                 )}
               </div>
 
@@ -390,9 +386,9 @@ const History = () => {
                     items: [
                       ...editing.items,
                       {
-                        name: "New item",
-                        portion: "1 serving",
-                        basePortion: "1 serving",
+                        name: t("hist.newItem"),
+                        portion: t("hist.serving"),
+                        basePortion: t("hist.serving"),
                         servings: 1,
                         baseMacros: { calories: 0, protein: 0, carbs: 0, fat: 0 },
                         calories: 0,
@@ -405,11 +401,11 @@ const History = () => {
                 }
                 className="w-full mb-4"
               >
-                + Add item
+                {t("hist.addItem")}
               </Button>
 
               <Button onClick={handleSaveEdit} className="w-full gradient-glow text-primary-foreground font-semibold">
-                Save changes
+                {t("hist.save")}
               </Button>
             </motion.div>
           </motion.div>

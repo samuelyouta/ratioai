@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useT } from "@/i18n";
 
 export function Sheet({
   open,
@@ -13,6 +14,7 @@ export function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const { t } = useT();
   return (
     <AnimatePresence>
       {open && (
@@ -37,7 +39,7 @@ export function Sheet({
               <h3 className="text-base font-semibold text-foreground">{title}</h3>
               <button
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={t("common.close")}
                 className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center"
               >
                 <X className="w-4 h-4 text-foreground" />

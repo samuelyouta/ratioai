@@ -4,6 +4,7 @@
  */
 
 const { reserveScan } = require("./_lib/scanLimit.js");
+const { languageInstruction } = require("./_lib/language.js");
 
 async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -39,7 +40,7 @@ async function handler(req, res) {
       toolName: "log_meal",
       tools: ANALYZE_TOOLS,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: SYSTEM_PROMPT + languageInstruction(req.body && req.body.language) },
         {
           role: "user",
           content: [

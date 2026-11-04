@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useT } from "@/i18n";
 import {
   getDeviceTimeZone,
   getTimeZone,
@@ -17,6 +18,7 @@ const DEVICE_VALUE = "__device__";
 /** Select for the zone that day boundaries are resolved in. */
 const TimeZonePicker = ({ onChange }: Props) => {
   const device = getDeviceTimeZone();
+  const { t } = useT();
   const zones = useMemo(() => listTimeZones(), []);
   const [value, setValue] = useState(() =>
     hasTimeZoneOverride() ? getTimeZone() : DEVICE_VALUE,
@@ -31,7 +33,7 @@ const TimeZonePicker = ({ onChange }: Props) => {
   return (
     <div>
       <label htmlFor="timezone-select" className="text-[11px] text-muted-foreground">
-        Time zone
+        {t("tz.label")}
       </label>
       <select
         id="timezone-select"
@@ -39,7 +41,7 @@ const TimeZonePicker = ({ onChange }: Props) => {
         onChange={(e) => apply(e.target.value)}
         className="mt-1 w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary"
       >
-        <option value={DEVICE_VALUE}>Use device setting ({device.replace(/_/g, " ")})</option>
+        <option value={DEVICE_VALUE}>{t("tz.device", { zone: device.replace(/_/g, " ") })}</option>
         {zones.map((tz) => (
           <option key={tz} value={tz}>
             {tz.replace(/_/g, " ")}

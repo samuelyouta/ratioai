@@ -39,9 +39,11 @@ import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { useMealLogVersion, useTodayKey } from "@/hooks/useMealLog";
+import { translate, useT } from "@/i18n";
 
 const Today = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const profile = getProfile()!;
 
@@ -82,8 +84,8 @@ const Today = () => {
   useEffect(() => {
     const awarded = evaluateProteinStreakReward();
     if (awarded) {
-      toast.success("Freeze Day earned!", {
-        description: "3 days of hitting protein. Use it on a missed log day.",
+      toast.success(translate("today.freeze"), {
+        description: translate("today.freezeDesc"),
       });
     }
     setFreezeDays(getStreakState().freezeDays);
@@ -93,8 +95,8 @@ const Today = () => {
     if (!viewingToday || meals.length < 1 || !shouldShowFlameToday()) return;
     setShowFlame(true);
     markFlameShown();
-    const t = setTimeout(() => setShowFlame(false), 2200);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setShowFlame(false), 2200);
+    return () => clearTimeout(timer);
   }, [meals.length, viewingToday]);
 
   useEffect(() => {
@@ -105,7 +107,7 @@ const Today = () => {
   const handleDelete = (id: string, title: string) => {
     deleteMeal(id);
     reload();
-    toast.success("Entry removed", { description: title });
+    toast.success(t("today.removed"), { description: title });
   };
 
   const remaining = Math.max(profile.calorieTarget - totals.calories, 0);
@@ -113,9 +115,9 @@ const Today = () => {
 
   const greeting = (() => {
     const h = hourOfDay();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
+    if (h < 12) return t("today.goodMorning");
+    if (h < 18) return t("today.goodAfternoon");
+    return t("today.goodEvening");
   })();
 
   const logPath = withDay("/app/log", selectedDay);
@@ -125,7 +127,7 @@ const Today = () => {
       <div className="px-6 safe-top pb-4">
         <p className="text-sm text-muted-foreground">{greeting}</p>
         <h1 className="text-xl font-bold text-foreground">
-          {profile.name?.trim() || "Athlete"}
+          {profile.name?.trim() || t("today.athlete")}
         </h1>
       </div>
 
@@ -146,33 +148,33 @@ const Today = () => {
         <ProgressRing progress={pct} size={180} strokeWidth={11}>
           <div className="text-center">
             <p className="text-4xl font-black text-foreground">{remaining}</p>
-            <p className="text-xs text-muted-foreground">remaining</p>
+            <p className="text-xs text-muted-foreground">{t("today.remaining")}</p>
           </div>
         </ProgressRing>
 
         <div className="flex items-center gap-6 mt-5 text-center">
           <div>
             <p className="text-lg font-bold text-foreground">{totals.calories}</p>
-            <p className="text-[11px] text-muted-foreground">eaten</p>
+            <p className="text-[11px] text-muted-foreground">{t("today.eaten")}</p>
           </div>
           <div className="w-px h-8 bg-border" />
           <div>
             <p className="text-lg font-bold text-foreground">{profile.calorieTarget}</p>
-            <p className="text-[11px] text-muted-foreground">target</p>
+            <p className="text-[11px] text-muted-foreground">{t("today.target")}</p>
           </div>
           <div className="w-px h-8 bg-border" />
           <div>
             <p className="text-lg font-bold text-foreground">0</p>
-            <p className="text-[11px] text-muted-foreground">burned</p>
+            <p className="text-[11px] text-muted-foreground">{t("today.burned")}</p>
           </div>
         </div>
       </motion.div>
 
       <div className="px-6 mb-6">
         <div className="flex gap-4">
-          <MacroBar label="Protein" current={Math.round(totals.protein)} target={profile.proteinTarget} color="primary" />
-          <MacroBar label="Carbs" current={Math.round(totals.carbs)} target={profile.carbsTarget} color="coral" />
-          <MacroBar label="Fat" current={Math.round(totals.fat)} target={profile.fatTarget} color="info" />
+          <MacroBar label={t("macro.protein")} current={Math.round(totals.protein)} target={profile.proteinTarget} color="primary" />
+          <MacroBar label={t("macro.carbs")} current={Math.round(totals.carbs)} target={profile.carbsTarget} color="coral" />
+          <MacroBar label={t("macro.fat")} current={Math.round(totals.fat)} target={profile.fatTarget} color="info" />
         </div>
       </div>
 
@@ -185,10 +187,10 @@ const Today = () => {
         >
           <div>
             <p className="text-sm font-bold text-primary-foreground">
-              {streak === 0 ? "Start your streak today" : `${streak}-day streak`}
+              {streak === 0 ? t("today.streakStart") : t("today.streakDays", { n: streak })}
             </p>
             <p className="text-xs text-primary-foreground/70">
-              {streak === 0 ? "Log a meal to begin" : "Keep going, you're on fire"}
+              {streak === 0 ? t("today.logToBegin") : t("today.keepGoing")}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -221,13 +223,13 @@ const Today = () => {
       <div className="px-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-foreground">
-            {viewingToday ? "Today's meals" : `${formatDayLabel(selectedDay)}'s meals`}
+            {viewingToday ? t("today.mealsToday") : t("today.mealsDay", { day: formatDayLabel(selectedDay) })}
           </h3>
           <button
             onClick={() => navigate(logPath)}
             className="text-xs text-primary font-semibold uppercase tracking-wide"
           >
-            Log
+            {t("today.log")}
           </button>
         </div>
 
@@ -237,10 +239,10 @@ const Today = () => {
             className="w-full bg-card border border-dashed border-border rounded-2xl p-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 transition-colors"
           >
             <p className="text-sm font-medium text-foreground">
-              {viewingToday ? "No meals yet" : "Nothing logged on this day"}
+              {viewingToday ? t("today.noMeals") : t("today.nothingDay")}
             </p>
             <p className="text-xs">
-              {viewingToday ? "Tap to log your first one" : "Tap to add an entry to this day"}
+              {viewingToday ? t("today.tapFirst") : t("today.tapAdd")}
             </p>
           </button>
         ) : (
@@ -259,11 +261,11 @@ const Today = () => {
                   </button>
                   <p className="text-sm font-bold text-primary whitespace-nowrap">
                     {m.totalCalories}
-                    <span className="text-muted-foreground font-normal text-xs"> cal</span>
+                    <span className="text-muted-foreground font-normal text-xs"> {t("common.cal")}</span>
                   </p>
                   <button
                     onClick={() => handleDelete(m.id, m.title)}
-                    aria-label={`Delete ${m.title}`}
+                    aria-label={t("today.deleteAria", { title: m.title })}
                     className="w-8 h-8 shrink-0 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -286,7 +288,7 @@ const Today = () => {
           className="mt-3 w-full border border-primary/30 bg-primary/10 rounded-2xl py-3 flex items-center justify-center gap-2 text-sm font-semibold text-primary"
         >
           <Plus className="w-4 h-4" />
-          Add entry to {viewingToday ? "today" : formatDayLabel(selectedDay).toLowerCase()}
+          {t("today.addEntry", { day: formatDayLabel(selectedDay).toLowerCase() })}
         </button>
       </div>
 

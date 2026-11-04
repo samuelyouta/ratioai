@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Sheet } from "@/components/app/Sheet";
 import { getMeals, mealDay, relogMeal, type Meal } from "@/lib/profile";
-import { formatDayLabel, formatTimeOfDay, isToday, todayKey, type DayKey } from "@/lib/dayKey";
+import { formatDayLabel, formatTimeOfDay, todayKey, type DayKey } from "@/lib/dayKey";
 import { toast } from "sonner";
+import { useT } from "@/i18n";
 
 const PAGE = 60;
 
@@ -17,6 +18,7 @@ interface Props {
 
 /** Every meal ever logged, grouped by day like the History page, ready to log again in one tap. */
 const MealPickerSheet = ({ open, day, onClose, onLogged }: Props) => {
+  const { t } = useT();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(PAGE);
@@ -51,16 +53,19 @@ const MealPickerSheet = ({ open, day, onClose, onLogged }: Props) => {
 
   const handleLog = (m: Meal) => {
     const copy = relogMeal(m, targetDay);
-    const where = isToday(targetDay) ? "today" : formatDayLabel(targetDay).toLowerCase();
-    toast.success("Logged again", {
-      description: `${copy.title} · ${copy.totalCalories} cal added to ${where}.`,
+    toast.success(t("relog.toast"), {
+      description: t("relog.toastDesc", {
+        title: copy.title,
+        cal: copy.totalCalories,
+        where: formatDayLabel(targetDay),
+      }),
     });
     onClose();
     onLogged?.(copy);
   };
 
   return (
-    <Sheet open={open} title="Log a previous meal" onClose={onClose}>
+    <Sheet open={open} title={t("picker.title")} onClose={onClose}>
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
@@ -69,18 +74,18 @@ const MealPickerSheet = ({ open, day, onClose, onLogged }: Props) => {
             setQuery(e.target.value);
             setShown(PAGE);
           }}
-          placeholder="Search your meals"
-          aria-label="Search your meals"
+          placeholder={t("picker.search")}
+          aria-label={t("picker.search")}
           className="w-full h-11 pl-9 pr-3 rounded-xl bg-secondary text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
       </div>
 
       {meals.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">
-          Meals you log will show up here so you can add them again in one tap.
+          {t("picker.empty")}
         </p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">No meals match “{query}”.</p>
+        <p className="text-sm text-muted-foreground text-center py-8">{t("picker.noMatch", { query })}</p>
       ) : (
         <div className="space-y-4">
           {grouped.map(([key, dayMeals]) => (
@@ -99,12 +104,12 @@ const MealPickerSheet = ({ open, day, onClose, onLogged }: Props) => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{m.title}</p>
                       <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                        {formatTimeOfDay(m.loggedAt)} · {m.totalCalories} cal · P {Math.round(m.totalProtein)}g · C{" "}
+                        {formatTimeOfDay(m.loggedAt)} · {m.totalCalories} {t("common.cal")} · P {Math.round(m.totalProtein)}g · C{" "}
                         {Math.round(m.totalCarbs)}g · F {Math.round(m.totalFat)}g
                       </p>
                     </div>
                     <span className="shrink-0 text-[11px] font-semibold text-primary bg-primary/10 border border-primary/30 rounded-full px-3 py-1">
-                      + Log
+                      {t("relog.plusLog")}
                     </span>
                   </button>
                 ))}
@@ -117,7 +122,7 @@ const MealPickerSheet = ({ open, day, onClose, onLogged }: Props) => {
               onClick={() => setShown((n) => n + PAGE)}
               className="w-full h-10 rounded-xl border border-border text-xs font-semibold text-foreground"
             >
-              Show more ({filtered.length - shown} left)
+              {t("picker.more", { n: filtered.length - shown })}
             </button>
           )}
         </div>

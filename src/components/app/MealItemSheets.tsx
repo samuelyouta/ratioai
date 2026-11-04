@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
 import { Field, Sheet } from "@/components/app/Sheet";
+import { useT } from "@/i18n";
 import { describeMealText } from "@/lib/mealAiClient";
 import { FOODS, type FoodDef } from "@/lib/foodDb";
 import {
@@ -27,6 +28,7 @@ interface EditorProps {
 }
 
 export function ItemEditorSheet({ open, item, onSave, onRemove, onClose }: EditorProps) {
+  const { t } = useT();
   const creating = item === null;
   const hasGrams = item ? gramsOf(item) !== null : true;
 
@@ -124,46 +126,46 @@ export function ItemEditorSheet({ open, item, onSave, onRemove, onClose }: Edito
   const show = (key: keyof typeof errors) => submitted && errors[key];
 
   return (
-    <Sheet open={open} title={creating ? "Add item manually" : "Edit item"} onClose={onClose}>
+    <Sheet open={open} title={creating ? t("item.addManual") : t("item.edit")} onClose={onClose}>
       <div className="space-y-3">
         <Field
-          label="Food name"
+          label={t("item.name")}
           value={name}
           onChange={setName}
-          placeholder="e.g. Olive oil, side salad"
+          placeholder={t("item.namePh")}
           error={show("name")}
         />
 
         {hasGrams ? (
           <Field
-            label={creating ? "Amount (optional)" : "Amount"}
+            label={creating ? t("item.amountOpt") : t("item.amount")}
             suffix="g"
             numeric
             value={grams}
             onChange={onGramsChange}
-            placeholder="e.g. 150"
+            placeholder={t("item.amountPh")}
             error={show("grams")}
           />
         ) : (
-          <Field label="Portion" value={portion} onChange={setPortion} placeholder="e.g. 1 slice" />
+          <Field label={t("item.portion")} value={portion} onChange={setPortion} placeholder={t("item.portionPh")} />
         )}
         {!creating && hasGrams && (
           <p className="text-[11px] text-muted-foreground -mt-1">
-            Changing the amount rescales calories and macros. You can still fine-tune them below.
+            {t("item.rescale")}
           </p>
         )}
 
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label="Calories"
-            suffix="cal"
+            label={t("edit.calories")}
+            suffix={t("common.cal")}
             numeric
             value={calories}
             onChange={setCalories}
             error={show("calories")}
           />
           <Field
-            label="Protein"
+            label={t("macro.protein")}
             suffix="g"
             numeric
             value={protein}
@@ -171,19 +173,19 @@ export function ItemEditorSheet({ open, item, onSave, onRemove, onClose }: Edito
             error={show("protein")}
           />
           <Field
-            label="Carbs"
+            label={t("macro.carbs")}
             suffix="g"
             numeric
             value={carbs}
             onChange={setCarbs}
             error={show("carbs")}
           />
-          <Field label="Fat" suffix="g" numeric value={fat} onChange={setFat} error={show("fat")} />
+          <Field label={t("macro.fat")} suffix="g" numeric value={fat} onChange={setFat} error={show("fat")} />
         </div>
 
         {submitted && !valid && (
           <p className="text-xs text-destructive">
-            Please fill in a name and valid, non-negative numbers.
+            {t("item.invalid")}
           </p>
         )}
 
@@ -194,14 +196,14 @@ export function ItemEditorSheet({ open, item, onSave, onRemove, onClose }: Edito
               className="h-12 px-4 rounded-xl bg-secondary text-destructive flex items-center gap-1.5 text-sm font-medium"
             >
               <Trash2 className="w-4 h-4" />
-              Remove
+              {t("item.remove")}
             </button>
           )}
           <button
             onClick={handleSave}
             className="flex-1 h-12 rounded-xl gradient-glow shadow-glow text-sm font-semibold text-primary-foreground"
           >
-            {creating ? "Add to meal" : "Save changes"}
+            {creating ? t("item.addToMeal") : t("item.saveChanges")}
           </button>
         </div>
       </div>
@@ -224,6 +226,7 @@ interface DescribeResponse {
 }
 
 export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: AddProps) {
+  const { t } = useT();
   const [query, setQuery] = useState("");
   const [description, setDescription] = useState("");
   const [estimating, setEstimating] = useState(false);
@@ -241,7 +244,7 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
   const estimate = async () => {
     const text = description.trim();
     if (text.length < 3) {
-      setAiError("Add a few words about what you ate.");
+      setAiError(t("item.addWords"));
       return;
     }
     setEstimating(true);
@@ -250,12 +253,12 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
       const r = await describeMealText<DescribeResponse>(text);
       const items = (r.items ?? []).map(aiEstimateToItem);
       if (items.length === 0) {
-        setAiError(r.notes || "No food detected. Try rephrasing, e.g. \"a tablespoon of butter\".");
+        setAiError(r.notes || t("item.aiNoFood"));
         return;
       }
       onDescribed(items);
     } catch (e) {
-      setAiError(e instanceof Error ? e.message : "Couldn't estimate that. Please try again.");
+      setAiError(e instanceof Error ? e.message : t("item.cantEstimate"));
     } finally {
       setEstimating(false);
     }
@@ -268,13 +271,13 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
   }, [query]);
 
   return (
-    <Sheet open={open} title="Add a missed item" onClose={onClose}>
+    <Sheet open={open} title={t("item.addMissed")} onClose={onClose}>
       <div className="relative mb-3">
         <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search foods (e.g. olive oil, rice)…"
+          placeholder={t("item.searchFoods")}
           className="w-full h-11 pl-9 pr-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
       </div>
@@ -289,7 +292,7 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{f.name}</p>
               <p className="text-[11px] text-muted-foreground">
-                {f.cal} cal · P {f.p}g · C {f.c}g · F {f.f}g · per {f.unitGrams}g
+                {t("item.perUnit", { cal: f.cal, p: f.p, c: f.c, f: f.f, g: f.unitGrams })}
               </p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -299,7 +302,7 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
         ))}
         {results.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No match for "{query}". Describe it to the AI below or enter it yourself.
+            {t("item.noMatch", { query })}
           </p>
         )}
       </div>
@@ -307,7 +310,7 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
       <div className="mt-4 rounded-2xl border border-border bg-card p-3">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-primary" />
-          <p className="text-sm font-semibold text-foreground">Describe it to the AI</p>
+          <p className="text-sm font-semibold text-foreground">{t("item.describeAI")}</p>
         </div>
         <textarea
           value={description}
@@ -317,7 +320,7 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
           }}
           rows={2}
           disabled={estimating}
-          placeholder="e.g. a tablespoon of butter and a glass of orange juice"
+          placeholder={t("item.aiPh")}
           className="w-full px-3 py-2 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
         />
         {aiError && <p className="text-xs text-destructive mt-1.5">{aiError}</p>}
@@ -327,7 +330,7 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
           className="mt-2 w-full h-11 rounded-xl gradient-glow text-sm font-semibold text-primary-foreground flex items-center justify-center gap-2 disabled:opacity-70"
         >
           {estimating && <Loader2 className="w-4 h-4 animate-spin" />}
-          {estimating ? "Estimating…" : "Estimate and add"}
+          {estimating ? t("desc.estimating") : t("item.estimateAdd")}
         </button>
       </div>
 
@@ -335,7 +338,7 @@ export function AddItemSheet({ open, onPick, onCustom, onDescribed, onClose }: A
         onClick={onCustom}
         className="mt-3 w-full h-12 rounded-xl border border-primary/40 text-primary text-sm font-semibold"
       >
-        Enter a custom item
+        {t("item.custom")}
       </button>
     </Sheet>
   );
