@@ -345,6 +345,7 @@ export const zh: Record<TranslationKey, string> = {
   "an.logging": "正在记录…",
   "an.confirm": "确认并记录餐食",
   "an.addedOne": "已添加 {name}",
+  "an.addedToMeal": "已添加到这顿餐食。",
   "an.addedMany": "已添加 {n} 项",
   "an.estimatedAI": "由 AI 估算。点按任意项目的铅笔图标即可调整。",
   "item.addManual": "手动添加食物",

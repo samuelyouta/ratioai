@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Minus, Pencil, Plus, Share2 } from "lucide-react";
-import { createMealId, saveMeal, type Meal } from "@/lib/profile";
+import { createMealId, getMeals, saveMeal, updateMeal, type Meal } from "@/lib/profile";
 import { maybeRequestReview } from "@/lib/reviewPrompt";
 import {
   activeItems,
@@ -75,6 +75,10 @@ const Analyze = () => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [autoNavTimer, setAutoNavTimer] = useState<number | null>(null);
+  const [savedMealId, setSavedMealId] = useState<string | null>(null);
+  const [extraCalories, setExtraCalories] = useState(0);
+  const [savedAddOpen, setSavedAddOpen] = useState(false);
+  const [savedCustomOpen, setSavedCustomOpen] = useState(false);
 
   const imageRef = useRef<string | null>(null);
   const runIdRef = useRef(0);
@@ -200,6 +204,7 @@ const Analyze = () => {
         });
       }
 
+      setSavedMealId(meal.id);
       setSaved(true);
       maybeRequestReview(meal.source);
       const timer = window.setTimeout(() => navigate(todayPath, { replace: true }), 3200);
@@ -211,6 +216,37 @@ const Analyze = () => {
         description: e instanceof Error ? e.message : t("an.tapConfirm"),
       });
     }
+  };
+
+  const addToSavedMeal = (added: EditableItem[]) => {
+    const kept = activeItems(added);
+    if (!savedMealId || kept.length === 0) return;
+    const before = getMeals().find((m) => m.id === savedMealId);
+    if (!before) return;
+    const ok = updateMeal(savedMealId, { items: [...before.items, ...kept.map(toMealItem)] });
+    if (!ok) {
+      toast.error(t("an.saveFail"), { description: t("an.storageFull") });
+      return;
+    }
+    // Recomputing totals from items would drop a hidden-ingredient estimate, so restore them.
+    const add = sumItems(kept);
+    updateMeal(savedMealId, {
+      totalCalories: before.totalCalories + Math.round(add.calories),
+      totalProtein: before.totalProtein + Math.round(add.protein),
+      totalCarbs: before.totalCarbs + Math.round(add.carbs),
+      totalFat: before.totalFat + Math.round(add.fat),
+    });
+    setExtraCalories((c) => c + Math.round(add.calories));
+    toast.success(
+      kept.length === 1 ? t("an.addedOne", { name: kept[0].name }) : t("an.addedMany", { n: kept.length }),
+      { description: t("an.addedToMeal") },
+    );
+  };
+
+  const openSavedAdd = () => {
+    if (autoNavTimer) window.clearTimeout(autoNavTimer);
+    setAutoNavTimer(null);
+    setSavedAddOpen(true);
   };
 
   if (loading) {
@@ -321,12 +357,19 @@ const Analyze = () => {
           <h2 className="text-2xl font-bold text-foreground mb-2">{t("an.logged")}</h2>
           <p className="text-muted-foreground text-sm">
             {t("an.caloriesAdded", {
-              cal: totalCalories,
+              cal: totalCalories + extraCalories,
               where: isToday(targetDay) ? t("an.yourDay") : formatDayLabel(targetDay).toLowerCase(),
             })}
           </p>
 
           <div className="mt-7 flex flex-col gap-2">
+            <button
+              onClick={openSavedAdd}
+              className="w-full bg-card border border-dashed border-primary/50 rounded-2xl py-3.5 text-sm font-semibold text-primary flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              {t("an.addMissed")}
+            </button>
             <button
               onClick={() => {
                 if (autoNavTimer) window.clearTimeout(autoNavTimer);
@@ -356,6 +399,33 @@ const Analyze = () => {
           protein={Math.round(totals.protein)}
           carbs={Math.round(totals.carbs)}
           fat={totalFat}
+        />
+
+        <AddItemSheet
+          open={savedAddOpen}
+          onClose={() => setSavedAddOpen(false)}
+          onPick={(food: FoodDef) => {
+            setSavedAddOpen(false);
+            addToSavedMeal([foodToItem(food)]);
+          }}
+          onCustom={() => {
+            setSavedAddOpen(false);
+            setSavedCustomOpen(true);
+          }}
+          onDescribed={(added) => {
+            setSavedAddOpen(false);
+            addToSavedMeal(added);
+          }}
+        />
+        <ItemEditorSheet
+          open={savedCustomOpen}
+          item={null}
+          onClose={() => setSavedCustomOpen(false)}
+          onSave={(next) => {
+            setSavedCustomOpen(false);
+            addToSavedMeal([next]);
+          }}
+          onRemove={() => setSavedCustomOpen(false)}
         />
       </div>
     );

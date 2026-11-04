@@ -345,6 +345,7 @@ export const ru: Record<TranslationKey, string> = {
   "an.logging": "Запись…",
   "an.confirm": "Подтвердить и записать блюдо",
   "an.addedOne": "Добавлено: {name}",
+  "an.addedToMeal": "Добавлено в это блюдо.",
   "an.addedMany": "Добавлено позиций: {n}",
   "an.estimatedAI": "Оценка ИИ. Нажмите на карандаш у любой позиции, чтобы изменить её.",
   "item.addManual": "Добавить продукт вручную",

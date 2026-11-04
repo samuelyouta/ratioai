@@ -345,6 +345,7 @@ export const ja: Record<TranslationKey, string> = {
   "an.logging": "記録中…",
   "an.confirm": "確認して食事を記録",
   "an.addedOne": "{name}を追加しました",
+  "an.addedToMeal": "この食事に追加しました。",
   "an.addedMany": "{n}品を追加しました",
   "an.estimatedAI": "AIによる推定です。各項目の鉛筆アイコンをタップして調整できます。",
   "item.addManual": "食品を手動で追加",

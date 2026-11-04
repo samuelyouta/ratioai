@@ -345,6 +345,7 @@ export const de: Record<TranslationKey, string> = {
   "an.logging": "Wird erfasst…",
   "an.confirm": "Bestätigen & Mahlzeit erfassen",
   "an.addedOne": "{name} hinzugefügt",
+  "an.addedToMeal": "Zu dieser Mahlzeit hinzugefügt.",
   "an.addedMany": "{n} Lebensmittel hinzugefügt",
   "an.estimatedAI": "Von der KI geschätzt. Tippe bei einem Lebensmittel auf den Stift, um es anzupassen.",
   "item.addManual": "Lebensmittel manuell hinzufügen",

@@ -345,6 +345,7 @@ export const it: Record<TranslationKey, string> = {
   "an.logging": "Registrazione…",
   "an.confirm": "Conferma e registra il pasto",
   "an.addedOne": "{name} aggiunto",
+  "an.addedToMeal": "Aggiunto a questo pasto.",
   "an.addedMany": "{n} alimenti aggiunti",
   "an.estimatedAI": "Stimato dall'IA. Tocca la matita su un alimento per modificarlo.",
   "item.addManual": "Aggiungi alimento manualmente",

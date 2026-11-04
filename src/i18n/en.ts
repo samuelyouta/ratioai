@@ -481,6 +481,7 @@ export const en = {
   "man.logItem1": "Log 1 item",
   "man.selected": "{cal} cal · {servings} × {unit}",
   "ins.trend7": "7-day trend",
+  "an.addedToMeal": "Added to this meal.",
   // @@APPEND
 } as const;
 

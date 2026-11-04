@@ -345,6 +345,7 @@ export const ko: Record<TranslationKey, string> = {
   "an.logging": "기록 중…",
   "an.confirm": "확인하고 식사 기록",
   "an.addedOne": "{name} 추가됨",
+  "an.addedToMeal": "이 식사에 추가됐어요.",
   "an.addedMany": "{n}개 항목 추가됨",
   "an.estimatedAI": "AI가 추정한 값이에요. 항목의 연필 아이콘을 눌러 조정하세요.",
   "item.addManual": "음식 직접 추가",

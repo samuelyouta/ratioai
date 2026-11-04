@@ -345,6 +345,7 @@ export const fr: Record<TranslationKey, string> = {
   "an.logging": "Enregistrement…",
   "an.confirm": "Confirmer et enregistrer le repas",
   "an.addedOne": "{name} ajouté",
+  "an.addedToMeal": "Ajouté à ce repas.",
   "an.addedMany": "{n} aliments ajoutés",
   "an.estimatedAI": "Estimé par l'IA. Touchez le crayon sur un aliment pour l'ajuster.",
   "item.addManual": "Ajouter un aliment manuellement",
