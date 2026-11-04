@@ -3,8 +3,11 @@ import BottomNav from "@/components/BottomNav";
 import { getLast7DaysTotals, getProfile } from "@/lib/profile";
 import { useMealLogVersion, useTodayKey } from "@/hooks/useMealLog";
 import { dayKeyToDate } from "@/lib/dayKey";
+import { useT } from "@/i18n";
+import { dateLocale } from "@/lib/dayKey";
 
 const Insights = () => {
+  const { t } = useT();
   const profile = getProfile()!;
   useMealLogVersion();
   useTodayKey();
@@ -29,34 +32,34 @@ const Insights = () => {
   // dayKeyToDate anchors at local midday; new Date("YYYY-MM-DD") would parse as
   // UTC midnight and render the previous weekday for anyone west of UTC.
   const dayLabel = (key: string) =>
-    dayKeyToDate(key).toLocaleDateString([], { weekday: "short" });
+    dayKeyToDate(key).toLocaleDateString(dateLocale(), { weekday: "short" });
 
   return (
     <div className="min-h-screen bg-background pb-28">
       <div className="px-6 safe-top pb-4">
-        <h1 className="text-2xl font-bold text-foreground">Insights</h1>
-        <p className="text-sm text-muted-foreground">Your last 7 days</p>
+        <h1 className="text-2xl font-bold text-foreground">{t("ins.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("ins.last7")}</p>
       </div>
 
       <div className="px-6 grid grid-cols-3 gap-2 mb-5">
         <div className="bg-card border border-border rounded-2xl p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Consistency</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{t("ins.consistency")}</p>
           <p className="text-lg font-bold text-foreground">{avgConsistency}%</p>
-          <p className="text-[10px] text-muted-foreground">Macro target hit</p>
+          <p className="text-[10px] text-muted-foreground">{t("ins.targetHit")}</p>
         </div>
         <div className="bg-card border border-border rounded-2xl p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Avg cal</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{t("ins.avgCal")}</p>
           <p className="text-lg font-bold text-foreground">
             {Math.round(days.reduce((s, d) => s + d.calories, 0) / 7)}
           </p>
-          <p className="text-[10px] text-muted-foreground">per day</p>
+          <p className="text-[10px] text-muted-foreground">{t("ins.perDay")}</p>
         </div>
         <div className="bg-card border border-border rounded-2xl p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Avg protein</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{t("ins.avgProtein")}</p>
           <p className="text-lg font-bold text-foreground">
             {Math.round(days.reduce((s, d) => s + d.protein, 0) / 7)}g
           </p>
-          <p className="text-[10px] text-muted-foreground">per day</p>
+          <p className="text-[10px] text-muted-foreground">{t("ins.perDay")}</p>
         </div>
       </div>
 
@@ -64,8 +67,8 @@ const Insights = () => {
       <div className="px-6 mb-5">
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-foreground text-sm">Calories</h3>
-            <span className="text-[10px] text-muted-foreground">target {profile.calorieTarget}</span>
+            <h3 className="font-semibold text-foreground text-sm">{t("ins.calories")}</h3>
+            <span className="text-[10px] text-muted-foreground">{t("ins.target", { n: profile.calorieTarget })}</span>
           </div>
           <div className="flex items-end justify-between gap-2 h-36">
             {days.map((d, i) => {
@@ -94,8 +97,8 @@ const Insights = () => {
       <div className="px-6 mb-5">
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-foreground text-sm">Macro Consistency</h3>
-            <span className="text-[10px] text-primary">7-day trend</span>
+            <h3 className="font-semibold text-foreground text-sm">{t("ins.macroConsistency")}</h3>
+            <span className="text-[10px] text-primary">{t("ins.trend7")}</span>
           </div>
           <div className="relative h-32">
             {/* Without preserveAspectRatio="none" the chart is letterboxed into

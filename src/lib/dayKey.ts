@@ -149,7 +149,7 @@ export function hourOfDay(instant: Date | string = new Date(), tz = getTimeZone(
 export function formatTimeOfDay(instant: Date | string, tz = getTimeZone()): string {
   const date = typeof instant === "string" ? new Date(instant) : instant;
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString(undefined, {
+  return date.toLocaleTimeString(dateLocale(), {
     hour: "numeric",
     minute: "2-digit",
     timeZone: tz,
@@ -189,15 +189,20 @@ export function dayKeyToDate(key: DayKey): Date {
   return new Date(y, m - 1, d, 12, 0, 0);
 }
 
+import { getLanguage, intlLocale, translate } from "@/i18n";
+
+/** Locale used when formatting dates for display. */
+export const dateLocale = () => intlLocale(getLanguage());
+
 /** "Today" / "Yesterday" / "Mon, Oct 20". */
 export function formatDayLabel(key: DayKey, tz = getTimeZone()): string {
   const today = todayKey(tz);
-  if (key === today) return "Today";
-  if (key === shiftDayKey(today, -1)) return "Yesterday";
-  if (key === shiftDayKey(today, 1)) return "Tomorrow";
+  if (key === today) return translate("day.today");
+  if (key === shiftDayKey(today, -1)) return translate("day.yesterday");
+  if (key === shiftDayKey(today, 1)) return translate("day.tomorrow");
   const date = dayKeyToDate(key);
   const sameYear = date.getFullYear() === dayKeyToDate(today).getFullYear();
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(dateLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -206,7 +211,7 @@ export function formatDayLabel(key: DayKey, tz = getTimeZone()): string {
 }
 
 export function formatDayLong(key: DayKey): string {
-  return dayKeyToDate(key).toLocaleDateString(undefined, {
+  return dayKeyToDate(key).toLocaleDateString(dateLocale(), {
     weekday: "long",
     month: "long",
     day: "numeric",

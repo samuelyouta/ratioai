@@ -5,16 +5,18 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight, Flame, Dumbbell, Scale, Zap } from "lucide-react";
 import { setDraft, getDraft } from "@/lib/onboardingDraft";
 import type { Goal } from "@/lib/profile";
+import { useT } from "@/i18n";
 
-const goals: { id: Goal; icon: typeof Flame; label: string; desc: string; color: string }[] = [
-  { id: "lose", icon: Flame, label: "Lose Fat", desc: "Caloric deficit with smart tracking", color: "text-coral" },
-  { id: "muscle", icon: Dumbbell, label: "Build Muscle", desc: "High protein, structured surplus", color: "text-primary" },
-  { id: "maintain", icon: Scale, label: "Recomp", desc: "Maintain weight, recompose body", color: "text-info" },
-  { id: "endurance", icon: Zap, label: "Endurance", desc: "Fuel for long-distance performance", color: "text-warning" },
+const goals: { id: Goal; icon: typeof Flame; color: string }[] = [
+  { id: "lose", icon: Flame, color: "text-coral" },
+  { id: "muscle", icon: Dumbbell, color: "text-primary" },
+  { id: "maintain", icon: Scale, color: "text-info" },
+  { id: "endurance", icon: Zap, color: "text-warning" },
 ];
 
 const StepGoal = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const [selected, setSelected] = useState<Goal | null>(getDraft().goal ?? null);
 
   const handleNext = () => {
@@ -26,12 +28,12 @@ const StepGoal = () => {
   return (
     <OnboardingLayout step={0} totalSteps={8}>
       <div className="mb-6">
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">What's your goal?</h2>
-        <p className="text-muted-foreground mt-2 text-base">We'll personalize everything around this.</p>
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">{t("goal.title")}</h2>
+        <p className="text-muted-foreground mt-2 text-base">{t("goal.subtitle")}</p>
       </div>
 
       <div className="space-y-3 flex-1">
-        {goals.map(({ id, icon: Icon, label, desc, color }, i) => {
+        {goals.map(({ id, icon: Icon, color }, i) => {
           const active = selected === id;
           return (
             <motion.button
@@ -62,8 +64,8 @@ const StepGoal = () => {
                 <Icon className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">{label}</h3>
-                <p className="text-xs text-muted-foreground">{desc}</p>
+                <h3 className="font-semibold text-foreground">{t(`goal.${id}`)}</h3>
+                <p className="text-xs text-muted-foreground">{t(`goal.${id}.desc`)}</p>
               </div>
             </motion.button>
           );
@@ -75,7 +77,7 @@ const StepGoal = () => {
         onClick={handleNext}
         className="gradient-glow text-primary-foreground font-semibold text-base px-8 py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center mt-6 disabled:opacity-40 disabled:shadow-none transition-opacity"
       >
-        Continue <ArrowRight className="w-5 h-5" />
+        {t("common.continue")} <ArrowRight className="w-5 h-5" />
       </button>
     </OnboardingLayout>
   );

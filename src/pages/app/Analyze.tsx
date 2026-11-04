@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Minus, Pencil, Plus, Share2 } from "lucide-react";
-import { createMealId, saveMeal, type Meal } from "@/lib/profile";
+import { createMealId, getMeals, saveMeal, updateMeal, type Meal } from "@/lib/profile";
 import { maybeRequestReview } from "@/lib/reviewPrompt";
 import {
   activeItems,
@@ -22,6 +22,7 @@ import ShareRecipeCard from "@/components/app/ShareRecipeCard";
 import { formatDayLabel, isToday, timestampForDay } from "@/lib/dayKey";
 import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "sonner";
+import { translate, useT } from "@/i18n";
 
 interface AnalyzedItem {
   name: string;
@@ -54,6 +55,7 @@ function parseHiddenCalories(result: AnalysisResult): number {
 
 const Analyze = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const [searchParams] = useSearchParams();
   const targetDay = readDayParam(searchParams);
   const logPath = withDay("/app/log", targetDay);
@@ -73,6 +75,10 @@ const Analyze = () => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [autoNavTimer, setAutoNavTimer] = useState<number | null>(null);
+  const [savedMealId, setSavedMealId] = useState<string | null>(null);
+  const [extraCalories, setExtraCalories] = useState(0);
+  const [savedAddOpen, setSavedAddOpen] = useState(false);
+  const [savedCustomOpen, setSavedCustomOpen] = useState(false);
 
   const imageRef = useRef<string | null>(null);
   const runIdRef = useRef(0);
@@ -89,7 +95,7 @@ const Analyze = () => {
       const r = await analyzeMealPhoto<AnalysisResult>(dataUrl);
       if (!current()) return;
       if (!r.items?.length) {
-        setError(r.notes || "No food detected in this photo. Try a clearer shot of your meal.");
+        setError(r.notes || translate("an.noFood"));
         return;
       }
       setResult(r);
@@ -110,7 +116,7 @@ const Analyze = () => {
         lower.includes("networkerror") ||
         lower.includes("function_invocation_failed")
       ) {
-        setError("Could not reach meal AI. Check your connection and try again in a moment.");
+        setError(translate("an.noReach"));
       } else {
         setError(raw);
       }
@@ -186,30 +192,61 @@ const Analyze = () => {
       const outcome = saveMeal(meal);
       if (!outcome.ok) {
         setSaving(false);
-        toast.error("Couldn't save this meal", {
-          description:
-            "Your device is out of storage space. Free some up, then tap Confirm again.",
+        toast.error(t("an.saveFail"), {
+          description: t("an.storageFull"),
         });
         return;
       }
 
       if (outcome.photoDropped) {
-        toast.message("Meal logged without the photo", {
-          description: "There wasn't room on this device to keep the picture.",
+        toast.message(t("an.noPhoto"), {
+          description: t("an.noPhotoDesc"),
         });
       }
 
+      setSavedMealId(meal.id);
       setSaved(true);
       maybeRequestReview(meal.source);
-      const t = window.setTimeout(() => navigate(todayPath, { replace: true }), 3200);
-      setAutoNavTimer(t);
+      const timer = window.setTimeout(() => navigate(todayPath, { replace: true }), 3200);
+      setAutoNavTimer(timer);
     } catch (e) {
       console.error("confirm & log failed", e);
       setSaving(false);
-      toast.error("Couldn't save this meal", {
-        description: e instanceof Error ? e.message : "Please tap Confirm again.",
+      toast.error(t("an.saveFail"), {
+        description: e instanceof Error ? e.message : t("an.tapConfirm"),
       });
     }
+  };
+
+  const addToSavedMeal = (added: EditableItem[]) => {
+    const kept = activeItems(added);
+    if (!savedMealId || kept.length === 0) return;
+    const before = getMeals().find((m) => m.id === savedMealId);
+    if (!before) return;
+    const ok = updateMeal(savedMealId, { items: [...before.items, ...kept.map(toMealItem)] });
+    if (!ok) {
+      toast.error(t("an.saveFail"), { description: t("an.storageFull") });
+      return;
+    }
+    // Recomputing totals from items would drop a hidden-ingredient estimate, so restore them.
+    const add = sumItems(kept);
+    updateMeal(savedMealId, {
+      totalCalories: before.totalCalories + Math.round(add.calories),
+      totalProtein: before.totalProtein + Math.round(add.protein),
+      totalCarbs: before.totalCarbs + Math.round(add.carbs),
+      totalFat: before.totalFat + Math.round(add.fat),
+    });
+    setExtraCalories((c) => c + Math.round(add.calories));
+    toast.success(
+      kept.length === 1 ? t("an.addedOne", { name: kept[0].name }) : t("an.addedMany", { n: kept.length }),
+      { description: t("an.addedToMeal") },
+    );
+  };
+
+  const openSavedAdd = () => {
+    if (autoNavTimer) window.clearTimeout(autoNavTimer);
+    setAutoNavTimer(null);
+    setSavedAddOpen(true);
   };
 
   if (loading) {
@@ -222,17 +259,17 @@ const Analyze = () => {
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}>
           <Loader2 className="w-10 h-10 text-primary" />
         </motion.div>
-        <p className="text-sm text-foreground font-semibold mt-4">Analyzing your meal…</p>
+        <p className="text-sm text-foreground font-semibold mt-4">{t("an.analyzing")}</p>
         <p className="text-xs text-muted-foreground mt-1">
           {slow
-            ? "Still working. This can take up to a minute on a slow connection."
-            : "Identifying items, portions, and hidden ingredients"}
+            ? t("an.slow")
+            : t("an.identifying")}
         </p>
         <button
           onClick={cancelAnalysis}
           className="mt-6 text-xs font-medium text-muted-foreground underline underline-offset-4"
         >
-          Cancel
+          {t("an.cancel")}
         </button>
       </motion.div>
     );
@@ -245,25 +282,25 @@ const Analyze = () => {
         animate={{ opacity: 1, y: 0 }}
         className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center"
       >
-        <p className="text-base font-semibold text-foreground">Daily scan limit reached</p>
+        <p className="text-base font-semibold text-foreground">{t("an.limitTitle")}</p>
         <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm">{error}</p>
         <button
           onClick={() => navigate(withDay("/app/manual", targetDay), { replace: true })}
           className="w-full max-w-xs gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
         >
-          Search &amp; Edit
+          {t("log.searchEdit")}
         </button>
         <button
           onClick={() => navigate(withDay("/app/describe", targetDay), { replace: true })}
           className="mt-3 w-full max-w-xs border border-primary/30 bg-primary/10 text-foreground font-semibold px-6 py-3 rounded-xl"
         >
-          Describe Meal
+          {t("log.describe")}
         </button>
         <button
           onClick={() => navigate(todayPath, { replace: true })}
           className="mt-4 text-sm font-medium text-muted-foreground underline underline-offset-4"
         >
-          Back to today
+          {t("an.backToday")}
         </button>
       </motion.div>
     );
@@ -276,16 +313,16 @@ const Analyze = () => {
         animate={{ opacity: 1, y: 0 }}
         className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center"
       >
-        <p className="text-base font-semibold text-foreground">Couldn't analyze that photo</p>
+        <p className="text-base font-semibold text-foreground">{t("an.failTitle")}</p>
         <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm">
-          {error ?? "No result"}
+          {error ?? t("an.noResult")}
         </p>
         {imageRef.current && (
           <button
             onClick={() => imageRef.current && void runAnalysis(imageRef.current)}
             className="gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
           >
-            Try again
+            {t("an.retry")}
           </button>
         )}
         <button
@@ -296,7 +333,7 @@ const Analyze = () => {
               : "gradient-glow text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-glow"
           }
         >
-          Retake photo
+          {t("an.retake")}
         </button>
       </motion.div>
     );
@@ -317,13 +354,22 @@ const Analyze = () => {
             transition={{ delay: 0.15, type: "spring" }}
             className="w-20 h-20 gradient-glow rounded-full mx-auto shadow-glow mb-6"
           />
-          <h2 className="text-2xl font-bold text-foreground mb-2">Meal logged</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">{t("an.logged")}</h2>
           <p className="text-muted-foreground text-sm">
-            {totalCalories} calories added to{" "}
-            {isToday(targetDay) ? "your day" : formatDayLabel(targetDay).toLowerCase()}
+            {t("an.caloriesAdded", {
+              cal: totalCalories + extraCalories,
+              where: isToday(targetDay) ? t("an.yourDay") : formatDayLabel(targetDay).toLowerCase(),
+            })}
           </p>
 
           <div className="mt-7 flex flex-col gap-2">
+            <button
+              onClick={openSavedAdd}
+              className="w-full bg-card border border-dashed border-primary/50 rounded-2xl py-3.5 text-sm font-semibold text-primary flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              {t("an.addMissed")}
+            </button>
             <button
               onClick={() => {
                 if (autoNavTimer) window.clearTimeout(autoNavTimer);
@@ -332,13 +378,13 @@ const Analyze = () => {
               className="w-full bg-card border border-primary/40 rounded-2xl py-3.5 text-sm font-semibold text-primary flex items-center justify-center gap-2 transition-colors hover:bg-primary/10"
             >
               <Share2 className="w-4 h-4" />
-              Share recipe card
+              {t("an.share")}
             </button>
             <button
               onClick={() => navigate(todayPath, { replace: true })}
               className="text-xs text-muted-foreground py-2"
             >
-              Continue to home
+              {t("an.home")}
             </button>
           </div>
         </motion.div>
@@ -346,13 +392,40 @@ const Analyze = () => {
         <ShareRecipeCard
           open={shareOpen}
           onClose={() => setShareOpen(false)}
-          title={result?.title ?? "Meal"}
+          title={result?.title ?? t("an.meal")}
           icon={result ? sanitizeMealIcon(result.icon) : undefined}
           imageDataUrl={imageUrl}
           calories={totalCalories}
           protein={Math.round(totals.protein)}
           carbs={Math.round(totals.carbs)}
           fat={totalFat}
+        />
+
+        <AddItemSheet
+          open={savedAddOpen}
+          onClose={() => setSavedAddOpen(false)}
+          onPick={(food: FoodDef) => {
+            setSavedAddOpen(false);
+            addToSavedMeal([foodToItem(food)]);
+          }}
+          onCustom={() => {
+            setSavedAddOpen(false);
+            setSavedCustomOpen(true);
+          }}
+          onDescribed={(added) => {
+            setSavedAddOpen(false);
+            addToSavedMeal(added);
+          }}
+        />
+        <ItemEditorSheet
+          open={savedCustomOpen}
+          item={null}
+          onClose={() => setSavedCustomOpen(false)}
+          onSave={(next) => {
+            setSavedCustomOpen(false);
+            addToSavedMeal([next]);
+          }}
+          onRemove={() => setSavedCustomOpen(false)}
         />
       </div>
     );
@@ -374,7 +447,7 @@ const Analyze = () => {
       {!isToday(targetDay) && (
         <div className="px-6 mb-3">
           <p className="text-xs text-primary bg-primary/10 border border-primary/20 rounded-xl px-3 py-2">
-            Logging to {formatDayLabel(targetDay)}
+            {t("an.loggingTo", { day: formatDayLabel(targetDay) })}
           </p>
         </div>
       )}
@@ -403,11 +476,11 @@ const Analyze = () => {
         >
           <div className="bg-warning/10 rounded-xl px-4 py-3 border border-warning/20">
             <p className="text-[10px] font-bold uppercase tracking-wider text-warning mb-1">
-              Hidden ingredient detected
+              {t("an.hiddenDetected")}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">{result.hiddenIngredient}</p>
             {hiddenCalories > 0 && acceptHidden && (
-              <p className="text-xs text-foreground/80 mt-1">+{hiddenCalories} cal added to total</p>
+              <p className="text-xs text-foreground/80 mt-1">{t("an.hiddenAdded", { cal: hiddenCalories })}</p>
             )}
             <div className="flex gap-2 mt-2">
               <button
@@ -416,7 +489,7 @@ const Analyze = () => {
                   acceptHidden ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                 }`}
               >
-                Yes, add it
+                {t("an.yesAdd")}
               </button>
               <button
                 onClick={() => setAcceptHidden(false)}
@@ -424,7 +497,7 @@ const Analyze = () => {
                   !acceptHidden ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                 }`}
               >
-                No thanks
+                {t("an.noThanks")}
               </button>
             </div>
           </div>
@@ -449,27 +522,27 @@ const Analyze = () => {
                     <h4 className="font-semibold text-foreground text-sm truncate">{it.name}</h4>
                     {it.manual ? (
                       <span className="text-[10px] bg-secondary text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
-                        Added by you
+                        {t("an.addedByYou")}
                       </span>
                     ) : (
                       <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded shrink-0">
-                        {it.confidence}% match
+                        {t("an.match", { n: it.confidence })}
                       </span>
                     )}
                   </motion.div>
                   <p className="text-xs text-muted-foreground">
                     {it.portion}
-                    {removed && " · won't be logged"}
+                    {removed && ` · ${t("an.wontLog")}`}
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
                   <p className="text-sm font-bold text-foreground">
                     {Math.round(it.calories * servings)}
-                    <span className="text-muted-foreground text-xs font-normal"> cal</span>
+                    <span className="text-muted-foreground text-xs font-normal"> {t("common.cal")}</span>
                   </p>
                   <button
                     onClick={() => setEditingIdx(i)}
-                    aria-label={`Edit ${it.name}`}
+                    aria-label={t("an.editAria", { name: it.name })}
                     className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center"
                   >
                     <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
@@ -479,13 +552,13 @@ const Analyze = () => {
               <div className="flex items-center justify-between mt-2">
                 <div className="flex gap-3 text-[11px] text-muted-foreground">
                   <span>
-                    P <span className="text-foreground font-medium">{Math.round(it.protein * servings)}g</span>
+                    {t("desc.p")} <span className="text-foreground font-medium">{Math.round(it.protein * servings)}g</span>
                   </span>
                   <span>
-                    C <span className="text-foreground font-medium">{Math.round(it.carbs * servings)}g</span>
+                    {t("desc.c")} <span className="text-foreground font-medium">{Math.round(it.carbs * servings)}g</span>
                   </span>
                   <span>
-                    F <span className="text-foreground font-medium">{Math.round(it.fat * servings)}g</span>
+                    {t("desc.f")} <span className="text-foreground font-medium">{Math.round(it.fat * servings)}g</span>
                   </span>
                 </div>
                 <div className="flex items-center gap-2 bg-secondary rounded-lg px-1">
@@ -495,7 +568,7 @@ const Analyze = () => {
                         prev.map((x, idx) => (idx === i ? { ...x, servings: Math.max(0, x.servings - 1) } : x)),
                       )
                     }
-                    aria-label="Fewer servings"
+                    aria-label={t("an.fewer")}
                     className="w-7 h-7 flex items-center justify-center text-muted-foreground"
                   >
                     <Minus className="w-3.5 h-3.5" />
@@ -505,7 +578,7 @@ const Analyze = () => {
                     onClick={() =>
                       setItems((prev) => prev.map((x, idx) => (idx === i ? { ...x, servings: x.servings + 1 } : x)))
                     }
-                    aria-label="More servings"
+                    aria-label={t("an.more")}
                     className="w-7 h-7 flex items-center justify-center text-muted-foreground"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -521,7 +594,7 @@ const Analyze = () => {
           className="w-full h-12 rounded-2xl border border-dashed border-primary/50 text-primary text-sm font-semibold flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          Add a missed item
+          {t("an.addMissed")}
         </button>
       </div>
 
@@ -534,20 +607,20 @@ const Analyze = () => {
       <div className="px-6">
         <div className="bg-card border border-border rounded-2xl p-4 mb-4">
           <motion.div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Total meal</span>
+            <span className="text-sm text-muted-foreground">{t("an.total")}</span>
             <span className="text-xl font-bold text-foreground">
-              {totalCalories} <span className="text-sm text-muted-foreground font-normal">cal</span>
+              {totalCalories} <span className="text-sm text-muted-foreground font-normal">{t("common.cal")}</span>
             </span>
           </motion.div>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <span>
-              Protein <span className="text-foreground font-medium">{Math.round(totals.protein)}g</span>
+              {t("macro.protein")} <span className="text-foreground font-medium">{Math.round(totals.protein)}g</span>
             </span>
             <span>
-              Carbs <span className="text-foreground font-medium">{Math.round(totals.carbs)}g</span>
+              {t("macro.carbs")} <span className="text-foreground font-medium">{Math.round(totals.carbs)}g</span>
             </span>
             <span>
-              Fat <span className="text-foreground font-medium">{totalFat}g</span>
+              {t("macro.fat")} <span className="text-foreground font-medium">{totalFat}g</span>
             </span>
           </div>
         </div>
@@ -559,7 +632,7 @@ const Analyze = () => {
           className="gradient-glow text-primary-foreground font-semibold text-base py-4 rounded-2xl shadow-glow w-full flex items-center justify-center gap-2 disabled:opacity-70"
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-          {saving ? "Logging…" : "Confirm & log meal"}
+          {saving ? t("an.logging") : t("an.confirm")}
         </motion.button>
       </div>
 
@@ -607,8 +680,8 @@ const Analyze = () => {
         onDescribed={(added) => {
           setAddOpen(false);
           setItems((prev) => [...prev, ...added]);
-          toast.success(added.length === 1 ? `Added ${added[0].name}` : `Added ${added.length} items`, {
-            description: "Estimated by AI. Tap the pencil on any item to adjust it.",
+          toast.success(added.length === 1 ? t("an.addedOne", { name: added[0].name }) : t("an.addedMany", { n: added.length }), {
+            description: t("an.estimatedAI"),
           });
         }}
       />

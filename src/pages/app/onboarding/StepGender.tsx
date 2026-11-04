@@ -5,15 +5,17 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { ArrowRight } from "lucide-react";
 import { getDraft, setDraft } from "@/lib/onboardingDraft";
 import type { Gender } from "@/lib/profile";
+import { useT } from "@/i18n";
 
-const genders: { id: Gender; label: string; emoji: string }[] = [
-  { id: "male", label: "Male", emoji: "♂" },
-  { id: "female", label: "Female", emoji: "♀" },
-  { id: "other", label: "Other", emoji: "✧" },
+const genders: { id: Gender; emoji: string }[] = [
+  { id: "male", emoji: "♂" },
+  { id: "female", emoji: "♀" },
+  { id: "other", emoji: "✧" },
 ];
 
 const StepGender = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const draft = getDraft();
   const [gender, setGender] = useState<Gender | null>(draft.gender ?? null);
 
@@ -27,15 +29,15 @@ const StepGender = () => {
     <OnboardingLayout step={2} totalSteps={8}>
       <div className="mb-8">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
-          Biological sex
+          {t("gender.title")}
         </h2>
         <p className="text-muted-foreground mt-2 text-base">
-          This helps us calculate your metabolic rate accurately.
+          {t("gender.subtitle")}
         </p>
       </div>
 
       <div className="flex-1 space-y-3">
-        {genders.map(({ id, label, emoji }, i) => {
+        {genders.map(({ id, emoji }, i) => {
           const active = gender === id;
           return (
             <motion.button
@@ -63,7 +65,7 @@ const StepGender = () => {
               >
                 {emoji}
               </div>
-              <h3 className="font-semibold text-foreground text-base">{label}</h3>
+              <h3 className="font-semibold text-foreground text-base">{t(`gender.${id}`)}</h3>
             </motion.button>
           );
         })}
@@ -74,7 +76,7 @@ const StepGender = () => {
         onClick={handleNext}
         className="gradient-glow text-primary-foreground font-semibold text-base px-8 py-4 rounded-2xl shadow-glow flex items-center gap-2 w-full justify-center mt-6 disabled:opacity-40 disabled:shadow-none transition-opacity"
       >
-        Continue <ArrowRight className="w-5 h-5" />
+        {t("common.continue")} <ArrowRight className="w-5 h-5" />
       </button>
     </OnboardingLayout>
   );

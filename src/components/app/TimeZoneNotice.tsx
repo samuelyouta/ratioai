@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Globe2 } from "lucide-react";
 import TimeZonePicker from "@/components/app/TimeZonePicker";
+import { useT } from "@/i18n";
 import {
   confirmTimeZone,
   describeTimeZone,
@@ -15,6 +16,7 @@ import {
  * zone, so getting it wrong is what makes entries land on the wrong date.
  */
 const TimeZoneNotice = () => {
+  const { t, rich } = useT();
   const [confirmed, setConfirmed] = useState(() => isTimeZoneConfirmed());
   const [editing, setEditing] = useState(false);
   const [zoneLabel, setZoneLabel] = useState(() => describeTimeZone());
@@ -38,10 +40,12 @@ const TimeZoneNotice = () => {
           <Globe2 className="w-4 h-4 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">Is this your time zone?</p>
+          <p className="text-sm font-semibold text-foreground">{t("tz.question")}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Your days start and end in <span className="text-foreground">{zoneLabel}</span>, which
-            makes today <span className="text-foreground">{formatDayLong(today)}</span>.
+            {rich("tz.explain", {
+              zone: <span className="text-foreground">{zoneLabel}</span>,
+              today: <span className="text-foreground">{formatDayLong(today)}</span>,
+            })}
           </p>
         </div>
       </div>
@@ -63,7 +67,7 @@ const TimeZoneNotice = () => {
             }}
             className="mt-3 w-full gradient-glow text-primary-foreground font-semibold text-sm py-2.5 rounded-xl"
           >
-            Done
+            {t("common.done")}
           </button>
         </div>
       ) : (
@@ -77,14 +81,14 @@ const TimeZoneNotice = () => {
             className="flex-1 gradient-glow text-primary-foreground font-semibold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5"
           >
             <Check className="w-3.5 h-3.5" />
-            Yes, that's right
+            {t("tz.yes")}
           </button>
           <button
             type="button"
             onClick={() => setEditing(true)}
             className="flex-1 bg-secondary text-foreground font-semibold text-xs py-2.5 rounded-xl"
           >
-            Change time zone
+            {t("tz.change")}
           </button>
         </div>
       )}

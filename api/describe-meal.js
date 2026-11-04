@@ -3,6 +3,8 @@
  * Uses .cjs so package.json "type":"module" cannot break function boot.
  */
 
+const { languageInstruction } = require("./_lib/language.js");
+
 async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -23,7 +25,7 @@ async function handler(req, res) {
       toolName: "log_meal",
       tools: DESCRIBE_TOOLS,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: SYSTEM_PROMPT + languageInstruction(req.body && req.body.language) },
         { role: "user", content: `Estimate this meal: ${description.trim()}` },
       ],
     });

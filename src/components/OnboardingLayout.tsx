@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { motion } from "framer-motion";
 import { previousOnboardingRoute } from "@/lib/onboardingRoutes";
+import LanguagePicker from "@/components/LanguagePicker";
+import { useT } from "@/i18n";
 
 interface OnboardingLayoutProps {
   step: number;
@@ -12,18 +14,22 @@ interface OnboardingLayoutProps {
 
 const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps) => {
   const navigate = useNavigate();
+  const { t } = useT();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Progress bar */}
       <div className="px-6 safe-top-sm pb-2">
-        <button
-          type="button"
-          onClick={() => navigate(previousOnboardingRoute(step), { replace: true })}
-          aria-label="Back"
-          className="mb-3 -ml-1 w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"
-        >
-          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-        </button>
+        <div className="mb-3 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate(previousOnboardingRoute(step), { replace: true })}
+            aria-label={t("common.back")}
+            className="-ml-1 w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center"
+          >
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+          </button>
+          {step === 0 && <LanguagePicker variant="pill" />}
+        </div>
         <div className="flex gap-1.5">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-muted">
@@ -57,11 +63,11 @@ const OnboardingLayout = ({ step, totalSteps, children }: OnboardingLayoutProps)
 
       <div className="px-6 pb-4 flex items-center justify-center gap-2">
         <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
-          Privacy
+          {t("common.privacy")}
         </a>
         <span className="text-muted-foreground/30 text-[11px]">·</span>
         <a href="/terms" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
-          Terms
+          {t("common.terms")}
         </a>
       </div>
     </div>

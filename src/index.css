@@ -81,11 +81,17 @@
     min-height: 100dvh;
   }
 
-  /* iOS Safari auto-zooms inputs below 16px — keep forms at native size */
-  input,
+}
+
+/*
+ * iOS auto-zooms the page when a focused field is under 16px and never zooms back.
+ * !important so it beats Tailwind's text-sm / text-xs utilities.
+ */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 

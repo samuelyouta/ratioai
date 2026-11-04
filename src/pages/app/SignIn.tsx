@@ -15,6 +15,7 @@ import {
 } from "@/lib/auth";
 import { syncUserDataBeforeRouting } from "@/lib/userSync";
 import { getProfile } from "@/lib/profile";
+import { translate, useT } from "@/i18n";
 
 /**
  * Sign-in gate shown after onboarding completes and before the paywall / app.
@@ -22,6 +23,7 @@ import { getProfile } from "@/lib/profile";
  */
 const SignIn = () => {
   const navigate = useNavigate();
+  const { t, rich } = useT();
   const location = useLocation();
   const from = (location.state as { from?: string; error?: string } | null)?.from || "/app/today";
 
@@ -57,9 +59,7 @@ const SignIn = () => {
         const { data } = await supabase.auth.getSession();
         if (data.session?.user || cancelled) return;
         setPending(null);
-        setErr(
-          "Sign-in did not complete. Tap Continue with Apple again, or sign in with your email and password.",
-        );
+        setErr(translate("auth.incomplete"));
       }, 1_500);
     }).then((h) => {
       handle = h;
@@ -75,7 +75,7 @@ const SignIn = () => {
     const { data: userResult } = await supabase.auth.getUser();
     const user = userResult.user ?? (await supabase.auth.getSession()).data.session?.user;
     if (!user) {
-      setErr("Signed in, but no account was created. Try again.");
+      setErr(t("auth.noAccount"));
       return;
     }
     await syncUserDataBeforeRouting(user.id);
@@ -91,9 +91,7 @@ const SignIn = () => {
     try {
       const { error, cancelled, nativeSession, browserPending } = await signInWithOAuth(provider, from);
       if (cancelled) {
-        setErr(
-          `${provider === "apple" ? "Apple" : "Google"} sign-in was cancelled. Try again, or sign in with your email and password.`,
-        );
+        setErr(t("auth.cancelled", { provider: provider === "apple" ? "Apple" : "Google" }));
         return;
       }
       if (error) {
@@ -109,7 +107,7 @@ const SignIn = () => {
       }
     } catch (e) {
       console.error(e);
-      setErr("Sign-in failed. Try again.");
+      setErr(t("auth.failed"));
     } finally {
       setBusy(null);
     }
@@ -121,11 +119,11 @@ const SignIn = () => {
     setErr(null);
     const trimmed = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setErr("Enter a valid email.");
+      setErr(t("auth.validEmail"));
       return;
     }
     if (!password) {
-      setErr("Enter your password.");
+      setErr(t("auth.enterPassword"));
       return;
     }
     setBusy("password");
@@ -155,7 +153,7 @@ const SignIn = () => {
     setErr(null);
     const trimmed = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setErr("Enter a valid email.");
+      setErr(t("auth.validEmail"));
       return;
     }
     setBusy("email");
@@ -168,7 +166,7 @@ const SignIn = () => {
     });
     setBusy(null);
     if (error) {
-      setErr("Could not send link. Try again.");
+      setErr(t("auth.linkFail"));
       return;
     }
     setSent(true);
@@ -190,13 +188,13 @@ const SignIn = () => {
           className="w-full max-w-sm"
         >
           <p className="text-[10px] uppercase tracking-[0.25em] text-primary mb-3 text-center">
-            One last step
+            {t("auth.lastStep")}
           </p>
           <h1 className="text-3xl font-bold text-foreground text-center leading-tight">
-            Save your plan
+            {t("auth.savePlan")}
           </h1>
           <p className="text-sm text-muted-foreground text-center mt-3 leading-relaxed">
-            Create your account so your streaks, meals, and targets follow you across devices.
+            {t("auth.create")}
           </p>
 
           <div className="mt-8 space-y-3">
@@ -214,7 +212,7 @@ const SignIn = () => {
                   <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zM236.5 105.8c22.2-26.4 20.2-50.4 19.6-59.1-19.7 1.1-42.5 13.4-55.5 28.5-14.3 16.2-22.7 36.2-20.9 58.7 21.3 1.6 40.7-9.4 56.8-28.1z"/>
                 </svg>
               )}
-              Continue with Apple
+              {t("auth.apple")}
             </motion.button>
 
             {/* Google */}
@@ -234,13 +232,13 @@ const SignIn = () => {
                   <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.4 5.8l6 5.1c4.2-3.9 6.6-9.6 6.6-15.4 0-1.3-.1-2.4-.4-3z"/>
                 </svg>
               )}
-              Continue with Google
+              {t("auth.google")}
             </motion.button>
 
             {/* Divider */}
             <div className="flex items-center gap-3 py-2">
               <div className="flex-1 h-px bg-border" />
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">or</span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("auth.or")}</span>
               <div className="flex-1 h-px bg-border" />
             </div>
 
@@ -248,7 +246,7 @@ const SignIn = () => {
             {sent ? (
               <div className="flex items-center justify-center gap-2 bg-primary/10 border border-primary/30 rounded-xl px-4 py-3.5 text-sm text-foreground">
                 <CheckCircle className="w-4 h-4 text-primary" />
-                Check your inbox for the sign-in link.
+                {t("auth.inbox")}
               </div>
             ) : (
               <form onSubmit={handleEmailFormSubmit} className="space-y-2">
@@ -265,7 +263,7 @@ const SignIn = () => {
                 />
                 <input
                   type="password"
-                  placeholder="Password"
+                  placeholder={t("auth.password")}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -289,11 +287,11 @@ const SignIn = () => {
                   ) : (
                     <Mail className="w-4 h-4" />
                   )}
-                  {hasPassword ? "Sign in" : "Send sign-in link"}
+                  {hasPassword ? t("auth.signIn") : t("auth.sendLink")}
                 </button>
                 {!hasPassword && (
                   <p className="text-[11px] text-muted-foreground text-center leading-relaxed pt-1">
-                    Have a password? Enter it above to sign in directly.
+                    {t("auth.havePassword")}
                   </p>
                 )}
               </form>
@@ -306,10 +304,10 @@ const SignIn = () => {
           </div>
 
           <p className="mt-8 text-[11px] text-muted-foreground text-center leading-relaxed">
-            By continuing, you agree to our{" "}
-            <a href="/terms" className="underline hover:text-primary">Terms</a>
-            {" "}and{" "}
-            <a href="/privacy" className="underline hover:text-primary">Privacy Policy</a>.
+            {rich("auth.agree", {
+              terms: <a href="/terms" className="underline hover:text-primary">{t("auth.termsLink")}</a>,
+              privacy: <a href="/privacy" className="underline hover:text-primary">{t("auth.privacyLink")}</a>,
+            })}
           </p>
         </motion.div>
       </div>

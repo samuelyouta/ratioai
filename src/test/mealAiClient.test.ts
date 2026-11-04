@@ -4,7 +4,8 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: { getSession: async () => ({ data: { session: { access_token: "tok" } } }) } },
 }));
 
-import { analyzeMealPhoto } from "@/lib/mealAiClient";
+import { analyzeMealPhoto, describeMealText } from "@/lib/mealAiClient";
+import { setLanguage } from "@/i18n";
 import { ScanLimitError, scansUsedToday, scansLeftToday, markScanLimitReached } from "@/lib/scanQuota";
 
 const respond = (status: number, body: unknown) =>
@@ -43,6 +44,28 @@ describe("analyzeMealPhoto scan limit", () => {
     markScanLimitReached();
     await expect(analyzeMealPhoto("img")).rejects.toBeInstanceOf(ScanLimitError);
     expect(f).not.toHaveBeenCalled();
+  });
+});
+
+describe("AI requests carry the app language", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it("sends the language code with photo and text analysis", async () => {
+    const f = respond(200, { ok: true });
+    vi.stubGlobal("fetch", f);
+    setLanguage("ja");
+    try {
+      await analyzeMealPhoto("img");
+      await describeMealText("ramen");
+    } finally {
+      setLanguage("en");
+    }
+    const bodies = f.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string));
+    expect(bodies[0]).toMatchObject({ imageBase64: "img", language: "ja" });
+    expect(bodies[1]).toMatchObject({ description: "ramen", language: "ja" });
   });
 });
 

@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useT, type TranslationKey } from "@/i18n";
 
-const tabs = [
-  { to: "/app/today", label: "Today" },
-  { to: "/app/insights", label: "Insights" },
-  { to: "/app/log", label: "Log", primary: true },
-  { to: "/app/history", label: "History" },
-  { to: "/app/profile", label: "Profile" },
+const tabs: { to: string; label: TranslationKey; primary?: boolean }[] = [
+  { to: "/app/today", label: "nav.today" },
+  { to: "/app/insights", label: "nav.insights" },
+  { to: "/app/log", label: "nav.log", primary: true },
+  { to: "/app/history", label: "nav.history" },
+  { to: "/app/profile", label: "nav.profile" },
 ];
 
 const HIDDEN = ["/app/welcome", "/app/log", "/app/analyze"];
@@ -18,6 +19,7 @@ const HIDDEN = ["/app/welcome", "/app/log", "/app/analyze"];
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useT();
   if (HIDDEN.includes(location.pathname) || location.pathname.startsWith("/app/onboarding")) {
     return null;
   }
@@ -36,18 +38,18 @@ const BottomNav = () => {
               }}
               className={`flex items-center justify-center transition-all ${
                 primary
-                  ? ""
+                  ? "shrink-0 mx-1"
                   : isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "flex-1 min-w-0 text-primary"
+                  : "flex-1 min-w-0 text-muted-foreground hover:text-foreground"
               }`}
             >
               {primary ? (
-                <span className="gradient-glow rounded-full px-5 py-2 -mt-5 shadow-glow text-primary-foreground text-xs font-bold uppercase tracking-wide">
-                  {label}
+                <span className="gradient-glow rounded-full px-4 py-2 -mt-5 shadow-glow text-primary-foreground text-xs font-bold uppercase tracking-wide">
+                  {t(label)}
                 </span>
               ) : (
-                <span className="text-xs font-semibold py-2 px-3">{label}</span>
+                <span className="text-xs font-semibold py-2 px-1 truncate">{t(label)}</span>
               )}
             </button>
           );

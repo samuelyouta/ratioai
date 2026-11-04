@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { todayKey } from "@/lib/dayKey";
+import { getLanguage } from "@/i18n";
 import {
   DAILY_SCAN_LIMIT,
   ScanLimitError,
@@ -132,13 +133,13 @@ async function postMealAi<T>(
 export async function analyzeMealPhoto<T = unknown>(imageBase64: string): Promise<T> {
   if (scansLeftToday() <= 0) throw new ScanLimitError();
   const day = todayKey();
-  const result = await postMealAi<T>("/api/analyze-meal", { imageBase64 }, { "x-scan-day": day });
+  const result = await postMealAi<T>("/api/analyze-meal", { imageBase64, language: getLanguage() }, { "x-scan-day": day });
   recordScan(day);
   return result;
 }
 
 export function describeMealText<T = unknown>(description: string): Promise<T> {
-  return postMealAi<T>("/api/describe-meal", { description });
+  return postMealAi<T>("/api/describe-meal", { description, language: getLanguage() });
 }
 
 export async function transcribeMealAudio(audioBase64: string, mimeType: string): Promise<string> {

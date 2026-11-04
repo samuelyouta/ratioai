@@ -9,11 +9,13 @@ import { readDayParam, withDay } from "@/lib/loggingDay";
 import { toast } from "@/hooks/use-toast";
 import PortionGuideList from "@/components/app/PortionGuideList";
 import { FOODS, type FoodDef } from "@/lib/foodDb";
+import { useT } from "@/i18n";
 
 type Selected = { food: FoodDef; servings: number };
 
 const Manual = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const [searchParams] = useSearchParams();
   const targetDay = readDayParam(searchParams);
   const [query, setQuery] = useState("");
@@ -60,7 +62,7 @@ const Manual = () => {
 
   const handleSave = () => {
     if (selected.length === 0) {
-      toast({ title: "Add at least one item", description: "Search and tap to add foods." });
+      toast({ title: t("man.addOne"), description: t("man.addOneDesc") });
       return;
     }
     const items: MealItem[] = selected.map((s) => ({
@@ -82,7 +84,7 @@ const Manual = () => {
     const meal: Meal = {
       id: createMealId(),
       loggedAt: timestampForDay(targetDay),
-      title: title.trim() || (items.length === 1 ? items[0].name : "Manual entry"),
+      title: title.trim() || (items.length === 1 ? items[0].name : t("man.entry")),
       icon: "",
       items,
       totalCalories: items.reduce((s, i) => s + i.calories, 0),
@@ -96,14 +98,16 @@ const Manual = () => {
     const outcome = saveMeal(meal);
     if (!outcome.ok) {
       toast({
-        title: "Couldn't save this meal",
-        description: "Your device is out of storage space. Free some up and try again.",
+        title: t("man.saveFail"),
+        description: t("man.storage"),
       });
       return;
     }
     maybeRequestReview(meal.source);
-    const where = isToday(targetDay) ? "today" : formatDayLabel(targetDay).toLowerCase();
-    toast({ title: "Logged", description: `${meal.totalCalories} cal added to ${where}.` });
+    toast({
+      title: t("man.logged"),
+      description: t("man.loggedDesc", { cal: meal.totalCalories, where: formatDayLabel(targetDay) }),
+    });
     navigate(withDay("/app/today", targetDay));
   };
 
@@ -115,16 +119,16 @@ const Manual = () => {
           <button
             onClick={() => navigate(-1)}
             className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center"
-            aria-label="Back"
+            aria-label={t("common.back")}
           >
             <ArrowLeft className="w-4 h-4 text-foreground" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-foreground leading-tight">Search & Edit</h1>
+            <h1 className="text-base font-semibold text-foreground leading-tight">{t("man.title")}</h1>
             <p className="text-[11px] text-muted-foreground">
               {isToday(targetDay)
-                ? "Manual log — no AI"
-                : `Adding to ${formatDayLabel(targetDay)}`}
+                ? t("man.noAI")
+                : t("desc.adding", { day: formatDayLabel(targetDay) })}
             </p>
           </div>
         </div>
@@ -134,7 +138,7 @@ const Manual = () => {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search foods (e.g. chicken, oats)…"
+            placeholder={t("man.search")}
             className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
@@ -144,12 +148,12 @@ const Manual = () => {
       {selected.length > 0 && (
         <div className="px-4 pt-4">
           <h2 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
-            Your meal
+            {t("man.yourMeal")}
           </h2>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Meal name (optional)"
+            placeholder={t("man.mealName")}
             className="w-full h-10 px-3 mb-3 rounded-lg bg-secondary/60 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none"
           />
           <div className="space-y-2">
@@ -161,14 +165,14 @@ const Manual = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{s.food.name}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {Math.round(s.food.cal * s.servings)} cal · {s.servings} × {s.food.unit}
+                    {t("man.selected", { cal: Math.round(s.food.cal * s.servings), servings: s.servings, unit: s.food.unit })}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => adjust(s.food.name, -0.5)}
                     className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center"
-                    aria-label="Decrease"
+                    aria-label={t("man.dec")}
                   >
                     <Minus className="w-3.5 h-3.5 text-foreground" />
                   </button>
@@ -176,7 +180,7 @@ const Manual = () => {
                   <button
                     onClick={() => adjust(s.food.name, 0.5)}
                     className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center"
-                    aria-label="Increase"
+                    aria-label={t("man.inc")}
                   >
                     <Plus className="w-3.5 h-3.5 text-foreground" />
                   </button>
@@ -190,7 +194,7 @@ const Manual = () => {
               name: s.food.name,
               portion: `${Math.round(s.food.unitGrams * s.servings)}g`,
             }))}
-            title="Portion guide"
+            title={t("desc.guide")}
             compact
           />
         </div>
@@ -199,16 +203,16 @@ const Manual = () => {
       {/* Results */}
       <div className="px-4 pt-5">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-          {query ? `Results (${results.length})` : "Common foods"}
+          {query ? t("man.results", { n: results.length }) : t("man.common")}
         </h2>
         {results.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground mb-3">No matches for "{query}".</p>
+            <p className="text-sm text-muted-foreground mb-3">{t("man.noMatches", { query })}</p>
             <button
               onClick={() => navigate(`/app/describe?q=${encodeURIComponent(query)}`)}
               className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-primary/15 border border-primary/30 text-sm font-medium text-foreground"
             >
-              Describe it instead — AI estimate
+              {t("man.describeInstead")}
             </button>
           </div>
         ) : (
@@ -222,7 +226,7 @@ const Manual = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{f.name}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {f.cal} cal · P {f.p}g · C {f.c}g · F {f.f}g · per {f.unit}
+                    {t("man.perUnit", { cal: f.cal, p: f.p, c: f.c, f: f.f, unit: f.unit })}
                   </p>
                 </div>
                 <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -243,20 +247,20 @@ const Manual = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</p>
-              <p className="text-lg font-bold text-foreground">{Math.round(totals.cal)} cal</p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("man.total")}</p>
+              <p className="text-lg font-bold text-foreground">{Math.round(totals.cal)} {t("common.cal")}</p>
             </div>
             <div className="flex gap-3 text-[11px] text-muted-foreground">
-              <span>P {totals.p.toFixed(0)}g</span>
-              <span>C {totals.c.toFixed(0)}g</span>
-              <span>F {totals.f.toFixed(0)}g</span>
+              <span>{t("desc.p")} {totals.p.toFixed(0)}g</span>
+              <span>{t("desc.c")} {totals.c.toFixed(0)}g</span>
+              <span>{t("desc.f")} {totals.f.toFixed(0)}g</span>
             </div>
           </div>
           <button
             onClick={handleSave}
             className="w-full h-12 rounded-xl gradient-glow shadow-glow text-sm font-semibold text-primary-foreground"
           >
-            Log {selected.length} item{selected.length > 1 ? "s" : ""}
+            {selected.length === 1 ? t("man.logItem1") : t("man.logItems", { n: selected.length })}
           </button>
         </motion.div>
       )}

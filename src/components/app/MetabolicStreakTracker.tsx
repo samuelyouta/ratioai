@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { getLoggedDayKeys } from "@/lib/profile";
+import { useT } from "@/i18n";
 import { getStreakState } from "@/lib/streak";
 import { dayKeyToDate, recentDayKeys, todayKey } from "@/lib/dayKey";
 
@@ -14,6 +15,7 @@ interface Props {
  * Days with a logged meal (or auto-protected by a freeze day) glow neon green.
  */
 const MetabolicStreakTracker = ({ days = 28, onSelectDay }: Props) => {
+  const { t } = useT();
   const cells = useMemo(() => {
     const logged = getLoggedDayKeys();
     const frozen = new Set(getStreakState().consumedFreezeDates);
@@ -34,19 +36,19 @@ const MetabolicStreakTracker = ({ days = 28, onSelectDay }: Props) => {
       <div className="flex items-center justify-between mb-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Metabolic Streak
+            {t("streak.title")}
           </p>
           <p className="text-sm font-semibold text-foreground mt-0.5">
             {loggedCount}{" "}
-            <span className="text-muted-foreground font-normal">/ {days} days locked in</span>
+            <span className="text-muted-foreground font-normal">{t("streak.locked", { days })}</span>
           </p>
         </div>
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-sm bg-primary shadow-glow" /> hit
+            <span className="w-2 h-2 rounded-sm bg-primary shadow-glow" /> {t("streak.hit")}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-sm bg-secondary" /> missed
+            <span className="w-2 h-2 rounded-sm bg-secondary" /> {t("streak.missed")}
           </span>
         </div>
       </div>
@@ -60,7 +62,7 @@ const MetabolicStreakTracker = ({ days = 28, onSelectDay }: Props) => {
           const glow = active
             ? { boxShadow: "0 0 8px hsl(var(--primary) / 0.55)" }
             : undefined;
-          const label = `${c.key}${active ? " — logged" : ""}`;
+          const label = `${c.key}${active ? ` — ${t("streak.logged")}` : ""}`;
 
           if (!onSelectDay) {
             return <div key={c.key} title={label} className={className} style={glow} />;
@@ -70,7 +72,7 @@ const MetabolicStreakTracker = ({ days = 28, onSelectDay }: Props) => {
               key={c.key}
               type="button"
               title={label}
-              aria-label={`View ${c.key}`}
+              aria-label={t("streak.view", { day: c.key })}
               onClick={() => onSelectDay(c.key)}
               className={`${className} active:scale-95`}
               style={glow}
@@ -81,7 +83,7 @@ const MetabolicStreakTracker = ({ days = 28, onSelectDay }: Props) => {
 
       {onSelectDay && (
         <p className="mt-2 text-[10px] text-muted-foreground text-center">
-          Tap any day to review or edit what you logged.
+          {t("streak.tapDay")}
         </p>
       )}
     </div>

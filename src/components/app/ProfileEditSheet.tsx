@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Field, Sheet } from "@/components/app/Sheet";
+import { useT, type TranslationKey } from "@/i18n";
 import type { Activity, Gender, Goal, Profile, Unit } from "@/lib/profile";
 import {
   applyDraft,
@@ -17,22 +18,22 @@ import {
   type ProfileDraft,
 } from "@/lib/profileEdit";
 
-const GOALS: { id: Goal; label: string }[] = [
-  { id: "lose", label: "Lose Fat" },
-  { id: "muscle", label: "Build Muscle" },
-  { id: "maintain", label: "Recomp" },
-  { id: "endurance", label: "Endurance" },
+const GOALS: { id: Goal; label: TranslationKey }[] = [
+  { id: "lose", label: "goal.lose" },
+  { id: "muscle", label: "goal.muscle" },
+  { id: "maintain", label: "goal.maintain" },
+  { id: "endurance", label: "goal.endurance" },
 ];
-const ACTIVITIES: { id: Activity; label: string }[] = [
-  { id: "sedentary", label: "Sedentary" },
-  { id: "light", label: "Lightly Active" },
-  { id: "moderate", label: "Moderately Active" },
-  { id: "very", label: "Very Active" },
+const ACTIVITIES: { id: Activity; label: TranslationKey }[] = [
+  { id: "sedentary", label: "activity.sedentary" },
+  { id: "light", label: "activity.light" },
+  { id: "moderate", label: "activity.moderate" },
+  { id: "very", label: "activity.very" },
 ];
-const GENDERS: { id: Gender; label: string }[] = [
-  { id: "male", label: "Male" },
-  { id: "female", label: "Female" },
-  { id: "other", label: "Other" },
+const GENDERS: { id: Gender; label: TranslationKey }[] = [
+  { id: "male", label: "gender.male" },
+  { id: "female", label: "gender.female" },
+  { id: "other", label: "gender.other" },
 ];
 
 function Chips<T extends string>({
@@ -42,10 +43,11 @@ function Chips<T extends string>({
   onChange,
 }: {
   label: string;
-  options: { id: T; label: string }[];
+  options: { id: T; label: TranslationKey }[];
   value: T;
   onChange: (v: T) => void;
 }) {
+  const { t } = useT();
   return (
     <div>
       <p className="text-[11px] font-medium text-muted-foreground mb-1">{label}</p>
@@ -62,7 +64,7 @@ function Chips<T extends string>({
                 : "bg-secondary border-border text-foreground/80"
             }`}
           >
-            {o.label}
+            {t(o.label)}
           </button>
         ))}
       </div>
@@ -85,6 +87,7 @@ interface Props {
  * "Use recommended" button changes them.
  */
 const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
+  const { t } = useT();
   const [draft, setDraft] = useState<ProfileDraft>(() => draftFromProfile(profile));
   const [customTargets, setCustomTargets] = useState(false);
   const [age, setAge] = useState("");
@@ -162,27 +165,27 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
   const rec = recommendedTargets(draft);
 
   return (
-    <Sheet open={open} title="Edit profile & targets" onClose={onClose}>
+    <Sheet open={open} title={t("edit.title")} onClose={onClose}>
       <div className="space-y-5">
         <Field
-          label="Name"
+          label={t("edit.name")}
           value={draft.name}
           onChange={(v) => setDraft((p) => ({ ...p, name: v }))}
-          placeholder="Your name"
+          placeholder={t("edit.namePh")}
         />
 
-        <Chips label="Goal" options={GOALS} value={draft.goal} onChange={(goal) => update({ goal })} />
+        <Chips label={t("edit.goal")} options={GOALS} value={draft.goal} onChange={(goal) => update({ goal })} />
         <Chips
-          label="Activity level"
+          label={t("edit.activity")}
           options={ACTIVITIES}
           value={draft.activity}
           onChange={(activity) => update({ activity })}
         />
-        <Chips label="Sex" options={GENDERS} value={draft.gender} onChange={(gender) => update({ gender })} />
+        <Chips label={t("edit.sex")} options={GENDERS} value={draft.gender} onChange={(gender) => update({ gender })} />
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] font-medium text-muted-foreground">Body</p>
+            <p className="text-[11px] font-medium text-muted-foreground">{t("edit.body")}</p>
             <div className="flex bg-secondary rounded-lg p-0.5">
               {(["metric", "imperial"] as const).map((u) => (
                 <button
@@ -200,8 +203,8 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Field
-              label="Age"
-              suffix="yrs"
+              label={t("edit.age")}
+              suffix={t("edit.yrs")}
               numeric
               value={age}
               error={!!showError("age")}
@@ -211,7 +214,7 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
               }}
             />
             <Field
-              label="Weight"
+              label={t("edit.weight")}
               suffix={imperial ? "lb" : "kg"}
               numeric
               value={weight}
@@ -225,7 +228,7 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
             {imperial ? (
               <>
                 <Field
-                  label="Height"
+                  label={t("edit.height")}
                   suffix="ft"
                   numeric
                   value={heightFt}
@@ -249,7 +252,7 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
               </>
             ) : (
               <Field
-                label="Height"
+                label={t("edit.height")}
                 suffix="cm"
                 numeric
                 value={heightCm}
@@ -270,31 +273,31 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] font-medium text-muted-foreground">Daily targets</p>
+            <p className="text-[11px] font-medium text-muted-foreground">{t("edit.daily")}</p>
             <button
               type="button"
               onClick={useRecommended}
               className="text-[11px] font-semibold text-primary"
             >
-              Use recommended ({rec.calorieTarget} cal)
+              {t("edit.useRec", { cal: rec.calorieTarget })}
             </button>
           </div>
           <p className="text-[11px] text-muted-foreground mb-3">
             {customTargets
-              ? "These are your own numbers. They won't change when you edit your stats."
-              : "Calculated from your stats and goal. Type a number to set your own."}
+              ? t("edit.custom")
+              : t("edit.auto")}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <Field
-              label="Calories"
-              suffix="cal"
+              label={t("edit.calories")}
+              suffix={t("common.cal")}
               numeric
               value={Number.isFinite(draft.calorieTarget) ? String(draft.calorieTarget) : ""}
               error={!!showError("calorieTarget")}
               onChange={setCalories}
             />
             <Field
-              label="Protein"
+              label={t("macro.protein")}
               suffix="g"
               numeric
               value={Number.isFinite(draft.proteinTarget) ? String(draft.proteinTarget) : ""}
@@ -302,7 +305,7 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
               onChange={(v) => setTarget("proteinTarget", v)}
             />
             <Field
-              label="Carbs"
+              label={t("macro.carbs")}
               suffix="g"
               numeric
               value={Number.isFinite(draft.carbsTarget) ? String(draft.carbsTarget) : ""}
@@ -310,7 +313,7 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
               onChange={(v) => setTarget("carbsTarget", v)}
             />
             <Field
-              label="Fat"
+              label={t("macro.fat")}
               suffix="g"
               numeric
               value={Number.isFinite(draft.fatTarget) ? String(draft.fatTarget) : ""}
@@ -323,8 +326,7 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
           )}
           {Number.isFinite(macroKcal) && macroGap > 100 && Number.isFinite(draft.calorieTarget) && (
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Your macros add up to {macroKcal} cal, {macroKcal > draft.calorieTarget ? "above" : "below"} your
-              calorie target.
+              {t(macroKcal > draft.calorieTarget ? "edit.macroAbove" : "edit.macroBelow", { kcal: macroKcal })}
             </p>
           )}
         </div>
@@ -334,7 +336,7 @@ const ProfileEditSheet = ({ open, profile, onSave, onClose }: Props) => {
           onClick={handleSave}
           className="w-full h-12 rounded-xl gradient-glow text-primary-foreground font-semibold text-sm"
         >
-          Save changes
+          {t("edit.save")}
         </button>
       </div>
     </Sheet>

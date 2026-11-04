@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { useT } from "@/i18n";
 import {
+  dateLocale,
   dayKeyToDate,
   formatDayLabel,
   isFutureDay,
@@ -26,6 +28,7 @@ interface Props {
  * of recent days, and a date field for jumping further back.
  */
 const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
+  const { t } = useT();
   const [pickerOpen, setPickerOpen] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
@@ -50,7 +53,7 @@ const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
         <button
           type="button"
           onClick={() => go(-1)}
-          aria-label="Previous day"
+          aria-label={t("day.prev")}
           className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center text-foreground active:scale-95 transition-transform"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -60,14 +63,14 @@ const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
           type="button"
           onClick={() => setPickerOpen((o) => !o)}
           className="flex-1 min-w-0 flex flex-col items-center justify-center py-1"
-          aria-label="Choose a date"
+          aria-label={t("day.choose")}
           aria-expanded={pickerOpen}
         >
           <span className="text-sm font-bold text-foreground truncate">
             {formatDayLabel(day)}
           </span>
           <span className="text-[11px] text-muted-foreground truncate">
-            {dayKeyToDate(day).toLocaleDateString(undefined, {
+            {dayKeyToDate(day).toLocaleDateString(dateLocale(), {
               month: "short",
               day: "numeric",
               year: "numeric",
@@ -78,7 +81,7 @@ const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
         <button
           type="button"
           onClick={() => setPickerOpen((o) => !o)}
-          aria-label="Open date picker"
+          aria-label={t("day.openPicker")}
           className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
             pickerOpen ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
           }`}
@@ -90,7 +93,7 @@ const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
           type="button"
           onClick={() => go(1)}
           disabled={atToday}
-          aria-label="Next day"
+          aria-label={t("day.next")}
           className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center text-foreground disabled:opacity-30 active:scale-95 transition-transform"
         >
           <ChevronRight className="w-4 h-4" />
@@ -104,7 +107,7 @@ const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
           className="overflow-hidden px-1 pt-2"
         >
           <label className="text-[11px] text-muted-foreground" htmlFor="day-picker">
-            Jump to a date
+            {t("day.jump")}
           </label>
           <input
             id="day-picker"
@@ -145,7 +148,7 @@ const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
               }`}
             >
               <span className="text-[9px] uppercase tracking-wide">
-                {date.toLocaleDateString(undefined, { weekday: "narrow" })}
+                {date.toLocaleDateString(dateLocale(), { weekday: "narrow" })}
               </span>
               <span className="text-xs font-bold">{date.getDate()}</span>
               <span
@@ -168,7 +171,7 @@ const DayNavigator = ({ day, onChange, loggedDays, stripDays = 14 }: Props) => {
           onClick={() => onChange(today)}
           className="mt-1 w-full text-[11px] font-semibold text-primary py-1.5"
         >
-          Back to today
+          {t("day.backToToday")}
         </button>
       )}
     </div>

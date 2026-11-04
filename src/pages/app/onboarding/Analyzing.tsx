@@ -3,18 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { trackOnboardingCompleted } from "@/lib/adEvents";
+import { useT, type TranslationKey } from "@/i18n";
 
-const STEPS = [
-  "Parsing biological framework...",
-  "Calibrating protein satiety index...",
-  "Optimizing computer-vision volume models...",
-];
+const STEPS: TranslationKey[] = ["analyzing.step1", "analyzing.step2", "analyzing.step3"];
 
 const STEP_MS = 800;
 const TOTAL_MS = 2500;
 
 const Analyzing = () => {
   const navigate = useNavigate();
+  const { t } = useT();
   const [i, setI] = useState(0);
   const [leaving, setLeaving] = useState(false);
 
@@ -81,7 +79,7 @@ const Analyzing = () => {
         </div>
 
         <p className="text-[10px] uppercase tracking-[0.25em] text-primary/80 mb-3">
-          AI Model Synthesis
+          {t("analyzing.title")}
         </p>
 
         <div className="h-8 relative w-full max-w-sm text-center">
@@ -94,7 +92,7 @@ const Analyzing = () => {
               transition={{ duration: 0.3 }}
               className="text-base text-muted-foreground tracking-wide"
             >
-              {STEPS[i]}
+              {t(STEPS[i])}
             </motion.p>
           </AnimatePresence>
         </div>
