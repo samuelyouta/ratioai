@@ -14,7 +14,8 @@ Configure these before shipping the iOS app with in-app subscriptions.
 | `ratioai_pro_yearly` | 1 year | RatioAi Pro Yearly |
 
 4. Set pricing, localizations, and review screenshot for each product.
-5. Submit products for review with your app binary.
+5. On the **yearly** product, add an **Introductory Offer** that is a free trial (for example 3 days). The paywall starts that trial when the yearly plan is selected. The monthly plan is a regular subscription.
+6. Submit the products for review with your app binary. A group left on "Prepare for Submission" does not return prices to the app.
 
 Product IDs must match `.env` (or defaults in `src/lib/subscriptions.ts`).
 
@@ -44,12 +45,11 @@ VITE_REVENUECAT_PRODUCT_YEARLY=ratioai_pro_yearly
 Optional:
 
 ```bash
-# Skip paywall locally (testing only)
-VITE_SUBSCRIPTION_BYPASS=true
-
-# Require subscription on web (default: web bypasses, native requires)
+# Require subscription on web (default: web bypasses, native always requires it)
 VITE_SUBSCRIPTION_REQUIRED_WEB=false
 ```
+
+iOS builds always show the trial funnel. `VITE_SUBSCRIPTION_BYPASS` does not turn it off.
 
 ## 4. Build & run native app
 
@@ -70,10 +70,13 @@ CAPACITOR_DEV_SERVER=http://localhost:8080 npx cap run ios
 ## 5. User flow
 
 ```
-Onboarding → Sign in (Apple / Google / Email) → Paywall → App
+Onboarding → Sign in (Apple / Google / Email) → Try for free → Trial reminder → Paywall → App
 ```
 
-- **RequireSubscription** blocks `/app/*` routes until `pro` entitlement is active.
+- After sign-in, iOS opens `/app/trial` ("RatioAi wants you to try it for free"), then `/app/trial/reminder` (asks for notification permission and schedules a local reminder before the trial ends), then the paywall.
+- The yearly plan's button starts the free trial. The monthly plan subscribes immediately.
+- **RequireSubscription** blocks meal logging until the `pro` entitlement is active, including when the App Store has not returned products yet.
+- The App Review account `reviewer@ratioai.app` still skips the paywall.
 - Purchases are linked to the Supabase user ID via `Purchases.logIn`.
 - **Restore Purchases** is available on the paywall and Profile screen.
 

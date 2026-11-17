@@ -5,6 +5,7 @@ import {
   type CustomerInfo,
   type PurchasesOfferings,
   type PurchasesPackage,
+  type PurchasesStoreProduct,
 } from "@revenuecat/purchases-capacitor";
 import { isNative } from "@/lib/native";
 import { enableAppleAdsAttribution } from "@/lib/appleAds";
@@ -24,11 +25,32 @@ export type SubscriptionStatus = "unknown" | "loading" | "active" | "inactive";
 let configured = false;
 
 export function isSubscriptionRequired(): boolean {
-  if (import.meta.env.VITE_SUBSCRIPTION_BYPASS === "true") return false;
+  // Native builds always gate the app. A bypass flag in the iOS build
+  // was letting people log meals without ever seeing a paywall.
   if (!isNative()) {
     return import.meta.env.VITE_SUBSCRIPTION_REQUIRED_WEB === "true";
   }
   return true;
+}
+
+/** Days in a free introductory offer, or null when the product has no free trial. */
+export function freeTrialDays(
+  intro: { price: number; periodUnit: string; periodNumberOfUnits: number; cycles: number } | null | undefined,
+): number | null {
+  if (!intro || intro.price > 0) return null;
+  const count = Math.max(1, intro.periodNumberOfUnits) * Math.max(1, intro.cycles || 1);
+  switch ((intro.periodUnit || "").toUpperCase()) {
+    case "DAY":
+      return count;
+    case "WEEK":
+      return count * 7;
+    case "MONTH":
+      return count * 30;
+    case "YEAR":
+      return count * 365;
+    default:
+      return null;
+  }
 }
 
 export function hasActiveEntitlement(info: CustomerInfo | null): boolean {
@@ -143,8 +165,56 @@ export async function getOfferings(): Promise<PurchasesOfferings | null> {
   }
 }
 
+/**
+ * Plans for the paywall. Uses the current RevenueCat offering, then asks the
+ * store directly so a missing offering still shows the two App Store products.
+ */
+export async function loadPaywallPlans(): Promise<{
+  monthlyPackage: PurchasesPackage | null;
+  yearlyPackage: PurchasesPackage | null;
+  monthlyProduct: PurchasesStoreProduct | null;
+  yearlyProduct: PurchasesStoreProduct | null;
+}> {
+  const empty = {
+    monthlyPackage: null,
+    yearlyPackage: null,
+    monthlyProduct: null,
+    yearlyProduct: null,
+  };
+  if (!isNative()) return empty;
+  const offerings = await getOfferings();
+  const picked = pickPaywallPackages(offerings);
+  if (picked.monthly || picked.yearly) {
+    return {
+      monthlyPackage: picked.monthly,
+      yearlyPackage: picked.yearly,
+      monthlyProduct: picked.monthly?.product ?? null,
+      yearlyProduct: picked.yearly?.product ?? null,
+    };
+  }
+  try {
+    if (!(await configureRevenueCat())) return empty;
+    const { products } = await Purchases.getProducts({
+      productIdentifiers: [PRODUCT_IDS.monthly, PRODUCT_IDS.yearly],
+    });
+    const monthlyProduct =
+      products.find((p) => p.identifier === PRODUCT_IDS.monthly) ?? null;
+    const yearlyProduct =
+      products.find((p) => p.identifier === PRODUCT_IDS.yearly) ?? null;
+    return { ...empty, monthlyProduct, yearlyProduct };
+  } catch (e) {
+    console.warn("RevenueCat products failed", e);
+    return empty;
+  }
+}
+
 export async function purchasePackage(pkg: PurchasesPackage): Promise<CustomerInfo> {
   const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
+  return customerInfo;
+}
+
+export async function purchaseStoreProduct(product: PurchasesStoreProduct): Promise<CustomerInfo> {
+  const { customerInfo } = await Purchases.purchaseStoreProduct({ product });
   return customerInfo;
 }
 
