@@ -519,6 +519,23 @@ export const en = {
   "paywall.f3": "Personalized macro targets",
   "paywall.f4": "Streaks and insights",
   "paywall.f5": "Sync across all your devices",
+  "paywall.headline": "Start your {days}-day {free} trial to continue",
+  "paywall.freeWord": "FREE",
+  "paywall.today": "Today",
+  "paywall.todayBody": "Unlock all of RatioAi, including AI meal scanning and your macro plan.",
+  "paywall.reminderWhen": "In {days} Days — Reminder",
+  "paywall.reminderBody": "We'll send you a reminder that your trial is ending soon.",
+  "paywall.billingWhen": "In {days} Days — Billing Starts",
+  "paywall.billingBody": "You'll be charged on {date}.",
+  "paywall.perMonth": "/mo",
+  "paywall.daysFree": "{days} DAYS FREE",
+  "paywall.noPayment": "No Payment Due Now",
+  "paywall.startMyTrial": "Start My {days}-Day Free Trial",
+  "paywall.already": "Already purchased?",
+  "paywall.legalYearly": "{days} days free, then {price} per year. Billed yearly. Plan auto-renews unless you cancel. Cancel in the App Store.",
+  "paywall.legalMonthly": "{price} per month. Billed monthly. Plan auto-renews unless you cancel. Cancel in the App Store.",
+  "paywall.monthlyNow": "The monthly plan is billed today. It does not include the free trial.",
+  "paywall.restoreShort": "Restore",
   // @@APPEND
 } as const;
 

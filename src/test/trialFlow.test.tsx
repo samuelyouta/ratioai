@@ -49,10 +49,14 @@ describe("free trial funnel", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(await screen.findByText("Choose your plan")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /start your 3-day free trial to continue/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Yearly")).toBeInTheDocument();
     expect(screen.getByText("Monthly")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start free trial" })).toBeInTheDocument();
+    expect(screen.getByText("3 DAYS FREE")).toBeInTheDocument();
+    expect(screen.getByText("No Payment Due Now")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start My 3-Day Free Trial" })).toBeInTheDocument();
     expect(screen.queryByText(/continue to ratioai/i)).not.toBeInTheDocument();
   });
 });

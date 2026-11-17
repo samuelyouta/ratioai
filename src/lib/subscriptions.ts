@@ -33,6 +33,19 @@ export function isSubscriptionRequired(): boolean {
   return true;
 }
 
+/** The yearly RatioAi Pro product includes this free introductory offer. */
+export const YEARLY_FREE_TRIAL_DAYS = 3;
+
+/**
+ * Trial length to show for the yearly plan. Uses the App Store introductory
+ * offer when the store has one, and the product's 3-day trial otherwise.
+ */
+export function resolvedYearlyTrialDays(
+  intro: { price: number; periodUnit: string; periodNumberOfUnits: number; cycles: number } | null | undefined,
+): number {
+  return freeTrialDays(intro) ?? YEARLY_FREE_TRIAL_DAYS;
+}
+
 /** Days in a free introductory offer, or null when the product has no free trial. */
 export function freeTrialDays(
   intro: { price: number; periodUnit: string; periodNumberOfUnits: number; cycles: number } | null | undefined,
