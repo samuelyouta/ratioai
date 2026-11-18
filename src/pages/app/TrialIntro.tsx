@@ -46,7 +46,7 @@ const TrialIntro = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-y-auto">
       <div className="flex-1 flex flex-col px-6 pb-6 max-w-sm mx-auto w-full safe-top">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -58,14 +58,14 @@ const TrialIntro = () => {
             {t("trial.intro.title")}
           </h1>
 
-          <div className="flex-1 flex items-center justify-center py-5">
-            <div className="relative w-[214px] rounded-[2.3rem] border border-primary/40 bg-black p-[7px] shadow-glow">
-              <div className="pointer-events-none absolute left-1/2 top-[11px] z-10 h-3.5 w-16 -translate-x-1/2 rounded-full bg-black ring-1 ring-primary/30" />
-              <div className="overflow-hidden rounded-[1.75rem] bg-black">
+          <div className="flex items-center justify-center py-4">
+            <div className="relative w-[196px] rounded-[2.1rem] border border-primary/40 bg-black p-[6px] shadow-glow">
+              <div className="pointer-events-none absolute left-1/2 top-[10px] z-10 h-3 w-14 -translate-x-1/2 rounded-full bg-black ring-1 ring-primary/30" />
+              <div className="overflow-hidden rounded-[1.65rem] bg-black">
                 <img
                   src={mealScan}
                   alt={t("trial.intro.previewAlt")}
-                  className="block h-[340px] w-full object-cover object-top"
+                  className="block h-auto w-full"
                 />
               </div>
             </div>
