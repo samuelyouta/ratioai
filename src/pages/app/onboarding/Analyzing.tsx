@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { trackOnboardingCompleted } from "@/lib/adEvents";
+import { getPostSignInPath } from "@/lib/auth";
 import { useT, type TranslationKey } from "@/i18n";
 
 const STEPS: TranslationKey[] = ["analyzing.step1", "analyzing.step2", "analyzing.step3"];
@@ -29,7 +30,10 @@ const Analyzing = () => {
         // Doing so dropped them back on the login screen after every attempt,
         // which is the loop App Review hit on iPad.
         const { data } = await supabase.auth.getSession();
-        navigate(data.session?.user ? "/app/today" : "/app/signin", { replace: true });
+        navigate(
+          data.session?.user ? getPostSignInPath(true, "/app/today") : "/app/signin",
+          { replace: true },
+        );
       })();
     }, TOTAL_MS);
     return () => {

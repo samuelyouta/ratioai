@@ -7,11 +7,11 @@ import { useSubscription } from "@/hooks/useSubscription";
  */
 const RequireSubscription = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const { status, isPro, subscriptionRequired, productsUnavailable } = useSubscription();
+  const { status, isPro, subscriptionRequired } = useSubscription();
 
-  // Nothing is purchasable (store outage, or In-App Purchases still awaiting
-  // review), so a paywall here would be an unescapable dead end.
-  if (!subscriptionRequired || isPro || productsUnavailable) {
+  // Missing store products used to skip this gate, which dropped people
+  // straight into meal logging. They now go through the trial funnel.
+  if (!subscriptionRequired || isPro) {
     return <>{children}</>;
   }
 
@@ -25,7 +25,7 @@ const RequireSubscription = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <Navigate
-      to="/app/paywall"
+      to="/app/trial"
       replace
       state={{ from: location.pathname + location.search }}
     />

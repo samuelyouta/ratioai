@@ -16,15 +16,17 @@ ffmpeg -y -hide_banner -loglevel error -i "$LOGO" \
   -vf "scale=1024:1024:force_original_aspect_ratio=decrease,pad=1024:1024:(ow-iw)/2:(oh-ih)/2:color=$BG" \
   "$ICON_DIR/AppIcon-512@2x.png"
 
-echo "→ Splash screens"
+# iPhone launch screens aspect-fill this square and crop the sides.
+# Keep the logo inside the center 1200×1200 of the 2732 canvas.
+echo "→ Splash screens (logo inside the center 1200×1200)"
 ffmpeg -y -hide_banner -loglevel error -i "$LOGO" \
-  -vf "scale=2732:2732:force_original_aspect_ratio=decrease,pad=2732:2732:(ow-iw)/2:(oh-ih)/2:color=$BG" \
+  -vf "scale=1200:1200:force_original_aspect_ratio=decrease,pad=2732:2732:(ow-iw)/2:(oh-ih)/2:color=$BG" \
   "$SPLASH_DIR/splash-2732x2732-2.png"
 ffmpeg -y -hide_banner -loglevel error -i "$LOGO" \
-  -vf "scale=1366:1366:force_original_aspect_ratio=decrease,pad=1366:1366:(ow-iw)/2:(oh-ih)/2:color=$BG" \
+  -vf "scale=600:600:force_original_aspect_ratio=decrease,pad=1366:1366:(ow-iw)/2:(oh-ih)/2:color=$BG" \
   "$SPLASH_DIR/splash-2732x2732-1.png"
 ffmpeg -y -hide_banner -loglevel error -i "$LOGO" \
-  -vf "scale=911:911:force_original_aspect_ratio=decrease,pad=911:911:(ow-iw)/2:(oh-ih)/2:color=$BG" \
+  -vf "scale=400:400:force_original_aspect_ratio=decrease,pad=911:911:(ow-iw)/2:(oh-ih)/2:color=$BG" \
   "$SPLASH_DIR/splash-2732x2732.png"
 
 echo "→ App Store screenshots (iPhone 6.7\" — 1290×2796)"

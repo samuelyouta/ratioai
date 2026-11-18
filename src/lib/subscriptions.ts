@@ -5,6 +5,7 @@ import {
   type CustomerInfo,
   type PurchasesOfferings,
   type PurchasesPackage,
+  type PurchasesStoreProduct,
 } from "@revenuecat/purchases-capacitor";
 import { isNative } from "@/lib/native";
 import { enableAppleAdsAttribution } from "@/lib/appleAds";
@@ -24,11 +25,69 @@ export type SubscriptionStatus = "unknown" | "loading" | "active" | "inactive";
 let configured = false;
 
 export function isSubscriptionRequired(): boolean {
-  if (import.meta.env.VITE_SUBSCRIPTION_BYPASS === "true") return false;
+  // Native builds always gate the app. A bypass flag in the iOS build
+  // was letting people log meals without ever seeing a paywall.
   if (!isNative()) {
     return import.meta.env.VITE_SUBSCRIPTION_REQUIRED_WEB === "true";
   }
   return true;
+}
+
+/** The yearly RatioAi Pro product includes this free introductory offer. */
+export const YEARLY_FREE_TRIAL_DAYS = 3;
+
+/**
+ * Trial length to show for the yearly plan. Uses the App Store introductory
+ * offer when the store has one, and the product's 3-day trial otherwise.
+ */
+export function resolvedYearlyTrialDays(
+  intro: { price: number; periodUnit: string; periodNumberOfUnits: number; cycles: number } | null | undefined,
+): number {
+  return freeTrialDays(intro) ?? YEARLY_FREE_TRIAL_DAYS;
+}
+
+/**
+ * Monthly equivalent of the yearly price, in the store's own currency format.
+ * Prefers the string Apple/RevenueCat already localized for the account's country.
+ */
+export function yearlyPerMonthLabel(
+  product:
+    | { pricePerMonthString?: string | null; price?: number; currencyCode?: string }
+    | null
+    | undefined,
+  locale: string,
+): string | null {
+  if (!product) return null;
+  if (product.pricePerMonthString) return product.pricePerMonthString;
+  if (typeof product.price !== "number" || !product.currencyCode) return null;
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: product.currencyCode,
+    }).format(product.price / 12);
+  } catch {
+    return null;
+  }
+}
+
+/** Days in a free introductory offer, or null when the product has no free trial. */
+export function freeTrialDays(
+  intro: { price: number; periodUnit: string; periodNumberOfUnits: number; cycles: number } | null | undefined,
+): number | null {
+  if (!intro || intro.price > 0) return null;
+  const count = Math.max(1, intro.periodNumberOfUnits) * Math.max(1, intro.cycles || 1);
+  switch ((intro.periodUnit || "").toUpperCase()) {
+    case "DAY":
+      return count;
+    case "WEEK":
+      return count * 7;
+    case "MONTH":
+      return count * 30;
+    case "YEAR":
+      return count * 365;
+    default:
+      return null;
+  }
 }
 
 export function hasActiveEntitlement(info: CustomerInfo | null): boolean {
@@ -143,8 +202,56 @@ export async function getOfferings(): Promise<PurchasesOfferings | null> {
   }
 }
 
+/**
+ * Plans for the paywall. Uses the current RevenueCat offering, then asks the
+ * store directly so a missing offering still shows the two App Store products.
+ */
+export async function loadPaywallPlans(): Promise<{
+  monthlyPackage: PurchasesPackage | null;
+  yearlyPackage: PurchasesPackage | null;
+  monthlyProduct: PurchasesStoreProduct | null;
+  yearlyProduct: PurchasesStoreProduct | null;
+}> {
+  const empty = {
+    monthlyPackage: null,
+    yearlyPackage: null,
+    monthlyProduct: null,
+    yearlyProduct: null,
+  };
+  if (!isNative()) return empty;
+  const offerings = await getOfferings();
+  const picked = pickPaywallPackages(offerings);
+  if (picked.monthly || picked.yearly) {
+    return {
+      monthlyPackage: picked.monthly,
+      yearlyPackage: picked.yearly,
+      monthlyProduct: picked.monthly?.product ?? null,
+      yearlyProduct: picked.yearly?.product ?? null,
+    };
+  }
+  try {
+    if (!(await configureRevenueCat())) return empty;
+    const { products } = await Purchases.getProducts({
+      productIdentifiers: [PRODUCT_IDS.monthly, PRODUCT_IDS.yearly],
+    });
+    const monthlyProduct =
+      products.find((p) => p.identifier === PRODUCT_IDS.monthly) ?? null;
+    const yearlyProduct =
+      products.find((p) => p.identifier === PRODUCT_IDS.yearly) ?? null;
+    return { ...empty, monthlyProduct, yearlyProduct };
+  } catch (e) {
+    console.warn("RevenueCat products failed", e);
+    return empty;
+  }
+}
+
 export async function purchasePackage(pkg: PurchasesPackage): Promise<CustomerInfo> {
   const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
+  return customerInfo;
+}
+
+export async function purchaseStoreProduct(product: PurchasesStoreProduct): Promise<CustomerInfo> {
+  const { customerInfo } = await Purchases.purchaseStoreProduct({ product });
   return customerInfo;
 }
 

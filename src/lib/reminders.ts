@@ -93,6 +93,8 @@ export async function ensureNotificationPermission() {
  */
 export function startReminderScheduler(): () => void {
   const tick = () => {
+    const path = window.location.pathname;
+    if (path.startsWith("/app/paywall") || path.startsWith("/app/trial")) return;
     const now = new Date();
     if (hourOfDay(now) < REMINDER_HOUR) return;
     const key = todayKey();

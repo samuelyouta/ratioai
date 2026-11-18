@@ -7,23 +7,25 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CustomerInfo, PurchasesPackage } from "@revenuecat/purchases-capacitor";
+import type { CustomerInfo, PurchasesPackage, PurchasesStoreProduct } from "@revenuecat/purchases-capacitor";
 import { Purchases } from "@revenuecat/purchases-capacitor";
 import { supabase } from "@/integrations/supabase/client";
 import { isNative } from "@/lib/native";
 import {
   configureRevenueCat,
+  ENTITLEMENT_ID,
   getCustomerInfo,
-  getOfferings,
   hasActiveEntitlement,
   isSubscriptionRequired,
+  loadPaywallPlans,
   loginRevenueCat,
   logoutRevenueCat,
-  pickPaywallPackages,
   purchasePackage,
+  purchaseStoreProduct,
   restorePurchases,
   type SubscriptionStatus,
 } from "@/lib/subscriptions";
+import { scheduleTrialEndReminder } from "@/lib/trialReminder";
 import { isReviewerEmail } from "@/lib/reviewerAccess";
 import { trackCheckoutStarted, trackSubscriptionPurchased } from "@/lib/adEvents";
 
@@ -35,8 +37,13 @@ interface SubscriptionContextValue {
   productsUnavailable: boolean;
   monthlyPackage: PurchasesPackage | null;
   yearlyPackage: PurchasesPackage | null;
+  monthlyProduct: PurchasesStoreProduct | null;
+  yearlyProduct: PurchasesStoreProduct | null;
   refresh: () => Promise<void>;
-  purchase: (pkg: PurchasesPackage) => Promise<boolean>;
+  purchase: (plan: {
+    pkg: PurchasesPackage | null;
+    product: PurchasesStoreProduct | null;
+  }) => Promise<boolean>;
   restore: () => Promise<boolean>;
 }
 
@@ -51,6 +58,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [reviewerBypass, setReviewerBypass] = useState(false);
   const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(null);
   const [yearlyPackage, setYearlyPackage] = useState<PurchasesPackage | null>(null);
+  const [monthlyProduct, setMonthlyProduct] = useState<PurchasesStoreProduct | null>(null);
+  const [yearlyProduct, setYearlyProduct] = useState<PurchasesStoreProduct | null>(null);
   const [productsUnavailable, setProductsUnavailable] = useState(false);
 
   const applyCustomerInfo = useCallback(
@@ -61,17 +70,26 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         return;
       }
       setStatus(hasActiveEntitlement(info) ? "active" : "inactive");
+      const ent = info?.entitlements.active[ENTITLEMENT_ID];
+      if (
+        ent?.isActive &&
+        ent.expirationDateMillis &&
+        (ent.periodType === "TRIAL" || ent.periodType === "INTRO")
+      ) {
+        void scheduleTrialEndReminder(ent.expirationDateMillis);
+      }
     },
     [subscriptionRequired],
   );
 
   const loadOfferings = useCallback(async () => {
     if (!isNative()) return;
-    const offerings = await getOfferings();
-    const { monthly, yearly } = pickPaywallPackages(offerings);
-    setMonthlyPackage(monthly);
-    setYearlyPackage(yearly);
-    setProductsUnavailable(!monthly && !yearly);
+    const plans = await loadPaywallPlans();
+    setMonthlyPackage(plans.monthlyPackage);
+    setYearlyPackage(plans.yearlyPackage);
+    setMonthlyProduct(plans.monthlyProduct);
+    setYearlyProduct(plans.yearlyProduct);
+    setProductsUnavailable(!plans.monthlyProduct && !plans.yearlyProduct);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -141,16 +159,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [applyCustomerInfo, loadOfferings, subscriptionRequired]);
 
   const purchase = useCallback(
-    async (pkg: PurchasesPackage) => {
+    async (plan: { pkg: PurchasesPackage | null; product: PurchasesStoreProduct | null }) => {
+      const storeProduct = plan.pkg?.product ?? plan.product;
+      if (!storeProduct) return false;
       try {
         const product = {
-          productId: pkg.product.identifier,
-          amount: pkg.product.price,
-          currency: pkg.product.currencyCode,
-          title: pkg.product.title,
+          productId: storeProduct.identifier,
+          amount: storeProduct.price,
+          currency: storeProduct.currencyCode,
+          title: storeProduct.title,
         };
         trackCheckoutStarted(product);
-        const info = await purchasePackage(pkg);
+        const info = plan.pkg
+          ? await purchasePackage(plan.pkg)
+          : await purchaseStoreProduct(storeProduct);
         applyCustomerInfo(info);
         const active = hasActiveEntitlement(info);
         if (active) {
@@ -200,6 +222,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       productsUnavailable,
       monthlyPackage,
       yearlyPackage,
+      monthlyProduct,
+      yearlyProduct,
       refresh,
       purchase,
       restore,
@@ -212,6 +236,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       customerInfo,
       monthlyPackage,
       yearlyPackage,
+      monthlyProduct,
+      yearlyProduct,
       refresh,
       purchase,
       restore,

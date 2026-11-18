@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
 import { SocialLogin } from "@capgo/capacitor-social-login";
+import { isSubscriptionRequired } from "@/lib/subscriptions";
 
 export type OAuthProvider = "google" | "apple";
 
@@ -82,7 +83,11 @@ export function getLaunchPath(hasProfile: boolean, hasSession: boolean): string 
  * sign-in. Send them into onboarding to finish setting up instead.
  */
 export function getPostSignInPath(hasProfile: boolean, redirect: string): string {
-  return hasProfile ? redirect : "/app/onboarding/goal";
+  if (!hasProfile) return "/app/onboarding/goal";
+  // iOS always continues into the free-trial funnel. The app itself stays
+  // behind RequireSubscription until a plan is active.
+  if (isSubscriptionRequired()) return "/app/trial";
+  return redirect;
 }
 
 /** Turn a Supabase password error into something a user can act on. */

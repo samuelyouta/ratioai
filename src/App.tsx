@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { startReminderScheduler, ensureNotificationPermission } from "@/lib/reminders";
+import { startTrialReminderWatcher } from "@/lib/trialReminder";
 import { useHardwareBack } from "@/hooks/useHardwareBack";
 import { useViewportFix } from "@/hooks/useViewportFix";
 import { applyTheme, getActiveTheme } from "@/lib/streak";
@@ -25,6 +26,8 @@ import AuthCallback from "./pages/app/AuthCallback";
 import NativeAuthBridge from "./pages/app/NativeAuthBridge";
 import AuthEntry from "./components/AuthEntry";
 import Paywall from "./pages/app/Paywall";
+import TrialIntro from "./pages/app/TrialIntro";
+import TrialReminder from "./pages/app/TrialReminder";
 import AppWelcome from "./pages/app/AppWelcome";
 import StepGoal from "./pages/app/onboarding/StepGoal";
 import StepName from "./pages/app/onboarding/StepName";
@@ -73,6 +76,8 @@ const AppRoutes = () => {
       {/* Must NOT require onboarding — OAuth/email return here before gates */}
       <Route path="/app/auth/callback" element={<AuthCallback />} />
       <Route path="/app/auth/native-bridge" element={<NativeAuthBridge />} />
+      <Route path="/app/trial" element={<RequireOnboarding><RequireAuth><TrialIntro /></RequireAuth></RequireOnboarding>} />
+      <Route path="/app/trial/reminder" element={<RequireOnboarding><RequireAuth><TrialReminder /></RequireAuth></RequireOnboarding>} />
       <Route path="/app/paywall" element={<RequireOnboarding><RequireAuth><Paywall /></RequireAuth></RequireOnboarding>} />
       <Route path="/app/today" element={<RequireOnboarding><RequireAuth><RequireSubscription><Today /></RequireSubscription></RequireAuth></RequireOnboarding>} />
       <Route path="/app/insights" element={<RequireOnboarding><RequireAuth><RequireSubscription><Insights /></RequireSubscription></RequireAuth></RequireOnboarding>} />
@@ -97,10 +102,12 @@ const App = () => {
     recordVisit();
     const stopSync = startSessionAutoSync();
     const stop = startReminderScheduler();
+    const stopTrialReminders = startTrialReminderWatcher();
 
     return () => {
       stopSync();
       stop();
+      stopTrialReminders();
     };
   }, []);
 
