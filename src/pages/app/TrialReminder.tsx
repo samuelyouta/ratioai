@@ -73,7 +73,7 @@ const TrialReminder = () => {
               whileTap={{ scale: 0.97 }}
               onClick={() => void continueToPaywall()}
               disabled={busy}
-              className="w-full gradient-glow text-primary-foreground rounded-xl px-4 py-4 text-sm font-semibold shadow-glow disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full rounded-full gradient-glow text-primary-foreground px-4 py-4 text-base font-bold shadow-glow disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : t("trial.reminder.cta")}
             </motion.button>

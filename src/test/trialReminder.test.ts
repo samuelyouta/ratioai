@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { freeTrialDays } from "@/lib/subscriptions";
+import { freeTrialDays, yearlyPerMonthLabel } from "@/lib/subscriptions";
 import { trialReminderDate } from "@/lib/trialReminder";
 
 describe("freeTrialDays", () => {
@@ -17,6 +17,22 @@ describe("freeTrialDays", () => {
       freeTrialDays({ price: 0.99, periodUnit: "MONTH", periodNumberOfUnits: 1, cycles: 1 }),
     ).toBeNull();
     expect(freeTrialDays(null)).toBeNull();
+  });
+});
+
+describe("yearlyPerMonthLabel", () => {
+  it("keeps the store's localized monthly equivalent", () => {
+    expect(
+      yearlyPerMonthLabel(
+        { pricePerMonthString: "3,33 €", price: 39.99, currencyCode: "EUR" },
+        "fr-FR",
+      ),
+    ).toBe("3,33 €");
+  });
+
+  it("formats from the yearly price when the store omits a monthly string", () => {
+    const label = yearlyPerMonthLabel({ price: 39.99, currencyCode: "USD" }, "en-US");
+    expect(label).toMatch(/3\.33/);
   });
 });
 

@@ -46,6 +46,30 @@ export function resolvedYearlyTrialDays(
   return freeTrialDays(intro) ?? YEARLY_FREE_TRIAL_DAYS;
 }
 
+/**
+ * Monthly equivalent of the yearly price, in the store's own currency format.
+ * Prefers the string Apple/RevenueCat already localized for the account's country.
+ */
+export function yearlyPerMonthLabel(
+  product:
+    | { pricePerMonthString?: string | null; price?: number; currencyCode?: string }
+    | null
+    | undefined,
+  locale: string,
+): string | null {
+  if (!product) return null;
+  if (product.pricePerMonthString) return product.pricePerMonthString;
+  if (typeof product.price !== "number" || !product.currencyCode) return null;
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: product.currencyCode,
+    }).format(product.price / 12);
+  } catch {
+    return null;
+  }
+}
+
 /** Days in a free introductory offer, or null when the product has no free trial. */
 export function freeTrialDays(
   intro: { price: number; periodUnit: string; periodNumberOfUnits: number; cycles: number } | null | undefined,

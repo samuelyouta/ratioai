@@ -270,33 +270,33 @@ function PlanCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`relative text-left rounded-2xl border px-3 py-3.5 transition-colors ${
+      className={`relative text-left rounded-2xl border-2 px-3.5 py-3.5 transition-colors ${
         selected
           ? "border-primary bg-primary/10 shadow-glow"
           : "border-border bg-card"
       }`}
     >
       {badge && (
-        <span className="absolute -top-2.5 right-2 rounded-full gradient-glow text-primary-foreground text-[9px] font-bold tracking-wide px-2 py-0.5">
+        <span className="absolute -top-2.5 right-3 rounded-full bg-foreground text-background text-[9px] font-extrabold tracking-wide px-2 py-0.5 shadow-glow-sm">
           {badge}
         </span>
       )}
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold">{title}</p>
+      <p className="text-sm font-semibold">{title}</p>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-bold">
+          {price ?? "—"}
+          {suffix && price && (
+            <span className="text-xs font-medium text-muted-foreground"> {suffix}</span>
+          )}
+        </p>
         <span
-          className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-            selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+            selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50"
           }`}
         >
-          {selected && <Check className="w-3 h-3" />}
+          {selected && <Check className="w-3 h-3" strokeWidth={3} />}
         </span>
       </div>
-      <p className="mt-2 text-sm font-semibold">
-        {price ?? "—"}
-        {suffix && price && (
-          <span className="text-xs font-normal text-muted-foreground"> {suffix}</span>
-        )}
-      </p>
     </button>
   );
 }

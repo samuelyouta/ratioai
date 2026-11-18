@@ -1,22 +1,41 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import mealScan from "@/assets/trial-meal-scan.png";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useT, type TranslationKey } from "@/i18n";
-
-const POINTS: TranslationKey[] = ["paywall.f1", "paywall.f2", "paywall.f3"];
+import { yearlyPerMonthLabel } from "@/lib/subscriptions";
+import { intlLocale, useT } from "@/i18n";
 
 const TrialIntro = () => {
   const navigate = useNavigate();
-  const { t } = useT();
-  const { isPro, status, subscriptionRequired } = useSubscription();
+  const { t, lang } = useT();
+  const {
+    isPro,
+    status,
+    subscriptionRequired,
+    yearlyPackage,
+    yearlyProduct,
+    restore,
+  } = useSubscription();
+  const [busy, setBusy] = useState(false);
+
+  const yearly = yearlyPackage?.product ?? yearlyProduct;
+  const yearlyPrice = yearly?.priceString ?? null;
+  const perMonth = yearlyPerMonthLabel(yearly, intlLocale(lang));
 
   useEffect(() => {
     if (subscriptionRequired && isPro && status !== "loading" && status !== "unknown") {
       navigate("/app/today", { replace: true });
     }
   }, [isPro, navigate, status, subscriptionRequired]);
+
+  const handleRestore = async () => {
+    setBusy(true);
+    const ok = await restore();
+    setBusy(false);
+    if (ok) navigate("/app/today", { replace: true });
+  };
 
   if (subscriptionRequired && (status === "loading" || status === "unknown")) {
     return (
@@ -27,53 +46,67 @@ const TrialIntro = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="safe-top-sticky">
-        <div className="h-1 w-full bg-muted">
-          <div className="h-full w-1/3 gradient-glow" />
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col px-6 pt-10 pb-10 max-w-sm mx-auto w-full">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <div className="flex-1 flex flex-col px-6 pb-6 max-w-sm mx-auto w-full safe-top">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 180, damping: 24 }}
           className="flex-1 flex flex-col"
         >
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-2xl gradient-glow flex items-center justify-center shadow-glow">
-              <Sparkles className="w-8 h-8 text-primary-foreground" />
+          <h1 className="text-[2rem] font-extrabold text-center leading-[1.12] tracking-tight">
+            {t("trial.intro.title")}
+          </h1>
+
+          <div className="flex-1 flex items-center justify-center py-5">
+            <div className="relative w-[214px] rounded-[2.3rem] border border-primary/40 bg-black p-[7px] shadow-glow">
+              <div className="pointer-events-none absolute left-1/2 top-[11px] z-10 h-3.5 w-16 -translate-x-1/2 rounded-full bg-black ring-1 ring-primary/30" />
+              <div className="overflow-hidden rounded-[1.75rem] bg-black">
+                <img
+                  src={mealScan}
+                  alt={t("trial.intro.previewAlt")}
+                  className="block h-[340px] w-full object-cover object-top"
+                />
+              </div>
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-foreground text-center leading-tight">
-            {t("trial.intro.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground text-center mt-4 leading-relaxed">
-            {t("trial.intro.body")}
+          <p className="flex items-center justify-center gap-2 text-sm font-semibold">
+            <Check className="w-4 h-4 text-primary" />
+            {t("paywall.noPayment")}
           </p>
 
-          <ul className="mt-8 space-y-3">
-            {POINTS.map((key) => (
-              <li key={key} className="flex items-center gap-3 text-sm text-foreground">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                  <Check className="w-3 h-3 text-primary" />
-                </span>
-                {t(key)}
-              </li>
-            ))}
-          </ul>
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate("/app/trial/reminder")}
+            className="w-full mt-4 rounded-full gradient-glow text-primary-foreground px-4 py-4 text-base font-bold shadow-glow"
+          >
+            {t("trial.intro.cta")}
+          </motion.button>
 
-          <div className="mt-auto pt-10">
-            <motion.button
+          <p className="mt-5 text-sm font-semibold text-center">{t("paywall.already")}</p>
+          {yearlyPrice && (
+            <p className="mt-1 text-xs text-muted-foreground text-center">
+              {perMonth
+                ? t("trial.intro.yearlyLine", { price: yearlyPrice, perMonth })
+                : t("trial.intro.yearlyOnly", { price: yearlyPrice })}
+            </p>
+          )}
+
+          <div className="mt-4 flex items-center justify-center gap-3 text-[11px] text-muted-foreground">
+            <a href="/terms" className="hover:text-primary">{t("common.terms")}</a>
+            <span aria-hidden>·</span>
+            <a href="/privacy" className="hover:text-primary">{t("common.privacy")}</a>
+            <span aria-hidden>·</span>
+            <button
               type="button"
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate("/app/trial/reminder")}
-              className="w-full gradient-glow text-primary-foreground rounded-xl px-4 py-4 text-sm font-semibold shadow-glow"
+              onClick={() => void handleRestore()}
+              disabled={busy}
+              className="hover:text-primary disabled:opacity-50"
             >
-              {t("trial.intro.cta")}
-            </motion.button>
+              {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : t("paywall.restoreShort")}
+            </button>
           </div>
         </motion.div>
       </div>
