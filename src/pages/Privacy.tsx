@@ -166,7 +166,10 @@ const Privacy = () => {
           <p className="text-sm text-muted-foreground leading-relaxed">
             You may access, update, or delete your personal data. Use Profile → Delete Account to remove
             your auth account and associated cloud data, or email{" "}
-            <span className="text-primary">privacy@ratioai.app</span>.
+            <a href="mailto:support@ratioai.site" className="text-primary font-medium hover:underline">
+              support@ratioai.site
+            </a>
+            .
           </p>
         </section>
 
@@ -181,7 +184,10 @@ const Privacy = () => {
         <section className="space-y-3">
           <h3 className="text-sm font-bold text-foreground">8. Contact</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Privacy questions: <span className="text-primary">privacy@ratioai.app</span>
+            Privacy questions:{" "}
+            <a href="mailto:support@ratioai.site" className="text-primary font-medium hover:underline">
+              support@ratioai.site
+            </a>
           </p>
         </section>
       </main>

@@ -86,4 +86,4 @@ Use this public page for App Store Connect → App Information → **Support URL
 
 `https://ratioai.vercel.app/support`
 
-It includes contact email (`support@ratioai.app`), FAQ, and links to Privacy / Terms.
+It includes contact email (`support@ratioai.site`), FAQ, and links to Privacy / Terms.
