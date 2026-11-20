@@ -82,7 +82,7 @@ Paste and run the contents of `supabase/pending-setup.sql`.
 supabase login
 supabase link --project-ref myyjjtclthflfgxkgubr
 supabase db push
-supabase functions deploy delete-account analyze-meal describe-meal
+supabase functions deploy delete-account analyze-meal describe-meal send-welcome-email send-nurture-emails
 ```
 
 ## 5. Verify

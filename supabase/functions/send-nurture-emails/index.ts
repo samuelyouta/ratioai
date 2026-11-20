@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
-const FROM_EMAIL = "RatioAi <onboarding@ratioai.app>";
+const FROM_EMAIL = "RatioAi <support@ratioai.site>";
 
 const emails = [
   {
