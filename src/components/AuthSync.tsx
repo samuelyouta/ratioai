@@ -66,11 +66,12 @@ const AuthSync = () => {
   return null;
 };
 
-/** Saves the signed-in address and sends the welcome email once. */
+/** Saves the address, records that the app is still installed, and sends the welcome once. */
 function enrollNurture(userId: string) {
-  const key = `ratioai-nurture:${userId}`;
+  const key = `ratioai-nurture-ping:${userId}`;
   try {
-    if (sessionStorage.getItem(key) === "1") return;
+    const last = Number(sessionStorage.getItem(key) || 0);
+    if (Date.now() - last < 6 * 60 * 60 * 1000) return;
   } catch {
     // Private mode can block storage. The server still sends the welcome once.
   }
@@ -79,7 +80,7 @@ function enrollNurture(userId: string) {
     const sent = (data as { success?: boolean } | null)?.success;
     if (error || (!sent && skipped !== "already-enrolled" && skipped !== "reviewer")) return;
     try {
-      sessionStorage.setItem(key, "1");
+      sessionStorage.setItem(key, String(Date.now()));
     } catch {
       // The server record is what prevents a second welcome.
     }

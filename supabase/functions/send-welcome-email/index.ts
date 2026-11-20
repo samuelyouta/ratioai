@@ -58,9 +58,12 @@ Deno.serve(async (req) => {
 
   await supabase
     .from("nurture_contacts")
-    .update({ user_id: user.id })
-    .eq("email", email)
-    .is("user_id", null);
+    .update({
+      user_id: user.id,
+      last_opened_at: new Date().toISOString(),
+      removed_at: null,
+    })
+    .eq("email", email);
 
   const { data: claimed, error: claimError } = await supabase
     .from("nurture_contacts")
@@ -86,13 +89,14 @@ Deno.serve(async (req) => {
   }
 
   const html = nurtureMessage({
-    headline: "Your next meal is the easy one.",
+    kicker: "YOU'RE IN ✨",
+    headline: "📸 Your next meal is the easy one.",
     paragraphs: [
-      "You have RatioAi on your phone. That part is already done.",
-      "Open the app, point it at a plate, and get the calories and macros back in a few seconds. No searching a database. No guessing the chicken.",
-      "Log the next thing you eat. One photo is enough to feel how this works.",
+      "RatioAi is on your phone. The hard part is already done.",
+      "Point it at a plate and watch the calories, protein, carbs, and fat come back in a few seconds. No database search. No guessing the chicken.",
+      "Log the next thing you eat. One photo is enough to feel the spark. 🔥",
     ],
-    button: "Open RatioAi",
+    button: "Open RatioAi →",
     unsubscribeUrl: `${supabaseUrl}/functions/v1/unsubscribe?id=${claimed.id}`,
   });
 
@@ -105,7 +109,7 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [email],
-      subject: "You downloaded RatioAi. Start with one photo.",
+      subject: "📸 You're in. Snap your first meal",
       html,
     }),
   });

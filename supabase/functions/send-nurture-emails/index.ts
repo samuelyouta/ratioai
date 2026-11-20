@@ -10,41 +10,75 @@ const corsHeaders = {
 const RESEND_API_URL = "https://api.resend.com/emails";
 const FROM_EMAIL = "RatioAi <support@ratioai.site>";
 
-const emails = [
+type NurtureCopy = {
+  kicker: string;
+  subject: string;
+  headline: string;
+  paragraphs: string[];
+  button: string;
+};
+
+const emails: Array<{
+  step: number;
+  delayDays: number;
+  active: NurtureCopy;
+  removed?: NurtureCopy;
+}> = [
   {
     step: 2,
     delayDays: 2,
-    subject: "The meal you skip logging is the one that counts",
-    headline: "Tracking is how the day stays honest.",
-    paragraphs: [
-      "Most people do not miss a goal because of one meal. They miss it because the meals in between never got counted.",
-      "A photo of breakfast, the snack, and dinner turns a vague day into something you can see: protein, carbs, fat, and calories. That picture is what makes the next choice obvious.",
-      "RatioAi is built for the plate in front of you, not for a perfect log.",
-    ],
-    button: "Snap today's meal",
+    active: {
+      kicker: "WHY IT MATTERS 🔥",
+      subject: "🔥 The meal you skip is the one that counts",
+      headline: "Tracking keeps the day honest.",
+      paragraphs: [
+        "Most people miss a goal because the meals in between never got counted. Not because of one plate.",
+        "Breakfast, the snack, dinner. Snap each one and the day turns into something you can see: protein, carbs, fat, calories. 📊",
+        "That picture is what makes the next choice obvious. RatioAi is built for the plate in front of you.",
+      ],
+      button: "Snap today's meal →",
+    },
   },
   {
     step: 3,
     delayDays: 4,
-    subject: "You do not need a perfect day",
-    headline: "Log the meal you actually ate.",
-    paragraphs: [
-      "The streak that lasts is not the one with perfect meals. It is the one where you logged the meal anyway.",
-      "Snap it before you clear the plate. If lunch got away from you, log dinner. RatioAi estimates the portion from the photo so you can get back to the rest of your day.",
-      "A week of real plates teaches you more than one careful Sunday.",
-    ],
-    button: "Log the next plate",
+    active: {
+      kicker: "KEEP IT EASY ✅",
+      subject: "✅ You don't need a perfect day",
+      headline: "Log the meal you actually ate.",
+      paragraphs: [
+        "The streak that lasts is not the pretty one. It's the one where you logged the meal anyway.",
+        "Snap it before you clear the plate. If lunch got away, log dinner. 🍽️ RatioAi reads the portion from the photo so you can get on with your day.",
+        "A week of real plates teaches you more than one careful Sunday.",
+      ],
+      button: "Log the next plate →",
+    },
   },
   {
     step: 4,
     delayDays: 5,
-    subject: "Deleted RatioAi? Your account is still here",
-    headline: "Come back for the next meal.",
-    paragraphs: [
-      "If the app is gone from your phone, you can put it back in a minute. This address is still saved, so you do not start from zero.",
-      "Reinstall RatioAi, sign in, and photograph the next thing you eat. One plate is a fresh start. The goal does not expire because a few days went quiet.",
-    ],
-    button: "Reinstall RatioAi",
+    active: {
+      kicker: "YOUR NEXT WIN 🥗",
+      subject: "🥗 Your meals are starting to tell a story",
+      headline: "Keep feeding the streak.",
+      paragraphs: [
+        "A few logged plates are enough to see the pattern: the meals that fill you up, and the ones that quietly blow the day.",
+        "Stay with it this week. Snap what you eat, glance at the macros, and let the goal get easier to hit. 💪",
+        "You already have RatioAi. The next photo is the whole assignment.",
+      ],
+      button: "Log today's plate →",
+    },
+    removed: {
+      kicker: "COME BACK 👋",
+      subject: "👋 RatioAi is one tap away",
+      headline: "Your account is gone, but the start is easy.",
+      paragraphs: [
+        "You deleted RatioAi. The address is still here, so this is the last nudge.",
+        "Reinstall the app, sign in again, and photograph the next thing you eat. One plate is a fresh start. 📸",
+        "The goal does not expire because a few days went quiet.",
+      ],
+      button: "Reinstall RatioAi →",
+    },
   },
 ];
 
@@ -71,7 +105,7 @@ Deno.serve(async (req) => {
     for (const emailConfig of emails) {
       const { data: users, error } = await supabase
         .from("nurture_contacts")
-        .select("id, email, nurture_sent_at")
+        .select("id, email, nurture_sent_at, removed_at")
         .eq("nurture_step", emailConfig.step - 1)
         .eq("unsubscribed", false)
         .not("nurture_sent_at", "is", null)
@@ -92,10 +126,14 @@ Deno.serve(async (req) => {
 
       for (const user of readyUsers) {
         try {
+          const copy = user.removed_at && emailConfig.removed
+            ? emailConfig.removed
+            : emailConfig.active;
           const html = nurtureMessage({
-            headline: emailConfig.headline,
-            paragraphs: emailConfig.paragraphs,
-            button: emailConfig.button,
+            kicker: copy.kicker,
+            headline: copy.headline,
+            paragraphs: copy.paragraphs,
+            button: copy.button,
             unsubscribeUrl: `${supabaseUrl}/functions/v1/unsubscribe?id=${user.id}`,
           });
           const res = await fetch(RESEND_API_URL, {
@@ -107,7 +145,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               from: FROM_EMAIL,
               to: [user.email],
-              subject: emailConfig.subject,
+              subject: copy.subject,
               html,
             }),
           });

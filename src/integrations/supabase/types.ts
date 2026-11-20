@@ -214,8 +214,10 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          last_opened_at: string | null
           nurture_sent_at: string | null
           nurture_step: number
+          removed_at: string | null
           unsubscribed: boolean
           user_id: string | null
         }
@@ -223,8 +225,10 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          last_opened_at?: string | null
           nurture_sent_at?: string | null
           nurture_step?: number
+          removed_at?: string | null
           unsubscribed?: boolean
           user_id?: string | null
         }
@@ -232,8 +236,10 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          last_opened_at?: string | null
           nurture_sent_at?: string | null
           nurture_step?: number
+          removed_at?: string | null
           unsubscribed?: boolean
           user_id?: string | null
         }
