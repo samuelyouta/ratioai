@@ -40,10 +40,12 @@ export function nurtureMessage(opts: {
     <div style="text-align:center;margin:26px 0 4px;">
       <a href="${APP_STORE_URL}" style="display:inline-block;background:#c6ef4a;color:#111;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:800;font-size:15px;">${opts.button}</a>
     </div>
-    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #2a2a2e;">
+    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #2a2a2e;text-align:center;">
       <p style="font-size:13px;color:#a1a1aa;margin:0;">— The RatioAi Team</p>
       <p style="font-size:12px;color:#a1a1aa;margin:8px 0 0;">Questions: <a href="mailto:${SUPPORT_EMAIL}" style="color:#c6ef4a;">${SUPPORT_EMAIL}</a></p>
-      <p style="font-size:11px;color:#71717a;margin:12px 0 0;"><a href="${opts.unsubscribeUrl}" style="color:#71717a;text-decoration:underline;">Unsubscribe</a></p>
+      <p style="margin:16px 0 0;">
+        <a href="${opts.unsubscribeUrl}" style="display:inline-block;border:1px solid #3f3f46;color:#e4e4e7;padding:10px 18px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:700;">Unsubscribe</a>
+      </p>
     </div>
   </div>
 </div>`;
