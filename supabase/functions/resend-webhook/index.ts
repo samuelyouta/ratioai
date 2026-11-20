@@ -68,12 +68,13 @@ Deno.serve(async (req) => {
         const bouncedEmails = eventData.to || [];
         console.warn(`Email bounced for: ${bouncedEmails.join(", ")}`);
 
-        // Mark bounced emails as unsubscribed in waitlist
         for (const email of bouncedEmails) {
+          const address = email.toLowerCase();
           const { error } = await supabase
-            .from("waitlist")
+            .from("nurture_contacts")
             .update({ unsubscribed: true })
-            .eq("email", email.toLowerCase());
+            .eq("email", address);
+          await supabase.from("waitlist").update({ unsubscribed: true }).eq("email", address);
 
           if (error) {
             console.error(`Failed to update bounced email ${email}:`, error.message);
@@ -88,12 +89,13 @@ Deno.serve(async (req) => {
         const complainedEmails = eventData.to || [];
         console.warn(`Spam complaint from: ${complainedEmails.join(", ")}`);
 
-        // Mark complained emails as unsubscribed
         for (const email of complainedEmails) {
+          const address = email.toLowerCase();
           const { error } = await supabase
-            .from("waitlist")
+            .from("nurture_contacts")
             .update({ unsubscribed: true })
-            .eq("email", email.toLowerCase());
+            .eq("email", address);
+          await supabase.from("waitlist").update({ unsubscribed: true }).eq("email", address);
 
           if (error) {
             console.error(`Failed to update complained email ${email}:`, error.message);

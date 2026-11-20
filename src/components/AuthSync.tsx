@@ -18,7 +18,10 @@ const AuthSync = () => {
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) runSync(session.user.id);
+      if (session?.user) {
+        runSync(session.user.id);
+        enrollNurture(session.user.id);
+      }
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
@@ -27,6 +30,9 @@ const AuthSync = () => {
         (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")
       ) {
         runSync(session.user.id);
+      }
+      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        enrollNurture(session.user.id);
       }
       if (session?.user && event === "SIGNED_IN") {
         trackSignIn(session.user);
@@ -59,5 +65,25 @@ const AuthSync = () => {
 
   return null;
 };
+
+/** Saves the signed-in address and sends the welcome email once. */
+function enrollNurture(userId: string) {
+  const key = `ratioai-nurture:${userId}`;
+  try {
+    if (sessionStorage.getItem(key) === "1") return;
+  } catch {
+    // Private mode can block storage. The server still sends the welcome once.
+  }
+  void supabase.functions.invoke("send-welcome-email", { body: {} }).then(({ data, error }) => {
+    const skipped = (data as { skipped?: string } | null)?.skipped;
+    const sent = (data as { success?: boolean } | null)?.success;
+    if (error || (!sent && skipped !== "already-enrolled" && skipped !== "reviewer")) return;
+    try {
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // The server record is what prevents a second welcome.
+    }
+  });
+}
 
 export default AuthSync;

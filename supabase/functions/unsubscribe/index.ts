@@ -25,16 +25,31 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  const { error } = await supabase
-    .from("waitlist")
+  const { data: contact, error: contactError } = await supabase
+    .from("nurture_contacts")
     .update({ unsubscribed: true })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
-  if (error) {
+  if (contactError) {
     return new Response("<h1>Something went wrong. Please try again.</h1>", {
       status: 500,
       headers: { "Content-Type": "text/html" },
     });
+  }
+
+  if (!contact?.length) {
+    const { error } = await supabase
+      .from("waitlist")
+      .update({ unsubscribed: true })
+      .eq("id", id);
+
+    if (error) {
+      return new Response("<h1>Something went wrong. Please try again.</h1>", {
+        status: 500,
+        headers: { "Content-Type": "text/html" },
+      });
+    }
   }
 
   return new Response(

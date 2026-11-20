@@ -39,6 +39,9 @@ serve(async (req) => {
     const admin = createClient(url, serviceKey);
 
     // Remove user-owned rows (auth.users cascade also covers profiles/meals).
+    // nurture_contacts stays. Deleting the app or the account clears user_id
+    // and keeps the address so the follow-up emails can still be sent.
+    // Unsubscribe is what stops them.
     await admin.from("meals").delete().eq("user_id", user.id);
     await admin.from("profiles").delete().eq("id", user.id);
 

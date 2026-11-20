@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { nurtureMessage } from "../_shared/nurtureEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,85 +8,43 @@ const corsHeaders = {
 };
 
 const RESEND_API_URL = "https://api.resend.com/emails";
-
 const FROM_EMAIL = "RatioAi <support@ratioai.site>";
 
 const emails = [
   {
-    step: 1,
-    delayDays: 0, // welcome - already sent via send-welcome-email
-    subject: "Welcome to the RatioAi waitlist! 🎉",
-    html: `
-      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; color: #1a1a1a;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 8px;">Welcome to RatioAi</h1>
-          <p style="color: #888; font-size: 14px; margin: 0;">You're officially on the list.</p>
-        </div>
-        <p style="font-size: 15px; line-height: 1.7;">Hey there! 👋</p>
-        <p style="font-size: 15px; line-height: 1.7;">Thanks for joining the RatioAi waitlist. We're building something special — an AI-powered nutrition tracker that makes calorie counting as easy as snapping a photo.</p>
-        <p style="font-size: 15px; line-height: 1.7;">You'll be among the first to try it when we launch. Stay tuned for updates!</p>
-         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
-           <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
-           <p style="font-size: 11px; color: #bbb; margin: 12px 0 0;"><a href="{{UNSUBSCRIBE_URL}}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a></p>
-         </div>
-       </div>
-     `,
-   },
-   {
-     step: 2,
+    step: 2,
     delayDays: 2,
-    subject: "Why we're building RatioAi 🧠",
-    html: `
-      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; color: #1a1a1a;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 8px;">The Problem We're Solving</h1>
-        </div>
-        <p style="font-size: 15px; line-height: 1.7;">Let's be honest — tracking what you eat is a pain.</p>
-        <p style="font-size: 15px; line-height: 1.7;">Searching databases, guessing portion sizes, manually logging every ingredient... Most people give up within a week.</p>
-        <p style="font-size: 15px; line-height: 1.7;"><strong>RatioAi changes that.</strong> Just snap a photo of your meal and our AI instantly breaks down the calories, protein, carbs, and fats — verified against USDA data.</p>
-        <p style="font-size: 15px; line-height: 1.7;">No more guessing. No more tedious logging. Just eat, snap, and know.</p>
-        <div style="background: #f8f8f8; border-radius: 12px; padding: 20px; margin: 24px 0;">
-          <p style="font-size: 14px; line-height: 1.6; margin: 0; color: #555;">
-            📸 <strong>Snap & Track</strong> — Photo-based meal logging<br>
-            🧠 <strong>AI Analysis</strong> — Instant macro breakdown<br>
-            📈 <strong>Smart Insights</strong> — Personalized goals that adapt
-          </p>
-        </div>
-        <p style="font-size: 15px; line-height: 1.7;">We can't wait to get this into your hands.</p>
-         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
-           <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
-           <p style="font-size: 11px; color: #bbb; margin: 12px 0 0;"><a href="{{UNSUBSCRIBE_URL}}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a></p>
-         </div>
-      </div>
-    `,
+    subject: "The meal you skip logging is the one that counts",
+    headline: "Tracking is how the day stays honest.",
+    paragraphs: [
+      "Most people do not miss a goal because of one meal. They miss it because the meals in between never got counted.",
+      "A photo of breakfast, the snack, and dinner turns a vague day into something you can see: protein, carbs, fat, and calories. That picture is what makes the next choice obvious.",
+      "RatioAi is built for the plate in front of you, not for a perfect log.",
+    ],
+    button: "Snap today's meal",
   },
   {
     step: 3,
+    delayDays: 4,
+    subject: "You do not need a perfect day",
+    headline: "Log the meal you actually ate.",
+    paragraphs: [
+      "The streak that lasts is not the one with perfect meals. It is the one where you logged the meal anyway.",
+      "Snap it before you clear the plate. If lunch got away from you, log dinner. RatioAi estimates the portion from the photo so you can get back to the rest of your day.",
+      "A week of real plates teaches you more than one careful Sunday.",
+    ],
+    button: "Log the next plate",
+  },
+  {
+    step: 4,
     delayDays: 5,
-    subject: "Help us spread the word? 🚀",
-    html: `
-      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; color: #1a1a1a;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 8px;">Know Someone Who'd Love This?</h1>
-        </div>
-        <p style="font-size: 15px; line-height: 1.7;">You've been on the RatioAi waitlist for a few days now, and we're getting closer to launch! 🎉</p>
-        <p style="font-size: 15px; line-height: 1.7;">If you know anyone who:</p>
-        <ul style="font-size: 15px; line-height: 1.9; padding-left: 20px;">
-          <li>Wants to eat healthier without the hassle</li>
-          <li>Is tired of manual calorie counting</li>
-          <li>Loves trying new AI-powered tools</li>
-        </ul>
-        <p style="font-size: 15px; line-height: 1.7;">...send them our way! Every person who joins helps us build a better product for everyone.</p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="https://ratioai.lovable.app" style="display: inline-block; background: #1a1a1a; color: #fff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px;">Share RatioAi →</a>
-        </div>
-        <p style="font-size: 15px; line-height: 1.7;">Thanks for being an early supporter. It means the world to us. 💚</p>
-         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee;">
-           <p style="font-size: 13px; color: #999; margin: 0;">— The RatioAi Team</p>
-           <p style="font-size: 11px; color: #bbb; margin: 12px 0 0;"><a href="{{UNSUBSCRIBE_URL}}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a></p>
-         </div>
-      </div>
-    `,
+    subject: "Deleted RatioAi? Your account is still here",
+    headline: "Come back for the next meal.",
+    paragraphs: [
+      "If the app is gone from your phone, you can put it back in a minute. This address is still saved, so you do not start from zero.",
+      "Reinstall RatioAi, sign in, and photograph the next thing you eat. One plate is a fresh start. The goal does not expire because a few days went quiet.",
+    ],
+    button: "Reinstall RatioAi",
   },
 ];
 
@@ -96,10 +55,10 @@ Deno.serve(async (req) => {
 
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   if (!RESEND_API_KEY) {
-    return new Response(
-      JSON.stringify({ error: "RESEND_API_KEY is not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -109,11 +68,9 @@ Deno.serve(async (req) => {
   const results = { sent: 0, errors: 0, details: [] as string[] };
 
   try {
-    // Process steps 2 and 3 (step 1 is sent immediately on signup)
-    for (const emailConfig of emails.filter((e) => e.step >= 2)) {
-      // Find users ready for this step
+    for (const emailConfig of emails) {
       const { data: users, error } = await supabase
-        .from("waitlist")
+        .from("nurture_contacts")
         .select("id, email, nurture_sent_at")
         .eq("nurture_step", emailConfig.step - 1)
         .eq("unsubscribed", false)
@@ -124,10 +81,8 @@ Deno.serve(async (req) => {
         results.details.push(`Error fetching step ${emailConfig.step}: ${error.message}`);
         continue;
       }
-
       if (!users || users.length === 0) continue;
 
-      // Filter by delay
       const now = new Date();
       const readyUsers = users.filter((u) => {
         const sentAt = new Date(u.nurture_sent_at);
@@ -137,6 +92,12 @@ Deno.serve(async (req) => {
 
       for (const user of readyUsers) {
         try {
+          const html = nurtureMessage({
+            headline: emailConfig.headline,
+            paragraphs: emailConfig.paragraphs,
+            button: emailConfig.button,
+            unsubscribeUrl: `${supabaseUrl}/functions/v1/unsubscribe?id=${user.id}`,
+          });
           const res = await fetch(RESEND_API_URL, {
             method: "POST",
             headers: {
@@ -147,18 +108,16 @@ Deno.serve(async (req) => {
               from: FROM_EMAIL,
               to: [user.email],
               subject: emailConfig.subject,
-              html: emailConfig.html.replace(
-                /\{\{UNSUBSCRIBE_URL\}\}/g,
-                `${supabaseUrl}/functions/v1/unsubscribe?id=${user.id}`
-              ),
+              html,
             }),
           });
 
           if (res.ok) {
             await supabase
-              .from("waitlist")
+              .from("nurture_contacts")
               .update({ nurture_step: emailConfig.step, nurture_sent_at: now.toISOString() })
-              .eq("id", user.id);
+              .eq("id", user.id)
+              .eq("nurture_step", emailConfig.step - 1);
             results.sent++;
           } else {
             const errBody = await res.text();
