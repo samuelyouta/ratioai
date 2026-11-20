@@ -39,6 +39,19 @@ serve(async (req) => {
     const admin = createClient(url, serviceKey);
 
     // Remove user-owned rows (auth.users cascade also covers profiles/meals).
+    // Keep the email address, and mark the account removed so the last
+    // follow-up can invite them back. Unsubscribe is what stops the sequence.
+    const removedAt = new Date().toISOString();
+    await admin
+      .from("nurture_contacts")
+      .update({ removed_at: removedAt, user_id: null })
+      .eq("user_id", user.id);
+    if (user.email) {
+      await admin
+        .from("nurture_contacts")
+        .update({ removed_at: removedAt, user_id: null })
+        .eq("email", user.email.toLowerCase());
+    }
     await admin.from("meals").delete().eq("user_id", user.id);
     await admin.from("profiles").delete().eq("id", user.id);
 

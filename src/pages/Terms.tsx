@@ -93,7 +93,10 @@ const Terms = () => {
         <section className="space-y-3">
           <h3 className="text-sm font-bold text-foreground">8. Contact</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Questions: <span className="text-primary">legal@ratioai.app</span>
+            Questions:{" "}
+            <a href="mailto:support@ratioai.site" className="text-primary font-medium hover:underline">
+              support@ratioai.site
+            </a>
           </p>
         </section>
       </main>

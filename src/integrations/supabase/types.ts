@@ -209,6 +209,42 @@ export type Database = {
         }
         Relationships: []
       }
+      nurture_contacts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          last_opened_at: string | null
+          nurture_sent_at: string | null
+          nurture_step: number
+          removed_at: string | null
+          unsubscribed: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          last_opened_at?: string | null
+          nurture_sent_at?: string | null
+          nurture_step?: number
+          removed_at?: string | null
+          unsubscribed?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          last_opened_at?: string | null
+          nurture_sent_at?: string | null
+          nurture_step?: number
+          removed_at?: string | null
+          unsubscribed?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       waitlist: {
         Row: {
           created_at: string

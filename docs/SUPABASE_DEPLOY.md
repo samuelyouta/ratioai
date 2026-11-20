@@ -37,13 +37,15 @@ This runs:
 ```bash
 supabase link --project-ref myyjjtclthflfgxkgubr
 supabase db push
-supabase functions deploy delete-account analyze-meal describe-meal
+supabase functions deploy delete-account analyze-meal describe-meal send-welcome-email send-nurture-emails unsubscribe resend-webhook
 ```
 
 ## Verify
 
 - **Tables:** https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/editor → `edge_rate_limits`, `profiles`, `meals`
 - **Functions:** https://supabase.com/dashboard/project/myyjjtclthflfgxkgubr/functions
+
+The welcome email goes out when someone signs in. The later emails go out only when `send-nurture-emails` runs. Schedule that function once a day from the Supabase dashboard (Edge Functions → send-nurture-emails → Schedules), or with a cron job that calls it.
 
 ## Cursor Cloud Agent
 

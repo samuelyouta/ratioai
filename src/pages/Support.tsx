@@ -3,7 +3,7 @@ import { ArrowLeft, ChevronDown, LifeBuoy, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 
-const SUPPORT_EMAIL = "support@ratioai.app";
+const SUPPORT_EMAIL = "support@ratioai.site";
 
 const faqs = [
   {
